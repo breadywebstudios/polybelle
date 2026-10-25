@@ -1033,9 +1033,13 @@
         <td><input type="text" maxlength="120" data-promo-field="required_item" value="${esc(promo.required_item)}" aria-label="Required selection for ${esc(promo.code)}"></td>
         <td><input type="number" min="1" step="1" data-promo-field="max_uses" value="${esc(promo.max_uses)}" aria-label="Maximum bookings for ${esc(promo.code)}"><small>${promo.used_count} used</small></td>
         <td><label class="switch"><input type="checkbox" data-promo-field="is_active" ${promo.is_active ? "checked" : ""}> ${promo.is_active ? "Active" : "Paused"}</label></td>
-        <td><div class="promo-actions"><button type="button" class="btn btn-outline sm" data-promo-save="${esc(promo.code)}">Save</button></div></td>
+        <td><div class="promo-actions">
+          <button type="button" class="btn btn-outline sm" data-promo-save="${esc(promo.code)}">Save</button>
+          <button type="button" class="btn btn-outline sm" data-promo-delete="${esc(promo.code)}" ${promo.used_count ? "disabled title=\"This code has redemption history; pause it instead.\"" : ""}>Delete</button>
+        </div></td>
       </tr>`).join("") : `<tr><td colspan="6" class="empty">No promo codes yet.</td></tr>`;
     $$("[data-promo-save]").forEach((button) => button.addEventListener("click", () => savePromo(button.dataset.promoSave)));
+    $$("[data-promo-delete]").forEach((button) => button.addEventListener("click", () => deletePromo(button.dataset.promoDelete)));
     $$("#promoRows [data-promo-field='discount_type']").forEach((select) => select.addEventListener("change", () => {
       const input = $('[data-promo-field="discount_value"]', select.closest("td"));
       if (select.value === "percentage") input.max = "100";
@@ -1067,6 +1071,21 @@
     if (error) return toast("Couldn't save promo code: " + error.message);
     toast(`Promo code ${code} saved`);
     loadPromos();
+  }
+
+  async function deletePromo(code) {
+    const promo = S.promos.find((item) => item.code === code);
+    if (!promo) return toast("Couldn't find that promo code. Refresh the list and try again.");
+    if (promo.used_count) return toast("This code has redemption history and can't be deleted. Pause it instead.");
+    if (!confirm(`Delete promo code ${code}? This cannot be undone.`)) return;
+    const { error } = await sb.from("pb_promo_codes").delete().eq("code", code);
+    if (error) {
+      if (error.code === "23503") return toast("This code now has redemption history and can't be deleted. Pause it instead.");
+      return toast("Couldn't delete promo code: " + error.message);
+    }
+    S.promos = S.promos.filter((item) => item.code !== code);
+    renderPromos();
+    toast(`Promo code ${code} deleted`);
   }
 
   $("#promoForm").addEventListener("submit", async (e) => {

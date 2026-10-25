@@ -230,8 +230,8 @@ b, strong { font-weight: 500; }
 .aside-note a { color: #fff; }
 .book-form { padding: 48px 44px; display: grid; gap: 38px; }
 .book-form fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 14px; min-width: 0; }
-.book-form legend { font: 400 1.5rem/1.2 var(--serif); padding: 0; margin-bottom: 14px; display: flex; gap: 14px; align-items: baseline; }
-.book-form legend span { font: 400 .78rem/1 var(--serif); color: var(--gold); letter-spacing: .14em; }
+.book-form legend { font: 600 1.55rem/1.2 var(--serif); color: var(--ink); padding: 0; margin-bottom: 14px; display: flex; gap: 14px; align-items: baseline; }
+.book-form legend span { font: 600 .82rem/1 var(--sans); color: #8B6632; letter-spacing: .12em; }
 .sub-label { margin: 8px 0 0; font-size: .86rem; color: var(--muted); }
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 label.field { display: grid; gap: 7px; font-size: .74rem; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
