@@ -17,14 +17,14 @@
   // ---------- helpers
   const imgFor = (v, i) => v.image_url || C.fallbackImages[i % C.fallbackImages.length];
   const telLink = (n) => "tel:+971" + n.replace(/\D/g, "").replace(/^0/, "");
-  // plain-text WhatsApp messages: some WhatsApp apps show emojis and typographic symbols as broken characters
+  // tidy WhatsApp text: swap typographic dashes/quotes for plain ones (emojis are kept)
   const waClean = (t) => String(t)
     .replace(/[\u2013\u2014\u2012\u2212]/g, "-").replace(/[\u00B7\u2022\u2219]/g, "-")
     .replace(/[\u2018\u2019\u201B]/g, "'").replace(/[\u201C\u201D]/g, '"').replace(/\u2026/g, "...")
     .replace(/[\u00A0\u2009\u202F]/g, " ")
-    .replace(/\p{Extended_Pictographic}|[\uFE0E\uFE0F\u200D]/gu, "")
     .replace(/[ \t]{2,}/g, " ").replace(/ +\n/g, "\n").trim();
-  const waLink = (num, text) => `https://wa.me/${num.replace(/\D/g, "")}${text ? "?text=" + encodeURIComponent(waClean(text)) : ""}`;
+  // api.whatsapp.com keeps emojis intact (the short wa.me redirect can garble them in WhatsApp Desktop/Web)
+  const waLink = (num, text) => `https://api.whatsapp.com/send?phone=${num.replace(/\D/g, "")}${text ? "&text=" + encodeURIComponent(waClean(text)) : ""}`;
   const fmtDate = (d) => d ? new Date(d + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" }) : "—";
   const todayDubai = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Dubai" }).format(new Date());
   const money = (n) => "AED " + Number(n).toLocaleString("en-US", { maximumFractionDigits: 0 });
@@ -145,7 +145,7 @@
     if (servicesOnly) { hint.textContent = "Choose the time of your event so our team can plan around it."; hint.className = "hint"; }
     else if (!venue || !date) { hint.textContent = "Pick a hall and date to see open sessions."; hint.className = "hint"; }
     else if (taken.length === 0) { hint.textContent = `Good news — ${venue.name} is open all day on ${fmtDate(date)}.`; hint.className = "hint"; }
-    else if (wholeTaken || C.sessions.every((s) => s.id === "Whole day" || taken.includes(s.id))) { hint.textContent = `${venue.name} is fully booked on this date. Please try another date or hall.`; hint.className = "hint warn"; }
+    else if (wholeTaken || C.sessions.every((s) => s.id === "Whole day" || taken.includes(s.id))) { hint.textContent = `${venue.name} is fully booked on this date. Please try another date or hall. 💛`; hint.className = "hint warn"; }
     else { hint.textContent = "Some sessions are already booked — open ones are still available."; hint.className = "hint"; }
   }
 
@@ -208,7 +208,7 @@
   function buildMessage(d, ref) {
     const sess = C.sessions.find((s) => s.id === d.session);
     return [
-      `Hi Polybelle! I'd like to book an event.`,
+      `Hi Polybelle! I'd like to book an event 🎉`,
       ``,
       `*Booking Ref:* ${ref}`,
       d.booking_type === "Services" ? `*Booking:* Package / services only` : `*Hall:* ${d.venue.name}`,
