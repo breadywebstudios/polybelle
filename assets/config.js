@@ -37,6 +37,9 @@ window.PB_CONFIG = {
     "Professional Host", "Photobooth", "Mascot Surprise", "Scent Station", "DIY Craft Station", "Souvenirs",
     "Face Painting", "Video / Audio Guestbook"],
 
+  // Tabs in the booking form's package & service picker (same groups as the package poster)
+  serviceCategories: ["Full Packages", "Wedding Packages", "Mascot Surprise", "Souvenirs & Stations", "Event Services"],
+
   galleryCategories: ["Birthday", "Wedding", "Baby Shower", "Christening", "Gender Reveal", "Cake Smash", "Photobooth", "Corporate"],
 
   // Shown when a venue has no photo yet

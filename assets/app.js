@@ -39,11 +39,24 @@
 
   $("#typeInput").innerHTML = `<option value="">Select occasion…</option>` + C.eventTypes.map((t) => `<option>${esc(t)}</option>`).join("");
   // ---------- packages & services picker (photo cards, managed in the admin)
-  let services = C.addOns.map((name) => ({ name, kind: /package/i.test(name) ? "Package" : "Service" }));
+  let services = C.addOns.map((name) => ({ name, kind: /package/i.test(name) ? "Package" : "Service", category: /package/i.test(name) ? "Full Packages" : "Event Services" }));
+  let svcTab = null;
+  function renderSvcTabs() {
+    const cats = [...(C.serviceCategories || []), ...new Set(services.map((x) => x.category || "Event Services"))]
+      .filter((c, i, arr) => arr.indexOf(c) === i && services.some((x) => (x.category || "Event Services") === c));
+    if (!cats.includes(svcTab)) svcTab = cats[0];
+    const picked = $$('#addonPick input:checked').map((i) => services.find((x) => x.name === i.value)?.category || "Event Services");
+    $("#svcTabs").innerHTML = cats.length > 1 ? cats.map((c) => {
+      const n = picked.filter((p) => p === c).length;
+      return `<button type="button" role="tab" aria-selected="${c === svcTab}" class="${c === svcTab ? "on" : ""}" data-cat="${esc(c)}">${esc(c)}${n ? `<i>${n}</i>` : ""}</button>`;
+    }).join("") : "";
+    $$("#svcTabs button").forEach((b) => b.addEventListener("click", () => { svcTab = b.dataset.cat; renderSvcTabs(); }));
+    $$("#addonPick .svc").forEach((el) => (el.hidden = cats.length > 1 && el.dataset.cat !== svcTab));
+  }
   function renderServices() {
     const picked = new Set($$('#addonPick input:checked').map((i) => i.value));
     $("#addonPick").innerHTML = services.map((sv) => `
-      <label class="svc">
+      <label class="svc" data-cat="${esc(sv.category || "Event Services")}">
         <input type="checkbox" name="add_ons" value="${esc(sv.name)}" ${picked.has(sv.name) ? "checked" : ""}>
         <span class="svc-card">
           <span class="svc-img">${sv.image_url ? `<img src="${esc(sv.image_url)}" alt="" loading="lazy" onerror="this.remove()">` : ""}<span class="svc-ph" aria-hidden="true">${esc(sv.name.trim()[0] || "")}</span>
@@ -51,8 +64,10 @@
           <span class="svc-body"><b>${esc(sv.name)}</b>${sv.description ? `<small>${esc(sv.description)}</small>` : ""}</span>
         </span>
       </label>`).join("");
+    renderSvcTabs();
   }
   renderServices();
+  $("#addonPick").addEventListener("change", renderSvcTabs);
   $("#dateInput").min = todayDubai();
 
   function renderContact() {
@@ -366,7 +381,7 @@
     sb.from("pb_reviews").select("name,event_type,rating,comment,source,featured,created_at").eq("status", "Approved")
       .order("featured", { ascending: false }).order("created_at", { ascending: false }).limit(60)
       .then(({ data }) => { R.items = data || []; renderReviews(); });
-    sb.from("pb_services").select("name,kind,description,image_url").eq("active", true).order("sort_order").order("name")
+    sb.from("pb_services").select("name,kind,category,description,image_url").eq("active", true).order("sort_order").order("name")
       .then(({ data }) => { if (data?.length) { services = data; renderServices(); update(); } });
     const [venues, settings] = await Promise.all([
       sb.from("pb_venues").select("id,name,tagline,description,capacity,branch,image_url,price_from,sort_order").eq("active", true).order("sort_order").order("name"),

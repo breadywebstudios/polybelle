@@ -560,7 +560,11 @@
     S.services = data; renderServicesAdmin();
   }
   function renderServicesAdmin() {
-    $("#sgrid").innerHTML = S.services.map((sv) => `
+    const order = C.serviceCategories || [];
+    const rank = (c) => (order.indexOf(c) < 0 ? 99 : order.indexOf(c));
+    const list = S.services.slice().sort((a, b) => rank(a.category) - rank(b.category) || a.sort_order - b.sort_order);
+    let lastCat = null;
+    $("#sgrid").innerHTML = list.map((sv) => (sv.category !== lastCat ? `<h4 class="sg-head">${esc((lastCat = sv.category) || "Other")}</h4>` : "") + `
       <div class="vcard">
         <div class="vimg" style="${sv.image_url ? `background-image:url('${esc(sv.image_url)}')` : ""}">
           <span class="badge ${sv.active ? "b-Confirmed" : "b-Cancelled"}">${sv.active ? "Shown" : "Hidden"}</span>
@@ -578,7 +582,8 @@
   }
   function openService(sv) {
     const isNew = !sv;
-    sv = sv || { name: "", kind: "Service", description: "", image_url: "", sort_order: (S.services.at(-1)?.sort_order || 0) + 1, active: true };
+    sv = sv || { name: "", kind: "Service", category: "Event Services", description: "", image_url: "", sort_order: (S.services.at(-1)?.sort_order || 0) + 1, active: true };
+    const cats = [...new Set([...(C.serviceCategories || []), sv.category].filter(Boolean))];
     const d = $("#vdrawer");
     d.innerHTML = `
       <div class="drawer-head"><div><span class="eyebrow">${isNew ? "New" : "Edit"} package / service</span><h3>${esc(sv.name || "Add an item")}</h3></div><button class="xbtn" data-close aria-label="Close">×</button></div>
@@ -588,6 +593,7 @@
         <input type="hidden" name="image_url" value="${esc(sv.image_url || "")}">
         <label class="field">Name<input name="name" required maxlength="60" value="${esc(sv.name)}" placeholder="e.g. Balloon Arch"></label>
         <div class="grid-2">
+          <label class="field">Group (tab in the booking form)<select name="category">${cats.map((c) => `<option ${c === sv.category ? "selected" : ""}>${esc(c)}</option>`).join("")}</select></label>
           <label class="field">Type<select name="kind">${["Package", "Service"].map((k) => `<option ${k === sv.kind ? "selected" : ""}>${k}</option>`).join("")}</select></label>
           <label class="field">Display order<input type="number" name="sort_order" value="${sv.sort_order}"></label>
         </div>
@@ -620,7 +626,7 @@
     $("#svcForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       const f = e.target;
-      const row = { name: f.name.value.trim(), kind: f.kind.value, description: f.description.value.trim() || null,
+      const row = { name: f.name.value.trim(), kind: f.kind.value, category: f.category.value, description: f.description.value.trim() || null,
         image_url: f.image_url.value || null, sort_order: +f.sort_order.value || 0, active: f.active.checked };
       if (!row.name) return toast("Name is required.");
       const { error } = isNew ? await sb.from("pb_services").insert(row) : await sb.from("pb_services").update(row).eq("id", sv.id);

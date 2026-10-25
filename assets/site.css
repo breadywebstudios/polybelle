@@ -357,3 +357,17 @@ label.field { display: grid; gap: 7px; font-size: .74rem; letter-spacing: .14em;
 .svc input:checked + .svc-card .svc-check::after { border-color: #fff; }
 .svc input:focus-visible + .svc-card { outline: 2px solid var(--gold); outline-offset: 2px; }
 @media (max-width: 560px) { .svc-grid { grid-template-columns: 1fr 1fr; gap: 10px; } .svc-body small { display: none; } }
+
+.svc-tabs { display: flex; gap: 4px 22px; flex-wrap: wrap; border-bottom: 1px solid var(--line); margin: 4px 0 4px; }
+.svc-tabs button { position: relative; font: 400 .7rem/1 var(--sans); letter-spacing: .18em; text-transform: uppercase; padding: 12px 0; border: 0; background: none; color: var(--muted); cursor: pointer; }
+.svc-tabs button::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 1px; background: var(--ink); transform: scaleX(0); transition: transform .45s var(--ease); }
+.svc-tabs button.on { color: var(--ink); }
+.svc-tabs button.on::after { transform: scaleX(1); }
+.svc-tabs button i { font-style: normal; display: inline-grid; place-items: center; min-width: 17px; height: 17px; margin-left: 6px; padding: 0 5px; border-radius: 999px; background: var(--ink); color: #fff; font-size: .62rem; letter-spacing: 0; }
+.svc[hidden] { display: none; }
+.svc:not([hidden]) .svc-card { animation: svcIn .5s var(--ease) both; }
+@keyframes svcIn { from { opacity: 0; transform: translateY(8px); } }
+.pay-note { margin: 0; font-size: .82rem; letter-spacing: .06em; color: var(--muted); }
+.pay-note b { color: var(--ink); }
+@media (max-width: 560px) { .svc-tabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; } .svc-tabs::-webkit-scrollbar { display: none; } .svc-tabs button { white-space: nowrap; } }
+.svc-tabs button { display: inline-flex; align-items: center; min-height: 42px; }
