@@ -38,11 +38,13 @@ h3 { font-size: 1.55rem; }
 b, strong { font-weight: 500; }
 .eyebrow { display: inline-block; font: 400 .72rem/1 var(--sans); letter-spacing: .32em; text-transform: uppercase; color: var(--gold); }
 .lead { color: var(--muted); font-size: 1.04rem; max-width: 560px; margin: 0 auto; }
-.section { padding: clamp(80px, 11vw, 140px) 0; }
-.section-head { text-align: center; display: grid; justify-items: center; gap: 16px; margin-bottom: clamp(44px, 6vw, 70px); }
+.section { padding: clamp(56px, 7vw, 96px) 0; }
+/* neighbouring sections on the same background share one gap instead of two */
+.halls + .booking { padding-top: 0; }
+.section-head { text-align: center; display: grid; justify-items: center; gap: 14px; margin-bottom: clamp(30px, 4vw, 48px); }
 .rule { display: block; width: 56px; height: 1px; background: var(--gold); transform-origin: center; }
 .rule.left { transform-origin: left; }
-.actions { margin-top: 44px; display: flex; gap: 22px; justify-content: center; align-items: center; flex-wrap: wrap; }
+.actions { margin-top: 32px; display: flex; gap: 22px; justify-content: center; align-items: center; flex-wrap: wrap; }
 
 /* ---------- Buttons & links ---------- */
 .btn { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 15px 30px; border-radius: 0; border: 1px solid transparent; font: 400 .78rem/1 var(--sans); letter-spacing: .2em; text-transform: uppercase; cursor: pointer; text-decoration: none; transition: background .35s var(--ease), color .35s var(--ease), border-color .35s var(--ease); }
@@ -120,7 +122,7 @@ b, strong { font-weight: 500; }
 
 /* ---------- Intro ---------- */
 .intro { background: var(--cream); }
-.statement { font: 400 clamp(1.5rem, 2.8vw, 2.15rem)/1.4 var(--serif); margin: 0 0 32px; color: var(--ink); }
+.statement { font: 400 clamp(1.5rem, 2.8vw, 2.15rem)/1.4 var(--serif); margin: 0 0 24px; color: var(--ink); }
 .occasions { margin: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 0; color: var(--muted); font-size: .72rem; letter-spacing: .24em; text-transform: uppercase; }
 .occasions span { white-space: nowrap; display: inline-flex; align-items: center; }
 .occasions span + span::before { content: ""; width: 4px; height: 4px; border-radius: 50%; background: var(--gold); margin: 0 16px; }
@@ -166,7 +168,7 @@ b, strong { font-weight: 500; }
 @media (max-width: 900px) { .pk-grid { grid-template-columns: 1fr; } .pk-intro { position: static; } }
 
 /* ---------- Gallery ---------- */
-.g-filters { display: flex; flex-wrap: wrap; gap: 6px 26px; justify-content: center; margin-bottom: 40px; }
+.g-filters { display: flex; flex-wrap: wrap; gap: 6px 26px; justify-content: center; margin-bottom: 28px; }
 .g-filters button { position: relative; font: 400 .72rem/1 var(--sans); letter-spacing: .22em; text-transform: uppercase; padding: 8px 0; border: 0; background: none; color: var(--muted); cursor: pointer; }
 .g-filters button::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: var(--ink); transform: scaleX(0); transition: transform .45s var(--ease); }
 .g-filters button.on { color: var(--ink); }
@@ -279,7 +281,7 @@ label.field { display: grid; gap: 7px; font-size: .74rem; letter-spacing: .14em;
 .loc p { margin: 0; color: #BCAEA4; font-size: .94rem; }
 .loc .link-line { color: var(--gold-soft); justify-self: start; margin-top: 12px; }
 @media (max-width: 700px) { .loc + .loc { border-left: 0; } .loc { padding: 30px 4px; } }
-.socials { display: flex; gap: 10px; justify-content: center; margin-top: 44px; }
+.socials { display: flex; gap: 10px; justify-content: center; margin-top: 32px; }
 .socials a { width: 44px; height: 44px; display: inline-grid; place-items: center; border-radius: 50%; border: 1px solid rgba(255,255,255,.25); color: #fff; transition: background .35s var(--ease), color .35s var(--ease), border-color .35s; }
 .socials a:hover { background: #fff; color: var(--ink); border-color: #fff; }
 .socials svg { width: 17px; height: 17px; fill: currentColor; }
