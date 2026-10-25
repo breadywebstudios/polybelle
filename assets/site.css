@@ -380,5 +380,9 @@ label.field { display: grid; gap: 7px; font-size: .74rem; letter-spacing: .14em;
 @keyframes svcIn { from { opacity: 0; transform: translateY(8px); } }
 .pay-note { margin: 0; font-size: .82rem; letter-spacing: .06em; color: var(--muted); }
 .pay-note b { color: var(--ink); }
-@media (max-width: 560px) { .svc-tabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; } .svc-tabs::-webkit-scrollbar { display: none; } .svc-tabs button { white-space: nowrap; } }
+@media (max-width: 560px) {
+  .svc-tabs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; overflow: visible; border-bottom: 0; }
+  .svc-tabs button { min-width: 0; padding: 8px 2px; white-space: normal; overflow-wrap: anywhere; font-size: .55rem; line-height: 1.2; letter-spacing: .02em; text-align: center; justify-content: center; }
+  .svc-tabs button i { min-width: 14px; height: 14px; margin-left: 2px; padding: 0 3px; font-size: .55rem; }
+}
 .svc-tabs button { display: inline-flex; align-items: center; min-height: 42px; }
