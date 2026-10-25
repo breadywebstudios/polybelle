@@ -101,3 +101,5 @@ dl.kv dd { margin: 0; word-break: break-word; }
 .inv-sum span { color: var(--muted); }
 .inv-sum .due { border-top: 1px solid var(--line); padding-top: 6px; margin-top: 4px; color: var(--rose); }
 .inv-sum .due span { color: var(--rose); }
+.adm-head .site-link { color: #fff; text-decoration: none; border: 1px solid rgba(255,255,255,.35); border-radius: 999px; padding: 6px 14px; font-size: .8rem; white-space: nowrap; }
+.adm-head .site-link:hover { background: rgba(255,255,255,.12); }
