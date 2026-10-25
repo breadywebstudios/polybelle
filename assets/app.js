@@ -20,7 +20,7 @@
   // tidy WhatsApp text: swap typographic dashes/quotes for plain ones (emojis are kept)
   const waClean = (t) => String(t)
     .replace(/[\u2013\u2014\u2012\u2212]/g, "-").replace(/[\u00B7\u2022\u2219]/g, "-")
-    .replace(/[\u2018\u2019\u201B]/g, "'").replace(/[\u201C\u201D]/g, '"').replace(/\u2026/g, "...")
+    .replace(/[\u2018\u2019\u201B]/g, "'").replace(/[\u201C\u201D]/g, '"').replace(/\u2026/g, "...").replace(/\u00D7/g, "x")
     .replace(/[\u00A0\u2009\u202F]/g, " ")
     .replace(/[ \t]{2,}/g, " ").replace(/ +\n/g, "\n").trim();
   // api.whatsapp.com keeps emojis intact (the short wa.me redirect can garble them in WhatsApp Desktop/Web)

@@ -12,7 +12,7 @@
   // tidy WhatsApp text: swap typographic dashes/quotes for plain ones (emojis are kept)
   const waClean = (t) => String(t)
     .replace(/[\u2013\u2014\u2012\u2212]/g, "-").replace(/[\u00B7\u2022\u2219]/g, "-")
-    .replace(/[\u2018\u2019\u201B]/g, "'").replace(/[\u201C\u201D]/g, '"').replace(/\u2026/g, "...")
+    .replace(/[\u2018\u2019\u201B]/g, "'").replace(/[\u201C\u201D]/g, '"').replace(/\u2026/g, "...").replace(/\u00D7/g, "x")
     .replace(/[\u00A0\u2009\u202F]/g, " ")
     .replace(/[ \t]{2,}/g, " ").replace(/ +\n/g, "\n").trim();
   // api.whatsapp.com keeps emojis intact (the short wa.me redirect can garble them in WhatsApp Desktop/Web)
@@ -149,14 +149,45 @@
   $("#drawerBg").addEventListener("click", closeDrawers);
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeDrawers(); });
 
+  // full booking summary for the "WhatsApp customer" button
   function customerMsg(b, status) {
-    const when = `${fmtDate(b.event_date)} (${b.session})`;
-    const msgs = {
-      Confirmed: `Hi ${b.name}! 🎉 Your booking at Polybelle Event Halls & Studio is CONFIRMED.\n\nRef: ${b.ref}\n${isServices(b) ? "Booking: " + whereText(b) : "Hall: " + b.venue_name}\nDate: ${when}\nOccasion: ${b.event_type}\n\nThank you for choosing Polybelle! 💛`,
-      Cancelled: `Hi ${b.name}, regarding your booking request ${b.ref} for ${whereText(b)} on ${when}: unfortunately we're unable to accommodate it. Please message us and we'll gladly help you find another date or hall. 💛`,
-      Pending: `Hi ${b.name}! Thank you for your booking request at Polybelle 💛\n\nRef: ${b.ref}\n${isServices(b) ? "Booking: " + whereText(b) : "Hall: " + b.venue_name}\nDate: ${when}\n\nWe're checking availability and will get back to you shortly.`
-    };
-    return msgs[status] || msgs.Pending;
+    const sess = C.sessions.find((x) => x.id === b.session);
+    const t = invTotals(b);
+    const hasInvoice = !!b.invoice_no || t.total > 0;
+    const details = [
+      `*Booking Ref:* ${b.ref}`,
+      isServices(b) ? `*Booking:* Package / services only` : `*Hall:* ${b.venue_name}`,
+      isServices(b) ? `*Event location:* ${b.event_location || "To be confirmed"}` : null,
+      `*Date:* ${fmtDate(b.event_date)}`,
+      `*Session:* ${b.session}${sess ? ` (${sess.time})` : ""}`,
+      `*Occasion:* ${b.event_type}`,
+      b.guests ? `*Guests:* ${b.guests}` : null,
+      b.add_ons?.length ? `\n*Packages & services:*\n${b.add_ons.map((a) => `- ${a}`).join("\n")}` : null,
+      b.custom_items?.length ? `\n*Additional items:*\n${b.custom_items.map((c) => `- ${ciText(c)}${ciTotal(c) ? ` (AED ${money(ciTotal(c))})` : ""}`).join("\n")}` : null,
+      b.notes ? `\n*Your notes:* ${b.notes}` : null,
+      hasInvoice ? [
+        ``,
+        b.invoice_no ? `*Invoice No:* ${b.invoice_no}` : null,
+        +b.discount ? `*Discount:* AED ${money(b.discount)}` : null,
+        `*Total:* AED ${money(t.total)}`,
+        t.paid ? `*Paid:* AED ${money(t.paid)}` : null,
+        `*Balance due:* AED ${money(t.balance)}`
+      ].filter((l) => l !== null).join("\n") : null
+    ].filter((l) => l !== null).join("\n");
+    const pay = hasInvoice && t.balance > 0 && S.settings?.payment_details ? `\n\n*Payment details:*\n${S.settings.payment_details}` : "";
+    const intro = {
+      Confirmed: `Hi ${b.name}! 🎉 Your booking at Polybelle Event Halls & Studio is *CONFIRMED*.`,
+      Pending: `Hi ${b.name}! Thank you for your booking request at Polybelle Event Halls & Studio 💛 Here are the details we received:`,
+      Completed: `Hi ${b.name}! Thank you for celebrating with Polybelle Event Halls & Studio 💛 Here is a summary of your event:`,
+      Cancelled: `Hi ${b.name}, regarding your booking request at Polybelle Event Halls & Studio: unfortunately we're unable to accommodate it on this date.`
+    }[status] || "";
+    const outro = {
+      Confirmed: `Thank you for choosing Polybelle! 💛 Message us anytime if you have questions.`,
+      Pending: `We're checking availability and will get back to you shortly.`,
+      Completed: `We'd love to hear how it went, and hope to celebrate with you again soon!`,
+      Cancelled: `Please message us and we'll gladly help you find another date or hall. 💛`
+    }[status] || "";
+    return `${intro}\n\n${details}${status === "Cancelled" ? "" : pay}\n\n${outro}`;
   }
 
   const money = (n) => Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
