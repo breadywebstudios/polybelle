@@ -52,6 +52,9 @@ b, strong { font-weight: 500; }
 .btn[disabled] { opacity: .6; cursor: progress; }
 .btn-dark, .btn-primary, .btn-wa { background: var(--ink); color: #fff; border-color: var(--ink); }
 .btn-dark:hover, .btn-primary:hover, .btn-wa:hover { background: var(--gold); border-color: var(--gold); }
+.btn-wa, #submitBtn { background: #25D366; color: #fff; border-color: #25D366; }
+.btn-wa:hover, #submitBtn:hover, #doneWa:hover { background: #1DA851; border-color: #1DA851; }
+#doneWa { background: #25D366; color: #fff; border-color: #25D366; }
 .btn-outline { background: transparent; color: var(--ink); border-color: var(--ink); }
 .btn-outline:hover { background: var(--ink); color: #fff; }
 .btn-light { background: #fff; color: var(--ink); }
@@ -306,9 +309,9 @@ label.field { display: grid; gap: 7px; font-size: .74rem; letter-spacing: .14em;
 .foot-bottom b { color: var(--gold-soft); font-weight: 400; }
 
 /* ---------- Floating WhatsApp ---------- */
-.wa-float { position: fixed; right: 22px; bottom: 22px; z-index: 35; width: 52px; height: 52px; border-radius: 50%; background: var(--ink); display: grid; place-items: center; box-shadow: 0 14px 30px -12px rgba(0,0,0,.5); opacity: 0; transform: translateY(16px) scale(.9); pointer-events: none; transition: opacity .5s var(--ease), transform .5s var(--ease), background .3s; }
+.wa-float { position: fixed; right: 22px; bottom: 22px; z-index: 35; width: 52px; height: 52px; border-radius: 50%; background: #25D366; display: grid; place-items: center; box-shadow: 0 14px 30px -12px rgba(0,0,0,.5); opacity: 0; transform: translateY(16px) scale(.9); pointer-events: none; transition: opacity .5s var(--ease), transform .5s var(--ease), background .3s; }
 .wa-float.show { opacity: 1; transform: none; pointer-events: auto; }
-.wa-float:hover { background: var(--gold); }
+.wa-float:hover { background: #1DA851; }
 .wa-float svg { width: 24px; height: 24px; fill: #fff; }
 
 /* ---------- Modals ---------- */

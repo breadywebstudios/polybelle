@@ -7,7 +7,7 @@ const corsHeaders = {
   "Content-Type": "application/json"
 };
 
-function reply(status: number, body: Record<string, string>) {
+function reply(status: number, body: Record<string, unknown>) {
   return new Response(JSON.stringify(body), { status, headers: corsHeaders });
 }
 
@@ -97,5 +97,5 @@ Deno.serve(async (request: Request) => {
     });
   }
 
-  return reply(201, { email });
+  return reply(200, { success: true, email });
 });

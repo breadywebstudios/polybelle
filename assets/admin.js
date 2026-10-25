@@ -981,6 +981,7 @@
     const email = form.email.value.trim().toLowerCase();
     const password = form.password.value;
     if (password.length < 8) return toast("Use a password with at least 8 characters.");
+    const wasAlreadyAllowlisted = S.admins.some((admin) => admin.email.toLowerCase() === email);
     const button = form.querySelector("button[type='submit']");
     button.disabled = true;
     let result;
@@ -1002,9 +1003,20 @@
       }
       return toast("Couldn't add admin: " + message);
     }
-    if (!data?.email) return toast("The admin service did not confirm the new account.");
+    if (data?.success !== true || typeof data.email !== "string" || data.email.toLowerCase() !== email) {
+      if (!wasAlreadyAllowlisted) {
+        const { data: admin, error: verifyError } = await sb.from("pb_admins").select("email").eq("email", email).maybeSingle();
+        if (verifyError) return toast("The service response was unclear and the new admin could not be verified: " + verifyError.message);
+        if (admin) {
+          form.reset();
+          toast(`Admin ${admin.email} added. Refreshing the admin list.`);
+          return loadAdmins();
+        }
+      }
+      return toast("The admin service returned an unexpected response. Redeploy the latest admin-create-user function, then try again.");
+    }
     form.reset();
-    toast(`Admin ${data.email} added`);
+    toast(`Admin ${email} added`);
     loadAdmins();
   });
 
