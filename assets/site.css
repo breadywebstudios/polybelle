@@ -233,3 +233,26 @@ footer a:hover { color: #fff; }
 .socials-lg svg { width: 18px; height: 18px; }
 .socials-lg a:hover { background: #fff; color: var(--cocoa); }
 .socials-center { display: flex; justify-content: center; }
+
+/* Reviews */
+.reviews { background: var(--cream); }
+.r-summary { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: .95rem; margin-top: 4px; }
+.r-summary b { font-family: var(--serif); font-size: 1.8rem; color: var(--cocoa); font-weight: 500; }
+.stars { color: var(--gold); letter-spacing: 2px; }
+.stars .off { color: #DCCFC2; }
+.r-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+.r-card { background: var(--white); border: 1px solid var(--line); border-radius: var(--radius); padding: 26px 24px; display: flex; flex-direction: column; gap: 14px; position: relative; }
+.r-card::before { content: "“"; position: absolute; top: 4px; right: 20px; font-family: var(--serif); font-size: 5rem; line-height: 1; color: var(--blush); }
+.r-card p { margin: 0; color: var(--cocoa); font-size: .97rem; white-space: pre-line; }
+.r-card .who { margin-top: auto; display: flex; align-items: center; gap: 12px; border-top: 1px solid var(--line); padding-top: 14px; }
+.r-card .av { width: 40px; height: 40px; border-radius: 50%; background: var(--blush); color: var(--rose-dark); display: grid; place-items: center; font-family: var(--serif); font-size: 1.2rem; flex: none; }
+.r-card .who b { display: block; font-weight: 500; }
+.r-card .who small { color: var(--muted); font-size: .8rem; }
+.r-empty { text-align: center; color: var(--muted); font-family: var(--serif); font-size: 1.3rem; font-style: italic; margin: 0; }
+.r-form { text-align: left; max-width: 480px; max-height: calc(100vh - 32px); overflow-y: auto; }
+.r-form h3, .r-form > p { text-align: center; }
+.stars-input { display: flex; flex-direction: row-reverse; justify-content: center; gap: 4px; }
+.stars-input input { position: absolute; opacity: 0; width: 0; }
+.stars-input label { font-size: 2.2rem; color: #DCCFC2; cursor: pointer; line-height: 1; transition: color .15s; }
+.stars-input input:checked ~ label, .stars-input label:hover, .stars-input label:hover ~ label { color: var(--gold); }
+.stars-input input:focus-visible + label { outline: 2px solid var(--rose); border-radius: 4px; }

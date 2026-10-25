@@ -38,7 +38,7 @@
     $("#whoEmail").textContent = user.email;
     $("#loginView").style.display = "none"; $("#resetView").style.display = "none";
     $("#appView").classList.add("on");
-    await Promise.all([loadVenues(), loadBookings(), loadSettings(), loadAdmins(), loadGallery()]);
+    await Promise.all([loadVenues(), loadBookings(), loadSettings(), loadAdmins(), loadGallery(), loadReviews()]);
     setInterval(() => { if (!document.hidden) loadBookings(true); }, 60000);
   }
 
@@ -616,6 +616,95 @@
     f.files.value = ""; f.caption.value = "";
     loadGallery();
   });
+
+  // ---------------- reviews
+  const SOURCES = ["Website", "Facebook", "Google", "Instagram", "WhatsApp"];
+  const RSTAT = { Pending: "b-Pending", Approved: "b-Confirmed", Hidden: "b-Cancelled" };
+  const starStr = (n) => "★".repeat(n) + `<span class="off">${"★".repeat(5 - n)}</span>`;
+  $("#rFilter").addEventListener("input", renderReviewsAdmin);
+  $("#rAdd").addEventListener("click", () => openReview(null));
+
+  async function loadReviews() {
+    const { data, error } = await sb.from("pb_reviews").select("*").order("created_at", { ascending: false });
+    if (error) return toast(error.message);
+    S.reviews = data; renderReviewsAdmin();
+  }
+  function renderReviewsAdmin() {
+    const pend = S.reviews.filter((r) => r.status === "Pending").length;
+    $("#rPendingCount").hidden = !pend; $("#rPendingCount").textContent = pend;
+    const f = $("#rFilter").value;
+    const list = S.reviews.filter((r) => !f || r.status === f);
+    const appr = S.reviews.filter((r) => r.status === "Approved");
+    $("#rCount").textContent = `${list.length} shown · ${appr.length} on website` + (appr.length ? ` · average ${(appr.reduce((s, r) => s + r.rating, 0) / appr.length).toFixed(1)}★` : "");
+    $("#rAdmin").innerHTML = list.map((r) => `
+      <div class="rcard ${r.featured ? "feat" : ""}" data-id="${r.id}">
+        <div class="rtop">
+          <span class="stars">${starStr(r.rating)}</span>
+          <b>${esc(r.name)}</b>
+          <small>${[r.event_type, "via " + r.source, fmtStamp(r.created_at)].filter(Boolean).map(esc).join(" · ")}</small>
+          <span class="badge ${RSTAT[r.status]}" style="margin-left:auto">${r.status}</span>
+          ${r.featured ? `<span class="badge" style="background:#F6EBD6;color:#8A6420">★ Featured</span>` : ""}
+        </div>
+        <p>${esc(r.comment)}</p>
+        <div class="ract">
+          ${r.status !== "Approved" ? `<button class="btn btn-primary sm" data-a="approve">Approve</button>` : ""}
+          ${r.status !== "Hidden" ? `<button class="btn btn-outline sm" data-a="hide">Hide</button>` : ""}
+          <button class="btn btn-outline sm" data-a="feature">${r.featured ? "Unfeature" : "Feature"}</button>
+          <button class="btn btn-outline sm" data-a="edit">✎ Edit</button>
+          <button class="linkbtn" data-a="delete" style="margin-left:auto">Delete</button>
+        </div>
+      </div>`).join("") || `<p class="hint">No reviews here yet.</p>`;
+    $$("#rAdmin .rcard").forEach((card) => {
+      const r = S.reviews.find((x) => x.id === card.dataset.id);
+      $$("[data-a]", card).forEach((b) => b.addEventListener("click", async () => {
+        const a = b.dataset.a;
+        if (a === "edit") return openReview(r);
+        if (a === "delete") {
+          if (!confirm(`Delete the review from ${r.name}?`)) return;
+          const { error } = await sb.from("pb_reviews").delete().eq("id", r.id);
+          if (error) return toast(error.message);
+          toast("Review deleted"); return loadReviews();
+        }
+        const patch = a === "approve" ? { status: "Approved" } : a === "hide" ? { status: "Hidden", featured: false } : { featured: !r.featured, ...(r.featured ? {} : { status: "Approved" }) };
+        const { error } = await sb.from("pb_reviews").update(patch).eq("id", r.id);
+        if (error) return toast(error.message);
+        toast(a === "approve" ? "Approved — now on the website" : a === "hide" ? "Hidden from the website" : r.featured ? "Unfeatured" : "Featured — shows first on the website");
+        loadReviews();
+      }));
+    });
+  }
+  function openReview(r) {
+    const isNew = !r;
+    r = r || { name: "", event_type: "", rating: 5, comment: "", source: "Facebook", status: "Approved", featured: false };
+    const d = $("#vdrawer");
+    d.innerHTML = `
+      <div class="drawer-head"><div><span class="eyebrow">${isNew ? "Add review" : "Edit review"}</span><h3>${esc(r.name || "New review")}</h3></div><button class="xbtn" data-close aria-label="Close">×</button></div>
+      <form class="drawer-body" id="revForm">
+        ${isNew ? `<p class="hint" style="margin:0">Only add reviews customers actually wrote (e.g. copied from your Facebook or Google reviews).</p>` : ""}
+        <label class="field">Customer name<input name="name" required maxlength="80" value="${esc(r.name)}"></label>
+        <div class="grid-2">
+          <label class="field">Rating<select name="rating">${[5, 4, 3, 2, 1].map((n) => `<option value="${n}" ${n === r.rating ? "selected" : ""}>${"★".repeat(n)} (${n})</option>`).join("")}</select></label>
+          <label class="field">Occasion<select name="event_type"><option value="">—</option>${[...new Set([...C.eventTypes, r.event_type].filter(Boolean))].map((t) => `<option ${t === r.event_type ? "selected" : ""}>${esc(t)}</option>`).join("")}</select></label>
+          <label class="field">Source<select name="source">${SOURCES.map((s) => `<option ${s === r.source ? "selected" : ""}>${s}</option>`).join("")}</select></label>
+          <label class="field">Status<select name="status">${["Pending", "Approved", "Hidden"].map((s) => `<option ${s === r.status ? "selected" : ""}>${s}</option>`).join("")}</select></label>
+        </div>
+        <label class="field">Review<textarea name="comment" required maxlength="1200" rows="6">${esc(r.comment)}</textarea></label>
+        <label class="switch"><input type="checkbox" name="featured" ${r.featured ? "checked" : ""}> Featured (shows first on the website)</label>
+        <button class="btn btn-primary" type="submit">${isNew ? "Add review" : "Save changes"}</button>
+      </form>`;
+    $("[data-close]", d).addEventListener("click", closeDrawers);
+    $("#revForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const f = e.target;
+      const row = { name: f.name.value.trim(), rating: +f.rating.value, event_type: f.event_type.value || null, source: f.source.value,
+        status: f.status.value, comment: f.comment.value.trim(), featured: f.featured.checked };
+      if (!row.name || !row.comment) return toast("Name and review are required.");
+      const { error } = isNew ? await sb.from("pb_reviews").insert(row) : await sb.from("pb_reviews").update(row).eq("id", r.id);
+      if (error) return toast(error.message);
+      toast(isNew ? "Review added" : "Review updated"); closeDrawers(); loadReviews();
+    });
+    openDrawer("#vdrawer");
+  }
 
   // ---------------- settings & admins
   async function loadSettings() {

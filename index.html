@@ -32,6 +32,7 @@
         <a href="#venues">Our Halls</a>
         <a href="#packages">Packages</a>
         <a href="#gallery">Gallery</a>
+        <a href="#reviews">Reviews</a>
         <a href="#contact">Locations</a>
         <a href="#book" class="btn btn-primary">Book Your Event</a>
       </nav>
@@ -112,6 +113,24 @@
         <div style="text-align:center;margin-top:30px">
           <button class="btn btn-outline" id="gMore" type="button" hidden>Show more photos</button>
           <a class="btn btn-outline" id="gFb" target="_blank" rel="noopener" href="#">More on Facebook ↗</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section reviews" id="reviews">
+      <div class="wrap">
+        <div class="section-head fade">
+          <span class="eyebrow">Kind Words</span>
+          <h2>What our clients say</h2>
+          <div class="ornament"></div>
+          <div class="r-summary" id="rSummary" hidden></div>
+        </div>
+        <div class="r-grid" id="rGrid"></div>
+        <p class="r-empty" id="rEmpty" hidden>Celebrated with us? We'd love to hear how your event went.</p>
+        <div style="text-align:center;margin-top:30px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+          <button class="btn btn-outline" id="rMore" type="button" hidden>Show more reviews</button>
+          <button class="btn btn-primary" id="rWrite" type="button">Write a review</button>
+          <a class="btn btn-outline" id="rFb" target="_blank" rel="noopener" href="#">Reviews on Facebook ↗</a>
         </div>
       </div>
     </section>
@@ -270,6 +289,26 @@
     <button class="lb-btn lb-prev" id="lbPrev" aria-label="Previous photo">‹</button>
     <figure><img id="lbImg" alt=""><figcaption id="lbCap"></figcaption></figure>
     <button class="lb-btn lb-next" id="lbNext" aria-label="Next photo">›</button>
+  </div>
+
+  <div class="modal" id="reviewModal" role="dialog" aria-modal="true" aria-labelledby="rTitle">
+    <form class="modal-card r-form" id="reviewForm" novalidate>
+      <h3 id="rTitle">Share your experience</h3>
+      <p>Your review will appear on our website once our team has checked it.</p>
+      <div class="stars-input" role="radiogroup" aria-label="Rating">
+        <input type="radio" name="rating" id="st5" value="5"><label for="st5" title="5 stars">★</label>
+        <input type="radio" name="rating" id="st4" value="4"><label for="st4" title="4 stars">★</label>
+        <input type="radio" name="rating" id="st3" value="3"><label for="st3" title="3 stars">★</label>
+        <input type="radio" name="rating" id="st2" value="2"><label for="st2" title="2 stars">★</label>
+        <input type="radio" name="rating" id="st1" value="1"><label for="st1" title="1 star">★</label>
+      </div>
+      <label class="field">Your name<input name="name" maxlength="80" required></label>
+      <label class="field">Occasion<select name="event_type" id="rType"></select></label>
+      <label class="field">Your review<textarea name="comment" maxlength="1200" required placeholder="How was your celebration with Polybelle?"></textarea></label>
+      <div class="error-box" id="rError" role="alert"></div>
+      <button class="btn btn-primary" type="submit">Submit review</button>
+      <button class="btn btn-outline" type="button" id="rCancel">Cancel</button>
+    </form>
   </div>
 
   <div class="modal" id="doneModal" role="dialog" aria-modal="true" aria-labelledby="doneTitle">

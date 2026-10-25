@@ -54,6 +54,7 @@
         <button class="active" data-tab="bookings">Bookings</button>
         <button data-tab="venues">Halls / Venues</button>
         <button data-tab="gallery">Gallery</button>
+        <button data-tab="reviews">Reviews <span class="tab-count" id="rPendingCount" hidden></span></button>
         <button data-tab="settings">Settings</button>
       </div>
     </nav>
@@ -109,6 +110,20 @@
           <span class="hint" id="gCount" style="margin:0"></span>
         </div>
         <div class="ggrid" id="gAdmin"></div>
+      </section>
+
+      <!-- Reviews -->
+      <section class="panel" id="tab-reviews">
+        <p class="lead" style="margin:0 0 18px">Reviews sent from the website arrive as <b>Pending</b>. Only <b>Approved</b> reviews show on the website, and <b>Featured</b> ones show first. You can also add real reviews customers left on Facebook or Google.</p>
+        <div class="toolbar">
+          <select id="rFilter">
+            <option value="">All reviews</option>
+            <option>Pending</option><option>Approved</option><option>Hidden</option>
+          </select>
+          <span class="hint" id="rCount" style="margin:0"></span>
+          <button class="btn btn-primary sm" id="rAdd" type="button" style="margin-left:auto">+ Add review</button>
+        </div>
+        <div class="rlist" id="rAdmin"></div>
       </section>
 
       <!-- Settings -->

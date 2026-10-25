@@ -272,6 +272,51 @@
   $("#lightbox").addEventListener("touchstart", (e) => (touchX = e.touches[0].clientX), { passive: true });
   $("#lightbox").addEventListener("touchend", (e) => { if (touchX === null) return; const dx = e.changedTouches[0].clientX - touchX; if (Math.abs(dx) > 50) openLb(G.idx + (dx < 0 ? 1 : -1)); touchX = null; });
 
+  // ---------- reviews
+  const R = { items: [], shown: 6 };
+  const starStr = (n) => "★".repeat(n) + `<span class="off">${"★".repeat(5 - n)}</span>`;
+  $("#rFb").href = C.facebook.replace(/&?sk=[^&]*/, "") + "&sk=reviews";
+  $("#rType").innerHTML = `<option value="">Select…</option>` + C.eventTypes.map((t) => `<option>${esc(t)}</option>`).join("");
+  function renderReviews() {
+    const n = R.items.length;
+    $("#rEmpty").hidden = n > 0;
+    $("#rSummary").hidden = n === 0;
+    if (n) {
+      const avg = R.items.reduce((s, r) => s + r.rating, 0) / n;
+      $("#rSummary").innerHTML = `<b>${avg.toFixed(1)}</b><span class="stars">${starStr(Math.round(avg))}</span><span>from ${n} review${n > 1 ? "s" : ""}</span>`;
+    }
+    $("#rGrid").innerHTML = R.items.slice(0, R.shown).map((r) => `
+      <article class="r-card fade">
+        <span class="stars" aria-label="${r.rating} out of 5 stars">${starStr(r.rating)}</span>
+        <p>${esc(r.comment)}</p>
+        <div class="who"><span class="av" aria-hidden="true">${esc(r.name.trim()[0] || "?").toUpperCase()}</span>
+          <div><b>${esc(r.name)}</b><small>${[r.event_type, r.source !== "Website" ? "via " + r.source : ""].filter(Boolean).map(esc).join(" · ")}</small></div></div>
+      </article>`).join("");
+    $("#rMore").hidden = n <= R.shown;
+    observe();
+  }
+  $("#rMore").addEventListener("click", () => { R.shown += 6; renderReviews(); });
+  const rModal = $("#reviewModal");
+  $("#rWrite").addEventListener("click", () => { rModal.classList.add("open"); $("#reviewForm").name.focus(); });
+  $("#rCancel").addEventListener("click", () => rModal.classList.remove("open"));
+  rModal.addEventListener("click", (e) => { if (e.target === rModal) rModal.classList.remove("open"); });
+  $("#reviewForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const f = e.target, fd = new FormData(f), err = $("#rError");
+    const p = { rating: fd.get("rating"), name: (fd.get("name") || "").trim(), event_type: fd.get("event_type"), comment: (fd.get("comment") || "").trim() };
+    const fail = (m) => { err.textContent = m; err.style.display = "block"; };
+    err.style.display = "none";
+    if (!p.rating) return fail("Please tap a star rating.");
+    if (!p.name) return fail("Please enter your name.");
+    if (p.comment.length < 10) return fail("Please write a few words about your event.");
+    const btn = f.querySelector("button[type=submit]"); btn.disabled = true;
+    const { error } = sb ? await sb.rpc("pb_submit_review", { p }) : { error: { message: "Please try again later." } };
+    btn.disabled = false;
+    if (error) return fail(error.message);
+    f.reset();
+    f.innerHTML = `<div class="tick" style="margin:0 auto">✓</div><h3 style="text-align:center">Thank you!</h3><p style="text-align:center">Your review has been sent to our team and will appear on the website once approved. 💛</p><button class="btn btn-primary" type="button" onclick="this.closest('.modal').classList.remove('open')">Close</button>`;
+  });
+
   // ---------- data
   async function loadBooked() {
     if (!sb) return;
@@ -285,6 +330,9 @@
     if (!sb) return;
     sb.from("pb_gallery").select("image_url,caption,category").eq("active", true).order("sort_order").order("created_at", { ascending: false })
       .then(({ data }) => { if (data) { G.items = data; renderGallery(); } });
+    sb.from("pb_reviews").select("name,event_type,rating,comment,source,featured,created_at").eq("status", "Approved")
+      .order("featured", { ascending: false }).order("created_at", { ascending: false }).limit(60)
+      .then(({ data }) => { R.items = data || []; renderReviews(); });
     const [venues, settings] = await Promise.all([
       sb.from("pb_venues").select("id,name,tagline,description,capacity,branch,image_url,price_from,sort_order").eq("active", true).order("sort_order").order("name"),
       sb.rpc("pb_public_settings"),
