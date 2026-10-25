@@ -119,14 +119,14 @@ b, strong { font-weight: 500; }
 @keyframes cue { 0% { top: -40%; } 100% { top: 100%; } }
 
 /* ---------- Intro ---------- */
-.intro { padding-bottom: clamp(40px, 6vw, 70px); }
+.intro { background: var(--cream); }
 .statement { font: 400 clamp(1.5rem, 2.8vw, 2.15rem)/1.4 var(--serif); margin: 0 0 32px; color: var(--ink); }
 .occasions { margin: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 0; color: var(--muted); font-size: .72rem; letter-spacing: .24em; text-transform: uppercase; }
 .occasions span { white-space: nowrap; display: inline-flex; align-items: center; }
 .occasions span + span::before { content: ""; width: 4px; height: 4px; border-radius: 50%; background: var(--gold); margin: 0 16px; }
 
 /* ---------- Halls ---------- */
-.halls { padding-top: clamp(40px, 6vw, 70px); }
+
 .venue-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 28px 24px; }
 .venue { display: grid; grid-template-rows: auto 1fr; gap: 18px; }
 .venue-img { position: relative; aspect-ratio: 3 / 4; overflow: hidden; background: var(--sand); }
