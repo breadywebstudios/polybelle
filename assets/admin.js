@@ -379,10 +379,9 @@
       <form class="drawer-body" id="invForm">
         <p class="hint" style="margin:0">Customer and event details are taken from the booking each time you open the invoice, so edits to the booking show up automatically.</p>
         <div>
-          <div style="font-size:.86rem;color:var(--muted);margin-bottom:8px">Line items (AED)</div>
+          <div style="font-size:.86rem;color:var(--muted);margin-bottom:8px">Line items (AED) <span class="hint" style="display:block;margin-top:2px">To add an extra item, use <b>Custom items</b> in Edit booking.</span></div>
           <div id="invItems" style="display:grid;gap:8px">${items.map(itemRow).join("")}</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
-            <button type="button" class="btn btn-outline sm" id="addLine">+ Add line</button>
             <button type="button" class="btn btn-outline sm" id="resetLines" title="Rebuild lines from the booking's hall, date and add-ons">↻ Refresh from booking</button>
           </div>
         </div>
@@ -414,7 +413,6 @@
       $$(".inv-desc", d).forEach((ta) => { const fit = () => { ta.style.height = "auto"; ta.style.height = ta.scrollHeight + "px"; }; ta.oninput = fit; fit(); });
     };
     f.addEventListener("input", sum);
-    $("#addLine").onclick = () => { $("#invItems").insertAdjacentHTML("beforeend", itemRow({ description: "", amount: 0 }, Date.now())); wire(); $("#invItems .inv-row:last-child .inv-desc").focus(); };
     $("#resetLines").onclick = () => { if (!confirm("Replace the current lines with the hall and add-ons from the booking?")) return; $("#invItems").innerHTML = defaultItems(b).map(itemRow).join(""); wire(); sum(); };
     wire(); sum();
     $("[data-close]", d).addEventListener("click", () => openBooking(fresh(b.id)));
