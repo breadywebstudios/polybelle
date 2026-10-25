@@ -90,11 +90,35 @@
     if (quiet && newPending) toast(`${newPending} new booking request${newPending > 1 ? "s" : ""}`);
   }
 
+  // ---------- overlaps (ignores cancelled bookings)
+  const sessOverlap = (a, b) => a === b || a === "Whole day" || b === "Whole day";
+  function overlapsFor(b) {
+    const res = { clash: [], hallDay: [], occasion: [] };
+    if (b.status === "Cancelled") return res;
+    S.bookings.forEach((o) => {
+      if (o.id === b.id || o.status === "Cancelled" || o.event_date !== b.event_date) return;
+      const sameHall = !isServices(b) && !isServices(o) && o.venue_id && o.venue_id === b.venue_id;
+      if (sameHall && sessOverlap(o.session, b.session)) res.clash.push(o);
+      else if (sameHall) res.hallDay.push(o);
+      if ((o.event_type || "").toLowerCase() === (b.event_type || "").toLowerCase()) res.occasion.push(o);
+    });
+    return res;
+  }
+  const hasOverlap = (b) => { const o = overlapsFor(b); return o.clash.length + o.hallDay.length + o.occasion.length > 0; };
+  function overlapBadges(b) {
+    const o = overlapsFor(b), refs = (l) => l.map((x) => `${x.ref} (${x.name}, ${x.session})`).join(", ");
+    return [
+      o.clash.length ? `<span class="ov ov-clash" title="Same hall, overlapping session: ${esc(refs(o.clash))}">Hall clash</span>` : "",
+      o.hallDay.length ? `<span class="ov ov-hall" title="Same hall, same day: ${esc(refs(o.hallDay))}">Same hall</span>` : "",
+      o.occasion.length ? `<span class="ov ov-occ" title="Same occasion, same day: ${esc(refs(o.occasion))}">Same occasion</span>` : ""
+    ].join("");
+  }
+
   function filtered() {
     const q = $("#q").value.trim().toLowerCase();
     const v = $("#fVenue").value, when = $("#fWhen").value, t = today();
     let list = S.bookings.filter((b) =>
-      (!S.statusFilter || b.status === S.statusFilter) &&
+      (!S.statusFilter || (S.statusFilter === "__overlap" ? hasOverlap(b) : b.status === S.statusFilter)) &&
       (!v || (v === "__services" ? isServices(b) : b.venue_id === v)) &&
       (when === "all" || (when === "upcoming" ? b.event_date >= t : b.event_date < t)) &&
       (!q || [b.ref, b.name, b.phone, b.email, b.venue_name, b.event_location, b.event_type].join(" ").toLowerCase().includes(q)));
@@ -108,8 +132,9 @@
     const up = S.bookings.filter((b) => b.event_date >= t);
     const count = (s) => up.filter((b) => b.status === s).length;
     const stats = [["", "Upcoming", up.length], ["Pending", "Pending", count("Pending")], ["Confirmed", "Confirmed", count("Confirmed")],
-      ["Completed", "Completed", S.bookings.filter((b) => b.status === "Completed").length], ["Cancelled", "Cancelled", S.bookings.filter((b) => b.status === "Cancelled").length]];
-    $("#stats").innerHTML = stats.map(([k, label, n]) => `<button class="stat ${S.statusFilter === k ? "active" : ""}" data-k="${k}"><span>${label}</span><b>${n}</b></button>`).join("")
+      ["Completed", "Completed", S.bookings.filter((b) => b.status === "Completed").length], ["Cancelled", "Cancelled", S.bookings.filter((b) => b.status === "Cancelled").length],
+      ["__overlap", "Overlaps", up.filter(hasOverlap).length]];
+    $("#stats").innerHTML = stats.map(([k, label, n]) => `<button class="stat ${S.statusFilter === k ? "active" : ""} ${k === "__overlap" && n ? "stat-warn" : ""}" data-k="${k}"><span>${label}</span><b>${n}</b></button>`).join("")
       + `<button class="stat" id="newBookingBtn" style="display:grid;place-items:center;border-style:dashed"><span style="color:var(--rose)">+ Add booking</span></button>`;
     $$("#stats .stat[data-k]").forEach((b) => b.addEventListener("click", () => {
       S.statusFilter = b.dataset.k;
@@ -119,16 +144,16 @@
     $("#newBookingBtn").addEventListener("click", () => openBooking(null));
 
     const list = filtered();
-    $("#rows").innerHTML = list.length ? list.map((b) => `
-      <tr class="row" data-id="${b.id}">
+    $("#rows").innerHTML = list.length ? list.map((b) => { const ov = overlapsFor(b); return `
+      <tr class="row ${ov.clash.length ? "row-clash" : ov.hallDay.length || ov.occasion.length ? "row-warn" : ""}" data-id="${b.id}">
         <td><b>${esc(fmtDate(b.event_date))}</b><small>${esc(b.session)}</small></td>
         <td>${isServices(b) ? `Services only<small>${esc(b.event_location || "Customer's venue")}</small>` : esc(b.venue_name)}</td>
         <td>${esc(b.name)}<small>${esc(b.phone)}</small></td>
         <td class="hide-sm">${esc(b.event_type)}</td>
         <td class="hide-sm">${b.guests ?? "—"}</td>
-        <td><span class="badge b-${b.status}">${b.status}</span></td>
+        <td><span class="badge b-${b.status}">${b.status}</span><div class="ovs">${overlapBadges(b)}</div></td>
         <td class="hide-sm"><small>${esc(b.ref)}</small><small>${fmtStamp(b.created_at)}</small></td>
-      </tr>`).join("") : `<tr><td colspan="7" class="empty">No bookings match these filters.</td></tr>`;
+      </tr>`; }).join("") : `<tr><td colspan="7" class="empty">No bookings match these filters.</td></tr>`;
     $$("#rows tr.row").forEach((r) => r.addEventListener("click", () => openBooking(S.bookings.find((b) => b.id === r.dataset.id))));
   }
   ["#q", "#fVenue", "#fWhen", "#fSort"].forEach((s) => $(s).addEventListener("input", renderBookings));
@@ -333,6 +358,10 @@
       </div>
       <div class="drawer-body">
         ${notice && NOTICE[notice] ? `<div class="notify"><p>${NOTICE[notice]}</p><a class="btn btn-wa sm" target="_blank" rel="noopener" href="${waLink(b.phone, customerMsg(b, notice))}">Send on WhatsApp</a></div>` : ""}
+        ${(() => { const o = overlapsFor(b); const item = (x) => `<li><button type="button" class="linkbtn" data-goto="${x.id}">${esc(x.ref)}</button> · ${esc(x.name)} · ${esc(isServices(x) ? "Services only" : x.venue_name)} · ${esc(x.session)} · ${esc(x.event_type)} · ${esc(x.status)}</li>`;
+          return [o.clash.length ? `<div class="ovbox ov-clash-box"><b>Hall clash</b> — same hall with an overlapping session:<ul>${o.clash.map(item).join("")}</ul></div>` : "",
+                  o.hallDay.length ? `<div class="ovbox ov-hall-box"><b>Same hall, same day</b> — plan setup and turnover:<ul>${o.hallDay.map(item).join("")}</ul></div>` : "",
+                  o.occasion.length ? `<div class="ovbox ov-occ-box"><b>Same occasion, same day</b> — check staff, mascots and supplies:<ul>${o.occasion.map(item).join("")}</ul></div>` : ""].join(""); })()}
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn btn-outline sm" id="editBtn" type="button">✎ Edit booking</button>
           <button class="btn btn-outline sm" id="invBtn" type="button">🧾 Invoice${b.invoice_no ? " " + esc(b.invoice_no) : ""}</button>
@@ -368,6 +397,7 @@
       </div>`;
     $("[data-close]", d).addEventListener("click", closeDrawers);
     $("#editBtn").addEventListener("click", () => openBookingForm(b));
+    $$("[data-goto]", d).forEach((x) => x.addEventListener("click", () => openBooking(fresh(x.dataset.goto))));
     $("#invBtn").addEventListener("click", () => openInvoice(b));
     $$("[data-st]", d).forEach((btn) => btn.addEventListener("click", async () => {
       const st = btn.dataset.st;
