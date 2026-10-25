@@ -152,94 +152,317 @@
     return msgs[status] || msgs.Pending;
   }
 
-  function openBooking(b) {
+  const money = (n) => Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const invTotals = (b) => {
+    const subtotal = (b.invoice_items || []).reduce((s, it) => s + (Number(it.amount) || 0), 0);
+    const total = Math.max(0, subtotal - (Number(b.discount) || 0));
+    return { subtotal, total, paid: Number(b.amount_paid) || 0, balance: Math.max(0, total - (Number(b.amount_paid) || 0)) };
+  };
+  const fresh = (id) => S.bookings.find((x) => x.id === id);
+  const nextInvoiceNo = () => today().slice(2, 4) + "-" + ((S.settings?.invoice_counter ?? 0) + 1);
+
+  // ---------- booking add / edit form
+  function openBookingForm(b) {
     const isNew = !b;
+    b = b || { venue_id: S.venues.find((v) => v.active)?.id, event_date: "", session: "Evening", event_type: C.eventTypes[0], guests: "", name: "", phone: "", email: "", customer_address: "", notes: "", add_ons: [], status: "Confirmed" };
     const d = $("#drawer");
-    if (isNew) {
-      d.innerHTML = `
-        <div class="drawer-head"><div><span class="eyebrow">New booking</span><h3>Add a booking</h3></div><button class="xbtn" data-close aria-label="Close">×</button></div>
-        <form class="drawer-body" id="newForm">
-          <label class="field">Hall<select name="venue_id" required>${S.venues.map((v) => `<option value="${v.id}">${esc(v.name)}${v.active ? "" : " (hidden)"}</option>`).join("")}</select></label>
-          <div class="grid-2">
-            <label class="field">Event date<input type="date" name="event_date" required></label>
-            <label class="field">Session<select name="session">${C.sessions.map((s) => `<option>${s.id}</option>`).join("")}</select></label>
-            <label class="field">Occasion<select name="event_type">${C.eventTypes.map((t) => `<option>${esc(t)}</option>`).join("")}</select></label>
-            <label class="field">Guests<input type="number" name="guests" min="1"></label>
-            <label class="field">Customer name<input name="name" required></label>
-            <label class="field">Mobile<input name="phone" required></label>
-          </div>
-          <label class="field">Email<input type="email" name="email"></label>
-          <label class="field">Status<select name="status">${STATUSES.map((s) => `<option ${s === "Confirmed" ? "selected" : ""}>${s}</option>`).join("")}</select></label>
-          <label class="field">Notes<textarea name="notes"></textarea></label>
-          <button class="btn btn-primary" type="submit">Save booking</button>
-        </form>`;
-      $("#newForm").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const fd = Object.fromEntries(new FormData(e.target));
-        const v = S.venues.find((x) => x.id === fd.venue_id);
-        const row = { ...fd, venue_name: v.name, guests: fd.guests || null, email: fd.email || null, notes: fd.notes || null,
-          ref: "PB-" + today().slice(2).replace(/-/g, "") + "-" + Math.random().toString(36).slice(2, 6).toUpperCase() };
-        const { error } = await sb.from("pb_bookings").insert(row);
-        if (error) return toast(error.message);
-        toast("Booking added"); closeDrawers(); loadBookings();
-      });
-    } else {
-      d.innerHTML = `
-        <div class="drawer-head">
-          <div><span class="eyebrow">${esc(b.ref)}</span><h3>${esc(b.name)}</h3><span class="badge b-${b.status}">${b.status}</span></div>
-          <button class="xbtn" data-close aria-label="Close">×</button>
+    const venueOpts = S.venues.map((v) => `<option value="${v.id}" ${v.id === b.venue_id ? "selected" : ""}>${esc(v.name)} (up to ${v.capacity})${v.active ? "" : " – hidden"}</option>`).join("");
+    const typeOpts = [...new Set([...C.eventTypes, b.event_type].filter(Boolean))].map((t) => `<option ${t === b.event_type ? "selected" : ""}>${esc(t)}</option>`).join("");
+    d.innerHTML = `
+      <div class="drawer-head"><div><span class="eyebrow">${isNew ? "New booking" : "Edit · " + esc(b.ref)}</span><h3>${isNew ? "Add a booking" : esc(b.name)}</h3></div><button class="xbtn" data-close aria-label="Close">×</button></div>
+      <form class="drawer-body" id="bkForm">
+        <label class="field">Hall<select name="venue_id" required>${venueOpts}</select></label>
+        <div class="grid-2">
+          <label class="field">Event date<input type="date" name="event_date" required value="${esc(b.event_date)}"></label>
+          <label class="field">Session<select name="session">${C.sessions.map((s) => `<option value="${s.id}" ${s.id === b.session ? "selected" : ""}>${s.id} · ${s.time}</option>`).join("")}</select></label>
+          <label class="field">Occasion<select name="event_type">${typeOpts}</select></label>
+          <label class="field">Guests<input type="number" name="guests" min="1" value="${b.guests ?? ""}"></label>
+          <label class="field">Customer name<input name="name" required maxlength="120" value="${esc(b.name)}"></label>
+          <label class="field">Mobile<input name="phone" required maxlength="40" value="${esc(b.phone)}"></label>
         </div>
-        <div class="drawer-body">
-          <dl class="kv">
-            <dt>Hall</dt><dd>${esc(b.venue_name)}</dd>
-            <dt>Event date</dt><dd>${esc(fmtDate(b.event_date))}</dd>
-            <dt>Session</dt><dd>${esc(b.session)} <small style="color:var(--muted)">${esc(C.sessions.find((s) => s.id === b.session)?.time || "")}</small></dd>
-            <dt>Occasion</dt><dd>${esc(b.event_type)}</dd>
-            <dt>Guests</dt><dd>${b.guests ?? "—"}</dd>
-            <dt>Add-ons</dt><dd>${b.add_ons?.length ? esc(b.add_ons.join(", ")) : "—"}</dd>
-            <dt>Mobile</dt><dd><a href="tel:+${intl(b.phone)}">${esc(b.phone)}</a></dd>
-            <dt>Email</dt><dd>${b.email ? `<a href="mailto:${esc(b.email)}">${esc(b.email)}</a>` : "—"}</dd>
-            <dt>Customer notes</dt><dd style="white-space:pre-wrap">${esc(b.notes || "—")}</dd>
-            <dt>Requested</dt><dd>${fmtStamp(b.created_at)}</dd>
-          </dl>
-          <div>
-            <div style="font-size:.86rem;color:var(--muted);margin-bottom:8px">Status</div>
-            <div class="status-row">${STATUSES.map((s) => `<button type="button" data-st="${s}" class="${s === b.status ? "cur" : ""}">${s}</button>`).join("")}</div>
-          </div>
-          <label class="field">Internal notes (only admins see this)
-            <textarea id="adminNotes" placeholder="Package, deposit, theme, supplier notes…">${esc(b.admin_notes || "")}</textarea>
-          </label>
-          <div><button class="btn btn-outline sm" id="saveNotes" type="button">Save notes</button></div>
+        <label class="field">Email<input type="email" name="email" value="${esc(b.email || "")}"></label>
+        <label class="field">Customer address / company (shown on invoice)<textarea name="customer_address" rows="2" placeholder="e.g. Cocoa Parties & Events SPC LLC&#10;Abu Dhabi, UAE">${esc(b.customer_address || "")}</textarea></label>
+        <div>
+          <div style="font-size:.86rem;color:var(--muted);margin-bottom:8px">Add-ons</div>
+          <div class="addons">${[...new Set([...C.addOns, ...(b.add_ons || [])])].map((a) => `<label class="addon"><input type="checkbox" name="add_ons" value="${esc(a)}" ${(b.add_ons || []).includes(a) ? "checked" : ""}><span>${esc(a)}</span></label>`).join("")}</div>
         </div>
-        <div class="drawer-foot">
-          <a class="btn btn-wa sm" id="waCust" target="_blank" rel="noopener" href="${waLink(b.phone, customerMsg(b, b.status))}">WhatsApp customer</a>
-          <button class="btn btn-outline sm" id="delBtn" type="button" style="margin-left:auto">Delete</button>
-        </div>`;
-      $$("[data-st]", d).forEach((btn) => btn.addEventListener("click", async () => {
-        const st = btn.dataset.st;
-        if (st === b.status) return;
-        const { error } = await sb.from("pb_bookings").update({ status: st }).eq("id", b.id);
-        if (error) return toast(error.message.includes("already has a confirmed") ? "Can't confirm: this hall already has a confirmed booking for that date & session." : error.message);
-        b.status = st;
-        toast(`Marked as ${st}`);
-        await loadBookings();
-        openBooking(S.bookings.find((x) => x.id === b.id));
-        if (st === "Confirmed" || st === "Cancelled") toast(`Marked as ${st} — tap “WhatsApp customer” to let them know`);
-      }));
-      $("#saveNotes").addEventListener("click", async () => {
-        const { error } = await sb.from("pb_bookings").update({ admin_notes: $("#adminNotes").value }).eq("id", b.id);
-        if (error) return toast(error.message);
-        b.admin_notes = $("#adminNotes").value; toast("Notes saved");
-      });
-      $("#delBtn").addEventListener("click", async () => {
-        if (!confirm(`Delete booking ${b.ref} for ${b.name}? This can't be undone. (Tip: use “Cancelled” to keep a record.)`)) return;
-        const { error } = await sb.from("pb_bookings").delete().eq("id", b.id);
-        if (error) return toast(error.message);
-        toast("Booking deleted"); closeDrawers(); loadBookings();
-      });
-    }
-    $("[data-close]", d).addEventListener("click", closeDrawers);
+        <label class="field">Customer notes<textarea name="notes">${esc(b.notes || "")}</textarea></label>
+        ${isNew ? `<label class="field">Status<select name="status">${STATUSES.map((s) => `<option ${s === b.status ? "selected" : ""}>${s}</option>`).join("")}</select></label>` : ""}
+        <button class="btn btn-primary" type="submit">${isNew ? "Save booking" : "Save changes"}</button>
+      </form>`;
+    $("[data-close]", d).addEventListener("click", () => (isNew ? closeDrawers() : openBooking(fresh(b.id))));
+    $("#bkForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const f = e.target, fd = new FormData(f);
+      const v = S.venues.find((x) => x.id === fd.get("venue_id"));
+      const row = {
+        venue_id: v.id, venue_name: v.name, event_date: fd.get("event_date"), session: fd.get("session"),
+        event_type: fd.get("event_type"), guests: fd.get("guests") || null, name: fd.get("name").trim(), phone: fd.get("phone").trim(),
+        email: fd.get("email").trim() || null, customer_address: fd.get("customer_address").trim() || null,
+        notes: fd.get("notes").trim() || null, add_ons: fd.getAll("add_ons")
+      };
+      let res;
+      if (isNew) {
+        row.status = fd.get("status");
+        row.ref = "PB-" + today().slice(2).replace(/-/g, "") + "-" + Math.random().toString(36).slice(2, 6).toUpperCase();
+        res = await sb.from("pb_bookings").insert(row).select().single();
+      } else {
+        res = await sb.from("pb_bookings").update(row).eq("id", b.id).select().single();
+      }
+      if (res.error) return toast(res.error.message.includes("already has a confirmed") ? "That hall already has a confirmed booking for this date & session." : res.error.message);
+      toast(isNew ? "Booking added" : "Booking updated");
+      await loadBookings();
+      openBooking(fresh(res.data.id));
+    });
     openDrawer("#drawer");
+  }
+
+  // ---------- booking details
+  function openBooking(b) {
+    if (!b) return openBookingForm(null);
+    const d = $("#drawer");
+    const t = invTotals(b);
+    d.innerHTML = `
+      <div class="drawer-head">
+        <div><span class="eyebrow">${esc(b.ref)}</span><h3>${esc(b.name)}</h3><span class="badge b-${b.status}">${b.status}</span></div>
+        <button class="xbtn" data-close aria-label="Close">×</button>
+      </div>
+      <div class="drawer-body">
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-outline sm" id="editBtn" type="button">✎ Edit booking</button>
+          <button class="btn btn-outline sm" id="invBtn" type="button">🧾 Invoice${b.invoice_no ? " " + esc(b.invoice_no) : ""}</button>
+        </div>
+        <dl class="kv">
+          <dt>Hall</dt><dd>${esc(b.venue_name)}</dd>
+          <dt>Event date</dt><dd>${esc(fmtDate(b.event_date))}</dd>
+          <dt>Session</dt><dd>${esc(b.session)} <small style="color:var(--muted)">${esc(C.sessions.find((s) => s.id === b.session)?.time || "")}</small></dd>
+          <dt>Occasion</dt><dd>${esc(b.event_type)}</dd>
+          <dt>Guests</dt><dd>${b.guests ?? "—"}</dd>
+          <dt>Add-ons</dt><dd>${b.add_ons?.length ? esc(b.add_ons.join(", ")) : "—"}</dd>
+          <dt>Mobile</dt><dd><a href="tel:+${intl(b.phone)}">${esc(b.phone)}</a></dd>
+          <dt>Email</dt><dd>${b.email ? `<a href="mailto:${esc(b.email)}">${esc(b.email)}</a>` : "—"}</dd>
+          ${b.customer_address ? `<dt>Address</dt><dd style="white-space:pre-wrap">${esc(b.customer_address)}</dd>` : ""}
+          <dt>Customer notes</dt><dd style="white-space:pre-wrap">${esc(b.notes || "—")}</dd>
+          <dt>Requested</dt><dd>${fmtStamp(b.created_at)}</dd>
+          ${b.invoice_no ? `<dt>Invoice</dt><dd>${esc(b.invoice_no)} · Total AED ${money(t.total)} · Paid AED ${money(t.paid)} · <b>Balance AED ${money(t.balance)}</b></dd>` : ""}
+        </dl>
+        <div>
+          <div style="font-size:.86rem;color:var(--muted);margin-bottom:8px">Status</div>
+          <div class="status-row">${STATUSES.map((s) => `<button type="button" data-st="${s}" class="${s === b.status ? "cur" : ""}">${s}</button>`).join("")}</div>
+        </div>
+        <label class="field">Internal notes (only admins see this)
+          <textarea id="adminNotes" placeholder="Package, deposit, theme, supplier notes…">${esc(b.admin_notes || "")}</textarea>
+        </label>
+        <div><button class="btn btn-outline sm" id="saveNotes" type="button">Save notes</button></div>
+      </div>
+      <div class="drawer-foot">
+        <a class="btn btn-wa sm" target="_blank" rel="noopener" href="${waLink(b.phone, customerMsg(b, b.status))}">WhatsApp customer</a>
+        <button class="btn btn-outline sm" id="delBtn" type="button" style="margin-left:auto">Delete</button>
+      </div>`;
+    $("[data-close]", d).addEventListener("click", closeDrawers);
+    $("#editBtn").addEventListener("click", () => openBookingForm(b));
+    $("#invBtn").addEventListener("click", () => openInvoice(b));
+    $$("[data-st]", d).forEach((btn) => btn.addEventListener("click", async () => {
+      const st = btn.dataset.st;
+      if (st === b.status) return;
+      const { error } = await sb.from("pb_bookings").update({ status: st }).eq("id", b.id);
+      if (error) return toast(error.message.includes("already has a confirmed") ? "Can't confirm: this hall already has a confirmed booking for that date & session." : error.message);
+      await loadBookings();
+      openBooking(fresh(b.id));
+      toast(st === "Confirmed" || st === "Cancelled" ? `Marked as ${st} — tap “WhatsApp customer” to let them know` : `Marked as ${st}`);
+    }));
+    $("#saveNotes").addEventListener("click", async () => {
+      const { error } = await sb.from("pb_bookings").update({ admin_notes: $("#adminNotes").value }).eq("id", b.id);
+      if (error) return toast(error.message);
+      b.admin_notes = $("#adminNotes").value; toast("Notes saved");
+    });
+    $("#delBtn").addEventListener("click", async () => {
+      if (!confirm(`Delete booking ${b.ref} for ${b.name}? This can't be undone. (Tip: use “Cancelled” to keep a record.)`)) return;
+      const { error } = await sb.from("pb_bookings").delete().eq("id", b.id);
+      if (error) return toast(error.message);
+      toast("Booking deleted"); closeDrawers(); loadBookings();
+    });
+    openDrawer("#drawer");
+  }
+
+  // ---------- invoice editor
+  const hallLine = (b) => `${b.venue_name} rental · ${b.event_type} · ${fmtDate(b.event_date)} (${b.session})`;
+  function defaultItems(b) {
+    const v = S.venues.find((x) => x.id === b.venue_id);
+    const items = [{ kind: "hall", description: hallLine(b), amount: v?.price_from ? Number(v.price_from) : 0 }];
+    (b.add_ons || []).forEach((a) => items.push({ description: a, amount: 0 }));
+    return items;
+  }
+
+  function openInvoice(b) {
+    // the hall-rental line always reflects the booking's current hall, occasion, date and session
+    const items = (b.invoice_items?.length ? b.invoice_items : defaultItems(b)).map((x) => (x.kind === "hall" ? { ...x, description: hallLine(b) } : { ...x }));
+    const d = $("#drawer");
+    const itemRow = (it, i) => `
+      <div class="inv-row" data-i="${i}" data-kind="${esc(it.kind || "")}">
+        <textarea class="inv-desc" rows="1" placeholder="Description, e.g. 15 pieces Scented Candles">${esc(it.description)}</textarea>
+        <input class="inv-amt" type="number" step="0.01" min="0" value="${it.amount || ""}" placeholder="0.00" aria-label="Amount (AED)">
+        <button type="button" class="xbtn inv-del" aria-label="Remove line">×</button>
+      </div>`;
+    d.innerHTML = `
+      <div class="drawer-head"><div><span class="eyebrow">${b.invoice_no ? "Invoice " + esc(b.invoice_no) : "New invoice"} · ${esc(b.ref)}</span><h3>${esc(b.name)}</h3></div><button class="xbtn" data-close aria-label="Close">×</button></div>
+      <form class="drawer-body" id="invForm">
+        <p class="hint" style="margin:0">Customer and event details are taken from the booking each time you open the invoice, so edits to the booking show up automatically.</p>
+        <div>
+          <div style="font-size:.86rem;color:var(--muted);margin-bottom:8px">Line items (AED)</div>
+          <div id="invItems" style="display:grid;gap:8px">${items.map(itemRow).join("")}</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+            <button type="button" class="btn btn-outline sm" id="addLine">+ Add line</button>
+            <button type="button" class="btn btn-outline sm" id="resetLines" title="Rebuild lines from the booking's hall, date and add-ons">↻ Refresh from booking</button>
+          </div>
+        </div>
+        <div class="grid-2">
+          <label class="field">Invoice number<input name="invoice_no" maxlength="30" value="${esc(b.invoice_no || "")}" placeholder="Auto: ${esc(nextInvoiceNo())}"></label>
+          <div class="hint" style="align-self:end;margin:0 0 10px">${b.invoice_no ? "Change it if you need to match your own numbering." : "Leave blank to use the next number automatically."}</div>
+          <label class="field">Discount (AED)<input type="number" step="0.01" min="0" name="discount" value="${b.discount || ""}" placeholder="0.00"></label>
+          <label class="field">Amount paid (AED)<input type="number" step="0.01" min="0" name="amount_paid" value="${b.amount_paid || ""}" placeholder="0.00"></label>
+          <label class="field">Issue date<input type="date" name="invoice_date" value="${esc(b.invoice_date || today())}"></label>
+          <label class="field">Document title<select name="doc_type"><option>Invoice</option><option>Receipt</option></select></label>
+        </div>
+        <label class="field">Note on invoice (optional)<textarea name="invoice_notes" rows="2" placeholder="e.g. 50% deposit required to secure the date">${esc(b.invoice_notes || "")}</textarea></label>
+        <div class="inv-sum" id="invSum"></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-outline" type="submit" data-act="save">Save</button>
+          <button class="btn btn-primary" type="submit" data-act="print">Save &amp; open invoice</button>
+        </div>
+      </form>`;
+    const f = $("#invForm");
+    const t0 = invTotals(b);
+    if (b.invoice_no && t0.paid > 0 && t0.balance === 0) f.doc_type.value = "Receipt";
+    const read = () => $$(".inv-row", d).map((r) => ({ ...(r.dataset.kind ? { kind: r.dataset.kind } : {}), description: $(".inv-desc", r).value.trim(), amount: Number($(".inv-amt", r).value) || 0 })).filter((x) => x.description || x.amount);
+    const sum = () => {
+      const t = invTotals({ invoice_items: read(), discount: f.discount.value, amount_paid: f.amount_paid.value });
+      $("#invSum").innerHTML = `<div><span>Subtotal</span><b>AED ${money(t.subtotal)}</b></div>${+f.discount.value ? `<div><span>Discount</span><b>− AED ${money(f.discount.value)}</b></div>` : ""}<div><span>Total</span><b>AED ${money(t.total)}</b></div><div><span>Paid</span><b>AED ${money(t.paid)}</b></div><div class="due"><span>Balance due</span><b>AED ${money(t.balance)}</b></div>`;
+    };
+    const wire = () => {
+      $$(".inv-del", d).forEach((x) => (x.onclick = () => { x.closest(".inv-row").remove(); sum(); }));
+      $$(".inv-desc", d).forEach((ta) => { const fit = () => { ta.style.height = "auto"; ta.style.height = ta.scrollHeight + "px"; }; ta.oninput = fit; fit(); });
+    };
+    f.addEventListener("input", sum);
+    $("#addLine").onclick = () => { $("#invItems").insertAdjacentHTML("beforeend", itemRow({ description: "", amount: 0 }, Date.now())); wire(); $("#invItems .inv-row:last-child .inv-desc").focus(); };
+    $("#resetLines").onclick = () => { if (!confirm("Replace the current lines with the hall and add-ons from the booking?")) return; $("#invItems").innerHTML = defaultItems(b).map(itemRow).join(""); wire(); sum(); };
+    wire(); sum();
+    $("[data-close]", d).addEventListener("click", () => openBooking(fresh(b.id)));
+
+    f.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const act = e.submitter?.dataset.act || "save";
+      const win = act === "print" ? window.open("", "_blank") : null;
+      const patch = { invoice_items: read(), discount: Number(f.discount.value) || 0, amount_paid: Number(f.amount_paid.value) || 0,
+        invoice_date: f.invoice_date.value || today(), invoice_notes: f.invoice_notes.value.trim() || null,
+        invoice_no: f.invoice_no.value.trim() || null };
+      let { error } = await sb.from("pb_bookings").update(patch).eq("id", b.id);
+      if (!error && !patch.invoice_no) ({ error } = await sb.rpc("pb_assign_invoice", { p_booking: b.id }));
+      if (error) {
+        if (win) win.close();
+        return toast(error.code === "23505" ? `Invoice number ${patch.invoice_no} is already used on another booking.` : error.message);
+      }
+      await Promise.all([loadBookings(), loadSettings()]);
+      const nb = fresh(b.id);
+      toast(`Invoice ${nb.invoice_no} saved`);
+      if (win) renderInvoice(win, nb, f.doc_type.value);
+      openInvoice(nb);
+      $("#invForm").doc_type.value = f.doc_type.value;
+    });
+    openDrawer("#drawer");
+  }
+
+  // ---------- printable invoice (matches Polybelle receipt layout)
+  function renderInvoice(win, b, docType) {
+    const s = S.settings || {};
+    const t = invTotals(b);
+    const nl = (x) => esc(x || "").replace(/\n/g, "<br>");
+    const customer = [b.name, b.customer_address || "", [b.phone, b.email].filter(Boolean).join(" · ")].filter(Boolean).join("\n");
+    const issue = new Date((b.invoice_date || today()) + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+    const sess = C.sessions.find((x) => x.id === b.session);
+    const lines = (b.invoice_items || []).map((it) => `<tr><td>${nl(it.description)}</td><td class="amt">${it.amount ? money(it.amount) : ""}</td></tr>`).join("");
+    const isReceipt = docType === "Receipt";
+    win.document.open();
+    win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${docType} ${esc(b.invoice_no)} – ${esc(b.name)}</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Lora:wght@500;600&family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  @page { size: A4; margin: 0; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #ECE6E0; font-family: Montserrat, Arial, sans-serif; color: #2B2B2B; font-size: 12.5px; line-height: 1.45; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .bar { position: sticky; top: 0; background: #3A2A24; color: #fff; display: flex; gap: 10px; justify-content: center; padding: 10px; font-size: 13px; }
+  .bar button { font: 500 13px Montserrat, sans-serif; border: 0; border-radius: 999px; padding: 9px 18px; cursor: pointer; background: #B8923E; color: #fff; }
+  .bar button.alt { background: transparent; border: 1px solid rgba(255,255,255,.4); }
+  .page { width: 210mm; min-height: 297mm; margin: 20px auto; background: #fff; padding: 20mm 18mm 16mm; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,.12); }
+  .top { display: flex; justify-content: space-between; gap: 24px; align-items: flex-start; }
+  .logo b { display: block; font-family: "Cormorant Garamond", Georgia, serif; font-weight: 500; font-size: 40px; letter-spacing: .26em; color: #B8923E; line-height: 1; }
+  .logo span { display: block; font-size: 7.6px; letter-spacing: .06em; color: #B8923E; font-weight: 600; margin-top: 6px; text-transform: uppercase; }
+  .biz { font-size: 11.5px; min-width: 62mm; }
+  h4 { font-family: Lora, Georgia, serif; color: #B8923E; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; font-size: 13.5px; margin: 0 0 3px; }
+  .sec { margin-top: 26px; }
+  .sec p { margin: 0; }
+  .grid { display: flex; justify-content: space-between; gap: 24px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 26px; }
+  th { background: #DCCAB9; color: #B08A4A; font-family: Lora, Georgia, serif; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; font-size: 13px; text-align: left; padding: 6px 12px; }
+  th.amt { width: 32mm; }
+  td { padding: 3px 12px; vertical-align: top; }
+  tbody tr:first-child td { padding-top: 22px; }
+  .amt { text-align: right; white-space: nowrap; }
+  .totals { margin: 26px 0 0 auto; width: 80mm; }
+  .totals div { display: flex; justify-content: space-between; padding: 3px 12px; }
+  .totals .grand { font-weight: 600; font-size: 13px; }
+  .totals .due { background: #F4ECE3; font-weight: 600; margin-top: 4px; padding: 6px 12px; }
+  .note { margin-top: 22px; font-size: 11.5px; color: #555; }
+  .foot { margin-top: auto; padding-top: 30px; font-size: 11.5px; }
+  .foot b { font-size: 13px; display: block; margin-bottom: 3px; }
+  .foot p { margin: 0 0 12px; }
+  .stamp { display: inline-block; margin-top: 6px; border: 2px solid #4F7A5A; color: #4F7A5A; font-weight: 600; letter-spacing: .14em; padding: 4px 12px; border-radius: 6px; font-size: 12px; transform: rotate(-4deg); }
+  @media print { body { background: #fff; } .bar { display: none; } .page { margin: 0; box-shadow: none; } }
+  @media (max-width: 820px) { .page { width: 100%; min-height: auto; padding: 24px 18px; margin: 0; } .top, .grid { flex-direction: column; } .logo b { font-size: 32px; } }
+</style></head><body>
+<div class="bar"><button onclick="window.print()">Print / Save as PDF</button><button class="alt" onclick="window.close()">Close</button></div>
+<div class="page">
+  <div class="top">
+    <div class="logo"><b>POLYBELLE</b><span>Making memorable memories, one milestone at a time</span></div>
+    <div class="biz">${nl(s.business_name)}<br>${nl(s.business_address)}</div>
+  </div>
+  <div class="grid">
+    <div class="sec">
+      <h4>${esc(docType)}</h4>
+      <p>No: ${esc(b.invoice_no)}</p>
+      <p>Issue Date: ${esc(issue)}</p>
+      <p>Booking Ref: ${esc(b.ref)}</p>
+    </div>
+    <div class="sec" style="min-width:62mm">
+      <h4>Event Details</h4>
+      <p>${esc(b.venue_name)} · ${esc(b.event_type)}</p>
+      <p>${esc(fmtDate(b.event_date))}</p>
+      <p>${esc(b.session)}${sess ? " (" + esc(sess.time) + ")" : ""}${b.guests ? " · " + b.guests + " guests" : ""}</p>
+    </div>
+  </div>
+  <div class="sec">
+    <h4>Customer Contact Details</h4>
+    <p>${nl(customer)}</p>
+  </div>
+  <table>
+    <thead><tr><th>Description</th><th class="amt">Amount</th></tr></thead>
+    <tbody>${lines || `<tr><td colspan="2" style="color:#999">No items yet</td></tr>`}</tbody>
+  </table>
+  <div class="totals">
+    ${+b.discount ? `<div><span>Subtotal</span><span>${money(t.subtotal)} AED</span></div><div><span>Discount</span><span>− ${money(b.discount)} AED</span></div>` : ""}
+    <div class="grand"><span>Total Amount</span><span>${money(t.total)} AED</span></div>
+    ${t.paid ? `<div><span>Amount Paid</span><span>${money(t.paid)} AED</span></div>` : ""}
+    ${t.paid || !isReceipt ? `<div class="due"><span>Balance Due</span><span>${money(t.balance)} AED</span></div>` : ""}
+    ${isReceipt && t.balance === 0 && t.total > 0 ? `<div style="justify-content:flex-end"><span class="stamp">PAID</span></div>` : ""}
+  </div>
+  ${b.invoice_notes ? `<div class="note">${nl(b.invoice_notes)}</div>` : ""}
+  <div class="foot">
+    <b>Payment Details</b>
+    <p>${nl(s.payment_details)}</p>
+    <p>${nl(s.invoice_footer)}</p>
+  </div>
+</div></body></html>`);
+    win.document.close();
   }
 
   // ---------------- venues
@@ -327,7 +550,25 @@
     const f = $("#settingsForm");
     f.booking_whatsapp.value = data.booking_whatsapp.replace(/^971/, "0");
     f.display_phones.value = data.display_phones;
+    S.settings = data;
+    const g = $("#invoiceSettingsForm");
+    g.business_name.value = data.business_name;
+    g.business_address.value = data.business_address;
+    g.payment_details.value = data.payment_details;
+    g.invoice_footer.value = data.invoice_footer;
+    g.next_no.value = data.invoice_counter + 1;
   }
+  $("#invoiceSettingsForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const g = e.target, next = parseInt(g.next_no.value, 10);
+    if (!(next > 0)) return toast("Next invoice number must be a positive number.");
+    const { error } = await sb.from("pb_settings").update({
+      business_name: g.business_name.value.trim(), business_address: g.business_address.value.trim(),
+      payment_details: g.payment_details.value.trim(), invoice_footer: g.invoice_footer.value.trim(), invoice_counter: next - 1
+    }).eq("id", 1);
+    if (error) return toast(error.message);
+    toast("Invoice settings saved"); loadSettings();
+  });
   $("#settingsForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     const num = intl(e.target.booking_whatsapp.value);

@@ -101,6 +101,16 @@
           </label>
           <div><button class="btn btn-primary sm" type="submit">Save settings</button></div>
         </form>
+        <form class="card" id="invoiceSettingsForm">
+          <h3>Invoice details</h3>
+          <p class="hint" style="margin:0">Printed on every invoice and receipt.</p>
+          <label class="field">Business name<input name="business_name" required></label>
+          <label class="field">Business address<textarea name="business_address" rows="4" required></textarea></label>
+          <label class="field">Payment details<textarea name="payment_details" rows="5"></textarea></label>
+          <label class="field">Footer (company name &amp; TRN)<textarea name="invoice_footer" rows="3"></textarea></label>
+          <label class="field">Next invoice number (shown as YY-number, e.g. 26-550)<input type="number" name="next_no" min="1" required></label>
+          <div><button class="btn btn-primary sm" type="submit">Save invoice details</button></div>
+        </form>
         <div class="card">
           <h3>Admin access</h3>
           <p class="hint" style="margin:0">People listed here can sign in to this page. They need an account with the same email — use “Forgot password?” on the sign-in screen to set one up.</p>

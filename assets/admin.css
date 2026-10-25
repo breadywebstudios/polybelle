@@ -90,3 +90,14 @@ dl.kv dd { margin: 0; word-break: break-word; }
   .hide-sm { display: none; }
   .adm-head .who span { display: none; }
 }
+
+/* Invoice editor */
+.inv-row { display: grid; grid-template-columns: 1fr 110px 36px; gap: 8px; align-items: start; }
+.inv-row textarea, .inv-row input { font: inherit; font-size: .9rem; padding: 9px 11px; border: 1px solid var(--line); border-radius: 10px; background: var(--ivory); color: var(--cocoa); width: 100%; resize: none; overflow: hidden; }
+.inv-row input { text-align: right; }
+.inv-row .xbtn { width: 36px; height: 38px; border-radius: 10px; }
+.inv-sum { background: var(--ivory); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; display: grid; gap: 4px; font-size: .92rem; }
+.inv-sum div { display: flex; justify-content: space-between; }
+.inv-sum span { color: var(--muted); }
+.inv-sum .due { border-top: 1px solid var(--line); padding-top: 6px; margin-top: 4px; color: var(--rose); }
+.inv-sum .due span { color: var(--rose); }
