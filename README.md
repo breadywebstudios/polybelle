@@ -22,7 +22,7 @@ Only emails in `pb_admins` can use the admin page (manage them in Admin → Sett
 ## Promo codes
 Apply `supabase/migrations/20261025200000_promo_codes.sql` in the Supabase SQL Editor before deploying the promo-code UI. It creates the promo tables and booking RPCs and seeds `MASCOT15` for 15% off Mascot Surprise, limited to 10 successfully submitted bookings.
 
-Admins can create, edit, pause, and cap promo codes in Admin → Promo codes. A use is counted atomically when a booking is submitted, including Pending requests. The selected required package or service and code are recorded with the booking. On its invoice, the discount is calculated against the matching item only; staff can adjust it if needed.
+Admins can create, edit, pause, and cap promo codes in Admin → Promo codes. Discounts can be a percentage or a fixed AED amount, applied only to the matching required package or service. A use is counted atomically when a booking is submitted, including Pending requests. The selected required package or service and code are recorded with the booking. On its invoice, the discount is calculated against the matching item only; fixed discounts cannot exceed that item's price, and staff can adjust the invoice discount if needed.
 
 ## Deploy
 Static site with no build step. Import the repo on Vercel (framework: Other) and deploy.

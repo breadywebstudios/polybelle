@@ -84,7 +84,7 @@
   async function loadBookings(quiet) {
     const [{ data, error }, { data: promos, error: promoError }] = await Promise.all([
       sb.from("pb_bookings").select("*").order("event_date", { ascending: true }).limit(2000),
-      sb.from("pb_promo_redemptions").select("booking_ref,promo_code,discount_percent,required_item")
+      sb.from("pb_promo_redemptions").select("booking_ref,promo_code,discount_type,discount_value,required_item")
     ]);
     if (error) { if (!quiet) toast("Couldn't load bookings: " + error.message); return; }
     if (promoError) console.error("Couldn't load booking promotions:", promoError.message);
@@ -488,7 +488,9 @@
         const itemTotal = read()
           .filter((item) => item.description.toLowerCase() === b.promo.required_item.toLowerCase())
           .reduce((total, item) => total + item.amount, 0);
-        f.discount.value = (itemTotal * Number(b.promo.discount_percent) / 100).toFixed(2);
+        const value = Number(b.promo.discount_value);
+        const discount = b.promo.discount_type === "fixed" ? Math.min(value, itemTotal) : itemTotal * value / 100;
+        f.discount.value = discount.toFixed(2);
       }
       const t = invTotals({ invoice_items: read(), discount: f.discount.value, amount_paid: f.amount_paid.value });
       $("#invSum").innerHTML = `<div><span>Subtotal</span><b>AED ${money(t.subtotal)}</b></div>${+f.discount.value ? `<div><span>Discount</span><b>− AED ${money(f.discount.value)}</b></div>` : ""}<div><span>Total</span><b>AED ${money(t.total)}</b></div><div><span>Paid</span><b>AED ${money(t.paid)}</b></div><div class="due"><span>Balance due</span><b>AED ${money(t.balance)}</b></div>`;
@@ -1018,28 +1020,40 @@
     $("#promoRows").innerHTML = S.promos.length ? S.promos.map((promo) => `
       <tr data-promo-row="${esc(promo.code)}">
         <td class="promo-code">${esc(promo.code)}</td>
-        <td><input type="number" min="0.01" max="100" step="0.01" data-promo-field="discount_percent" value="${esc(promo.discount_percent)}" aria-label="Discount percent for ${esc(promo.code)}">%</td>
+        <td><select data-promo-field="discount_type" aria-label="Discount type for ${esc(promo.code)}"><option value="percentage" ${promo.discount_type === "percentage" ? "selected" : ""}>%</option><option value="fixed" ${promo.discount_type === "fixed" ? "selected" : ""}>AED</option></select>
+          <input type="number" min="0.01" ${promo.discount_type === "percentage" ? 'max="100"' : ""} step="0.01" data-promo-field="discount_value" value="${esc(promo.discount_value)}" aria-label="Discount value for ${esc(promo.code)}"></td>
         <td><input type="text" maxlength="120" data-promo-field="required_item" value="${esc(promo.required_item)}" aria-label="Required selection for ${esc(promo.code)}"></td>
         <td><input type="number" min="1" step="1" data-promo-field="max_uses" value="${esc(promo.max_uses)}" aria-label="Maximum bookings for ${esc(promo.code)}"><small>${promo.used_count} used</small></td>
         <td><label class="switch"><input type="checkbox" data-promo-field="is_active" ${promo.is_active ? "checked" : ""}> ${promo.is_active ? "Active" : "Paused"}</label></td>
         <td><div class="promo-actions"><button type="button" class="btn btn-outline sm" data-promo-save="${esc(promo.code)}">Save</button></div></td>
       </tr>`).join("") : `<tr><td colspan="6" class="empty">No promo codes yet.</td></tr>`;
     $$("[data-promo-save]").forEach((button) => button.addEventListener("click", () => savePromo(button.dataset.promoSave)));
+    $$("#promoRows [data-promo-field='discount_type']").forEach((select) => select.addEventListener("change", () => {
+      const input = $('[data-promo-field="discount_value"]', select.closest("td"));
+      if (select.value === "percentage") input.max = "100";
+      else input.removeAttribute("max");
+    }));
     $$("#promoRows [data-promo-field='is_active']").forEach((checkbox) => checkbox.addEventListener("change", () => {
       checkbox.closest("label").lastChild.textContent = checkbox.checked ? " Active" : " Paused";
     }));
   }
+  $("#promoForm [name='discount_type']").addEventListener("change", (e) => {
+    const input = $("#promoForm [name='discount_value']");
+    if (e.target.value === "percentage") input.max = "100";
+    else input.removeAttribute("max");
+  });
 
   async function savePromo(code) {
     const row = $(`[data-promo-row="${CSS.escape(code)}"]`);
-    const discount = Number($('[data-promo-field="discount_percent"]', row).value);
+    const discountType = $('[data-promo-field="discount_type"]', row).value;
+    const discountValue = Number($('[data-promo-field="discount_value"]', row).value);
     const maxUses = Number($('[data-promo-field="max_uses"]', row).value);
     const requiredItem = $('[data-promo-field="required_item"]', row).value.trim();
-    if (!(discount > 0 && discount <= 100) || !Number.isInteger(maxUses) || maxUses < 1 || !requiredItem) {
-      return toast("Enter a discount from 0.01% to 100%, a required selection, and a positive whole-number limit.");
+    if (!(discountValue > 0) || (discountType === "percentage" && discountValue > 100) || !Number.isInteger(maxUses) || maxUses < 1 || !requiredItem) {
+      return toast("Enter a positive discount value (up to 100% for percentage discounts), a required selection, and a positive whole-number limit.");
     }
     const { error } = await sb.from("pb_promo_codes").update({
-      discount_percent: discount, required_item: requiredItem, max_uses: maxUses,
+      discount_type: discountType, discount_value: discountValue, required_item: requiredItem, max_uses: maxUses,
       is_active: $('[data-promo-field="is_active"]', row).checked
     }).eq("code", code);
     if (error) return toast("Couldn't save promo code: " + error.message);
@@ -1051,20 +1065,23 @@
     e.preventDefault();
     const form = e.target;
     const code = form.code.value.trim().toUpperCase();
-    const discount = Number(form.discount_percent.value);
+    const discountType = form.discount_type.value;
+    const discountValue = Number(form.discount_value.value);
     const maxUses = Number(form.max_uses.value);
     const requiredItem = form.required_item.value.trim();
     if (!/^[A-Z0-9_-]{2,40}$/.test(code)) return toast("Use 2–40 letters, numbers, hyphens, or underscores for the code.");
-    if (!(discount > 0 && discount <= 100) || !Number.isInteger(maxUses) || maxUses < 1 || !requiredItem) {
-      return toast("Enter a discount from 0.01% to 100%, a required selection, and a positive whole-number limit.");
+    if (!(discountValue > 0) || (discountType === "percentage" && discountValue > 100) || !Number.isInteger(maxUses) || maxUses < 1 || !requiredItem) {
+      return toast("Enter a positive discount value (up to 100% for percentage discounts), a required selection, and a positive whole-number limit.");
     }
     const { error } = await sb.from("pb_promo_codes").insert({
-      code, discount_percent: discount, required_item: requiredItem,
+      code, discount_type: discountType, discount_value: discountValue, required_item: requiredItem,
       max_uses: maxUses, is_active: form.is_active.checked
     });
     if (error) return toast(error.code === "23505" ? "That promo code already exists." : "Couldn't create promo code: " + error.message);
     form.reset();
-    form.discount_percent.value = "15";
+    form.discount_type.value = "percentage";
+    form.discount_value.value = "15";
+    form.discount_value.max = "100";
     form.required_item.value = "Mascot Surprise";
     form.max_uses.value = "10";
     form.is_active.checked = true;

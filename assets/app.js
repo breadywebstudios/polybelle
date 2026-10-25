@@ -402,7 +402,7 @@
       return;
     }
     container.innerHTML = data?.length ? data.map((promo) =>
-      `<div class="promo-offer"><p><strong>${esc(promo.discount_percent)}% off ${esc(promo.required_item)}</strong> with promo code</p><code>${esc(promo.code)}</code></div>`
+      `<div class="promo-offer"><p><strong>${promo.discount_type === "fixed" ? `AED ${esc(promo.discount_value)} off` : `${esc(promo.discount_value)}% off`} ${esc(promo.required_item)}</strong> with promo code</p><code>${esc(promo.code)}</code></div>`
     ).join("") : `<p class="hint">No active promo offers right now.</p>`;
   }
 

@@ -1,6 +1,7 @@
 create table if not exists public.pb_promo_codes (
   code text primary key check (code = upper(code) and code ~ '^[A-Z0-9_-]{2,40}$'),
-  discount_percent numeric(5, 2) not null check (discount_percent > 0 and discount_percent <= 100),
+  discount_type text not null default 'percentage',
+  discount_value numeric(10, 2) not null,
   required_item text not null check (length(btrim(required_item)) > 0),
   max_uses integer not null check (max_uses > 0),
   is_active boolean not null default true,
@@ -12,11 +13,51 @@ create table if not exists public.pb_promo_redemptions (
   id bigint generated always as identity primary key,
   promo_code text not null references public.pb_promo_codes(code) on update cascade on delete restrict,
   booking_ref text not null,
-  discount_percent numeric(5, 2) not null,
+  discount_type text not null default 'percentage',
+  discount_value numeric(10, 2) not null,
   required_item text not null,
   redeemed_at timestamptz not null default now(),
   unique (promo_code, booking_ref)
 );
+
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'pb_promo_codes' and column_name = 'discount_percent'
+  ) and not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'pb_promo_codes' and column_name = 'discount_value'
+  ) then
+    alter table public.pb_promo_codes rename column discount_percent to discount_value;
+  end if;
+
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'pb_promo_redemptions' and column_name = 'discount_percent'
+  ) and not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'pb_promo_redemptions' and column_name = 'discount_value'
+  ) then
+    alter table public.pb_promo_redemptions rename column discount_percent to discount_value;
+  end if;
+end;
+$$;
+
+alter table public.pb_promo_codes add column if not exists discount_type text not null default 'percentage';
+alter table public.pb_promo_codes add column if not exists discount_value numeric(10, 2);
+alter table public.pb_promo_codes alter column discount_value type numeric(10, 2);
+alter table public.pb_promo_codes drop constraint if exists pb_promo_codes_discount_percent_check;
+alter table public.pb_promo_codes drop constraint if exists pb_promo_codes_discount_value_check;
+alter table public.pb_promo_codes drop constraint if exists pb_promo_codes_discount_type_check;
+alter table public.pb_promo_codes
+  add constraint pb_promo_codes_discount_type_check check (discount_type in ('percentage', 'fixed')),
+  add constraint pb_promo_codes_discount_value_check
+    check (discount_value > 0 and (discount_type = 'fixed' or discount_value <= 100));
+
+alter table public.pb_promo_redemptions add column if not exists discount_type text not null default 'percentage';
+alter table public.pb_promo_redemptions add column if not exists discount_value numeric(10, 2);
+alter table public.pb_promo_redemptions alter column discount_value type numeric(10, 2);
 
 create index if not exists pb_promo_redemptions_booking_ref_idx
   on public.pb_promo_redemptions (booking_ref);
@@ -44,18 +85,19 @@ grant select, insert, update, delete on public.pb_promo_codes to authenticated;
 grant select on public.pb_promo_codes to anon;
 grant select on public.pb_promo_redemptions to authenticated;
 
-insert into public.pb_promo_codes (code, discount_percent, required_item, max_uses, is_active)
-values ('MASCOT15', 15, 'Mascot Surprise', 10, true)
+insert into public.pb_promo_codes (code, discount_type, discount_value, required_item, max_uses, is_active)
+values ('MASCOT15', 'percentage', 15, 'Mascot Surprise', 10, true)
 on conflict (code) do nothing;
 
+drop function if exists public.pb_public_promos();
 create or replace function public.pb_public_promos()
-returns table (code text, discount_percent numeric, required_item text)
+returns table (code text, discount_type text, discount_value numeric, required_item text)
 language sql
 stable
 security definer
 set search_path = public, pg_temp
 as $$
-  select p.code, p.discount_percent, p.required_item
+  select p.code, p.discount_type, p.discount_value, p.required_item
   from public.pb_promo_codes p
   where p.is_active
   order by p.created_at desc, p.code;
@@ -95,6 +137,7 @@ declare
   v_code text := upper(btrim(coalesce(p_promo_code, '')));
   v_has_required_item boolean;
   v_discount text;
+  v_discount_label text;
 begin
   if v_code = '' then
     return public.pb_request_booking(p)::text;
@@ -129,21 +172,25 @@ begin
     raise exception 'Promo code % has reached its booking limit.', v_code;
   end if;
 
-  v_discount := trim(trailing '.' from trim(trailing '0' from v_promo.discount_percent::text));
+  v_discount := trim(trailing '.' from trim(trailing '0' from v_promo.discount_value::text));
+  v_discount_label := case
+    when v_promo.discount_type = 'fixed' then format('AED %s off', v_discount)
+    else format('%s%% off', v_discount)
+  end;
   v_booking_payload := jsonb_set(
     coalesce(p, '{}'::jsonb),
     '{notes}',
     to_jsonb(concat_ws(E'\n',
       nullif(btrim(coalesce(p->>'notes', '')), ''),
-      format('Promo code %s applied: %s%% off %s.', v_code, v_discount, v_promo.required_item)
+      format('Promo code %s applied: %s %s.', v_code, v_discount_label, v_promo.required_item)
     )),
     true
   );
 
   v_booking_ref := public.pb_request_booking(v_booking_payload)::text;
 
-  insert into public.pb_promo_redemptions (promo_code, booking_ref, discount_percent, required_item)
-  values (v_code, v_booking_ref, v_promo.discount_percent, v_promo.required_item);
+  insert into public.pb_promo_redemptions (promo_code, booking_ref, discount_type, discount_value, required_item)
+  values (v_code, v_booking_ref, v_promo.discount_type, v_promo.discount_value, v_promo.required_item);
 
   return v_booking_ref;
 end;

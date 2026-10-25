@@ -379,8 +379,12 @@ label.field { display: grid; gap: 7px; font-size: .74rem; letter-spacing: .14em;
 .svc[hidden] { display: none; }
 .svc:not([hidden]) .svc-card { animation: svcIn .5s var(--ease) both; }
 @keyframes svcIn { from { opacity: 0; transform: translateY(8px); } }
-.pay-note { margin: 0; font-size: .82rem; letter-spacing: .06em; color: var(--muted); }
-.pay-note b { color: var(--ink); }
+.pay-note { display: grid; justify-items: center; gap: 10px; margin: 0; color: var(--muted); }
+.pay-note > p { margin: 0; font-size: .82rem; letter-spacing: .06em; }
+.pay-brands { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; }
+.pay-brand { display: inline-flex; align-items: center; justify-content: center; min-width: 112px; min-height: 46px; padding: 8px 18px; border: 1px solid var(--line); border-radius: 12px; background: #fff; box-shadow: 0 5px 18px rgba(40, 32, 28, .08); }
+.pay-brand img { display: block; width: auto; max-width: 86px; height: 24px; }
+.pay-note > small { font-size: .72rem; letter-spacing: .04em; }
 .promo-panel { display: grid; gap: 12px; padding: 18px; border: 1px solid var(--line); background: var(--cream); }
 .promo-offers { display: grid; gap: 8px; }
 .promo-offer { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
