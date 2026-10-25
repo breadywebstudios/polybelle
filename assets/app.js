@@ -48,6 +48,13 @@
   // ---------- packages & services picker (photo cards, managed in the admin)
   let services = C.addOns.map((name) => ({ name, kind: /package/i.test(name) ? "Package" : "Service", category: /package/i.test(name) ? "Full Packages" : "Event Services" }));
   let svcTab = null;
+  const compactSvcLabels = {
+    "Full Packages": "Full",
+    "Wedding Packages": "Wedding",
+    "Mascot Surprise": "Mascot",
+    "Souvenirs & Stations": "Gifts",
+    "Event Services": "Services",
+  };
   function renderSvcTabs() {
     const cats = [...(C.serviceCategories || []), ...new Set(services.map((x) => x.category || "Event Services"))]
       .filter((c, i, arr) => arr.indexOf(c) === i && services.some((x) => (x.category || "Event Services") === c));
@@ -55,7 +62,7 @@
     const picked = $$('#addonPick input:checked').map((i) => services.find((x) => x.name === i.value)?.category || "Event Services");
     $("#svcTabs").innerHTML = cats.length > 1 ? cats.map((c) => {
       const n = picked.filter((p) => p === c).length;
-      return `<button type="button" role="tab" aria-selected="${c === svcTab}" class="${c === svcTab ? "on" : ""}" data-cat="${esc(c)}">${esc(c)}${n ? `<i>${n}</i>` : ""}</button>`;
+      return `<button type="button" role="tab" aria-label="${esc(c)}" aria-selected="${c === svcTab}" class="${c === svcTab ? "on" : ""}" data-cat="${esc(c)}"><span class="svc-tab-full">${esc(c)}</span><span class="svc-tab-short" aria-hidden="true">${esc(compactSvcLabels[c] || c)}</span>${n ? `<i>${n}</i>` : ""}</button>`;
     }).join("") : "";
     $$("#svcTabs button").forEach((b) => b.addEventListener("click", () => { svcTab = b.dataset.cat; renderSvcTabs(); }));
     $$("#addonPick .svc").forEach((el) => (el.hidden = cats.length > 1 && el.dataset.cat !== svcTab));
