@@ -1,8 +1,6 @@
 body { background: var(--cream); }
 .login { min-height: 100vh; display: grid; place-items: center; padding: 16px; }
 .login-card { background: var(--white); border-radius: 22px; padding: 40px 32px; width: min(400px, 100%); box-shadow: var(--shadow); display: grid; gap: 16px; text-align: center; }
-.login-card .brand { justify-items: center; margin-bottom: 8px; }
-.login-card .brand-logo { width: 300px; height: 70px; }
 .login-card form { display: grid; gap: 14px; text-align: left; }
 .linkbtn { background: none; border: 0; color: var(--rose); cursor: pointer; font: inherit; font-size: .88rem; padding: 0; text-decoration: underline; }
 .msg { font-size: .88rem; border-radius: 10px; padding: 10px 12px; display: none; }
@@ -13,9 +11,6 @@ body { background: var(--cream); }
 .app.on { display: block; }
 .adm-head { background: var(--cocoa); color: #fff; position: sticky; top: 0; z-index: 20; }
 .adm-head .wrap { display: flex; align-items: center; justify-content: space-between; height: 64px; gap: 12px; }
-.adm-head .brand b { color: #fff; font-size: 1.5rem; }
-.adm-head .brand-logo { width: 220px; height: 48px; }
-.adm-head .brand small { color: #D9C8BD; font-size: .55rem; margin-top: 2px; }
 .adm-head .who { font-size: .82rem; color: #D9C8BD; display: flex; gap: 14px; align-items: center; }
 .adm-head .who button { background: transparent; border: 1px solid rgba(255,255,255,.35); color: #fff; border-radius: 999px; padding: 6px 14px; cursor: pointer; font: inherit; font-size: .8rem; }
 .tabs { background: var(--white); border-bottom: 1px solid var(--line); }
@@ -133,3 +128,40 @@ dl.kv dd { margin: 0; word-break: break-word; }
 
 .sg-head { grid-column: 1 / -1; font: 400 .74rem/1 var(--sans); letter-spacing: .2em; text-transform: uppercase; color: var(--gold); margin: 18px 0 -4px; }
 .sg-head:first-child { margin-top: 0; }
+
+/* Booking edit: grouped add-ons and custom items */
+.ao-title { font-size: .74rem; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+.ao-title span { text-transform: none; letter-spacing: 0; }
+.ao-group { border-top: 1px solid var(--line); padding: 10px 0 12px; }
+.ao-head { font: 400 .68rem/1 var(--sans); letter-spacing: .2em; text-transform: uppercase; color: var(--gold); margin-bottom: 9px; display: flex; gap: 8px; align-items: center; }
+.ao-head i { font-style: normal; color: #fff; background: var(--ink); border-radius: 999px; min-width: 17px; height: 17px; display: inline-grid; place-items: center; font-size: .6rem; letter-spacing: 0; padding: 0 5px; }
+.ao-head i:empty { display: none; }
+.ao-group .addon span { padding: 7px 12px; font-size: .82rem; }
+.ci-rows { display: grid; gap: 10px; margin-bottom: 12px; }
+.ci-rows:empty { display: none; }
+.ci-row { display: grid; grid-template-columns: 80px 1fr 1fr 36px; gap: 8px 10px; padding: 12px; background: var(--ivory); border: 1px solid var(--line); }
+.ci-f { display: grid; gap: 4px; font-size: .64rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); min-width: 0; }
+.ci-d { grid-column: 1 / 4; }
+.ci-row .ci-del { grid-column: 4; grid-row: 1; align-self: end; width: 36px; height: 38px; border-radius: 8px; }
+.ci-row input { font: inherit; font-size: .92rem; letter-spacing: 0; text-transform: none; padding: 9px 10px; border: 1px solid var(--line); background: #fff; color: var(--ink); width: 100%; min-width: 0; }
+.ci-row .ci-qty, .ci-row .ci-price { text-align: right; }
+.ci-total { font-size: 1rem; letter-spacing: 0; color: var(--ink); padding: 9px 0; }
+.inv-row.locked textarea, .inv-row.locked input { background: var(--cream); color: var(--muted); }
+.inv-lock { font-size: .6rem; letter-spacing: .1em; text-transform: uppercase; color: var(--gold); text-align: center; align-self: center; }
+
+/* Admin wordmark (matches the website) */
+.adm-mark { color: var(--ink); }
+.adm-mark b { color: var(--gold); font-size: 1.9rem; }
+.adm-mark small { font-size: .58rem; color: var(--muted); }
+.login-card .adm-mark { margin: 6px auto 14px; }
+.adm-head .adm-mark { justify-items: start; gap: 7px; }
+.adm-head .adm-mark b { color: var(--gold-soft); font-size: 1.4rem; }
+.adm-head .adm-mark small { color: #CDBFB5; font-size: .52rem; }
+.adm-head .wrap { height: 72px; }
+.adm-head .who a, .adm-head .who button { white-space: nowrap; }
+@media (max-width: 560px) {
+  .adm-head .adm-mark b { font-size: 1.1rem; letter-spacing: .22em; margin-right: -.22em; }
+  .adm-head .adm-mark small { font-size: .46rem; letter-spacing: .3em; }
+  .adm-head .who { gap: 6px; }
+  .adm-head .who a, .adm-head .who button { padding: 6px 10px; font-size: .74rem; }
+}

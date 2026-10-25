@@ -135,8 +135,8 @@
   $("#refreshBtn").addEventListener("click", () => loadBookings().then(() => toast("Bookings refreshed")));
 
   $("#csvBtn").addEventListener("click", () => {
-    const cols = ["ref", "status", "booking_type", "event_date", "session", "venue_name", "event_location", "event_type", "guests", "add_ons", "name", "phone", "email", "notes", "admin_notes", "created_at"];
-    const cell = (v) => `"${String(Array.isArray(v) ? v.join("; ") : v ?? "").replace(/"/g, '""')}"`;
+    const cols = ["ref", "status", "booking_type", "event_date", "session", "venue_name", "event_location", "event_type", "guests", "add_ons", "custom_items", "name", "phone", "email", "notes", "admin_notes", "created_at"];
+    const cell = (v) => Array.isArray(v) && v.length && typeof v[0] === "object" ? cell(v.map((c) => `${ciText(c)} @ ${c.price} = ${ciTotal(c)}`)) : `"${String(Array.isArray(v) ? v.join("; ") : v ?? "").replace(/"/g, '""')}"`;
     const csv = [cols.join(","), ...filtered().map((b) => cols.map((c) => cell(b[c])).join(","))].join("\n");
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv" }));
@@ -166,9 +166,29 @@
     return { subtotal, total, paid: Number(b.amount_paid) || 0, balance: Math.max(0, total - (Number(b.amount_paid) || 0)) };
   };
   const fresh = (id) => S.bookings.find((x) => x.id === id);
+  // custom items: { id, description, qty, price } -> invoice line "qty × description", amount = qty × price
+  const ciTotal = (c) => (Number(c.qty) || 0) * (Number(c.price) || 0);
+  const ciText = (c) => ((Number(c.qty) || 1) > 1 ? `${Number(c.qty)} × ` : "") + c.description;
+  const customLines = (b) => (b.custom_items || []).map((c) => ({ kind: "custom", cid: c.id, description: ciText(c), amount: ciTotal(c) }));
   const isServices = (b) => b.booking_type === "Services" || !b.venue_id;
   const whereText = (b) => (isServices(b) ? "Package / services" + (b.event_location ? " · " + b.event_location : "") : b.venue_name || "");
   const nextInvoiceNo = () => today().slice(2, 4) + "-" + ((S.settings?.invoice_counter ?? 0) + 1);
+
+  // add-on checkboxes grouped like the website's tabs; selected items no longer in the catalog go under "Other"
+  function addonGroups(selected) {
+    const svc = S.services?.length ? S.services : C.addOns.map((name) => ({ name, category: "Event Services", active: true }));
+    const order = C.serviceCategories || [];
+    const known = new Set(svc.map((x) => x.name));
+    const groups = new Map(order.map((c) => [c, []]));
+    svc.filter((x) => x.active || selected.includes(x.name)).sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+      .forEach((x) => { const c = x.category || "Event Services"; if (!groups.has(c)) groups.set(c, []); groups.get(c).push(x.name); });
+    const other = selected.filter((n) => !known.has(n));
+    if (other.length) groups.set("Other", other);
+    return [...groups].filter(([, names]) => names.length).map(([cat, names]) => `
+      <div class="ao-group"><div class="ao-head">${esc(cat)}<i>${names.filter((n) => selected.includes(n)).length || ""}</i></div>
+        <div class="addons">${names.map((a) => `<label class="addon"><input type="checkbox" name="add_ons" value="${esc(a)}" ${selected.includes(a) ? "checked" : ""}><span>${esc(a)}</span></label>`).join("")}</div>
+      </div>`).join("");
+  }
 
   // ---------- booking add / edit form
   function openBookingForm(b) {
@@ -193,13 +213,40 @@
         <label class="field">Email<input type="email" name="email" value="${esc(b.email || "")}"></label>
         <label class="field">Customer address / company (shown on invoice)<textarea name="customer_address" rows="2" placeholder="e.g. Cocoa Parties & Events SPC LLC&#10;Abu Dhabi, UAE">${esc(b.customer_address || "")}</textarea></label>
         <div>
-          <div style="font-size:.86rem;color:var(--muted);margin-bottom:8px">Add-ons</div>
-          <div class="addons">${[...new Set([...(S.services?.length ? S.services.map((x) => x.name) : C.addOns), ...(b.add_ons || [])])].map((a) => `<label class="addon"><input type="checkbox" name="add_ons" value="${esc(a)}" ${(b.add_ons || []).includes(a) ? "checked" : ""}><span>${esc(a)}</span></label>`).join("")}</div>
+          <div class="ao-title">Packages &amp; services</div>
+          ${addonGroups(b.add_ons || [])}
+        </div>
+        <div>
+          <div class="ao-title">Custom items <span>(shown on the invoice)</span></div>
+          <div id="ciRows" class="ci-rows"></div>
+          <button type="button" class="btn btn-outline sm" id="ciAdd">+ Add custom item</button>
         </div>
         <label class="field">Customer notes<textarea name="notes">${esc(b.notes || "")}</textarea></label>
         ${isNew ? `<label class="field">Status<select name="status">${STATUSES.map((s) => `<option ${s === b.status ? "selected" : ""}>${s}</option>`).join("")}</select></label>` : ""}
         <button class="btn btn-primary" type="submit">${isNew ? "Save booking" : "Save changes"}</button>
       </form>`;
+    const ciRow = (c) => `
+      <div class="ci-row" data-id="${esc(c.id)}">
+        <label class="ci-f ci-d">Description<input class="ci-desc" placeholder="e.g. Scent bottle souvenirs 15 ml" maxlength="120" value="${esc(c.description || "")}"></label>
+        <button type="button" class="xbtn ci-del" aria-label="Remove item">×</button>
+        <label class="ci-f">Qty<input class="ci-qty" type="number" min="0" step="1" value="${c.qty ?? 1}"></label>
+        <label class="ci-f">Unit price (AED)<input class="ci-price" type="number" min="0" step="0.01" value="${c.price ?? ""}" placeholder="0.00"></label>
+        <div class="ci-f">Total (AED)<span class="ci-total">${money(ciTotal(c))}</span></div>
+      </div>`;
+    const ciWire = () => $$(".ci-row", d).forEach((r) => {
+      const upd = () => ($(".ci-total", r).textContent = money(ciTotal({ qty: $(".ci-qty", r).value, price: $(".ci-price", r).value })));
+      $(".ci-qty", r).oninput = upd; $(".ci-price", r).oninput = upd;
+      $(".ci-del", r).onclick = () => r.remove();
+    });
+    $("#ciRows").innerHTML = (b.custom_items || []).map(ciRow).join("");
+    ciWire();
+    $("#ciAdd").addEventListener("click", () => {
+      $("#ciRows").insertAdjacentHTML("beforeend", ciRow({ id: "c" + Date.now().toString(36), description: "", qty: 1, price: "" }));
+      ciWire(); $("#ciRows .ci-row:last-child .ci-desc").focus();
+    });
+    $$(".ao-group input", d).forEach((cb) => cb.addEventListener("change", () => {
+      const g = cb.closest(".ao-group"); $(".ao-head i", g).textContent = $$("input:checked", g).length || "";
+    }));
     const syncLoc = () => ($("#bkLocWrap").hidden = !!$("#bkVenue").value);
     $("#bkVenue").addEventListener("change", syncLoc); syncLoc();
     $("[data-close]", d).addEventListener("click", () => (isNew ? closeDrawers() : openBooking(fresh(b.id))));
@@ -213,7 +260,9 @@
         event_location: v ? null : fd.get("event_location").trim() || null, event_date: fd.get("event_date"), session: fd.get("session"),
         event_type: fd.get("event_type"), guests: fd.get("guests") || null, name: fd.get("name").trim(), phone: fd.get("phone").trim(),
         email: fd.get("email").trim() || null, customer_address: fd.get("customer_address").trim() || null,
-        notes: fd.get("notes").trim() || null, add_ons: fd.getAll("add_ons")
+        notes: fd.get("notes").trim() || null, add_ons: fd.getAll("add_ons"),
+        custom_items: $$(".ci-row", f).map((r) => ({ id: r.dataset.id, description: $(".ci-desc", r).value.trim(),
+          qty: Number($(".ci-qty", r).value) || 0, price: Number($(".ci-price", r).value) || 0 })).filter((c) => c.description)
       };
       let res;
       if (isNew) {
@@ -254,6 +303,7 @@
           <dt>Occasion</dt><dd>${esc(b.event_type)}</dd>
           <dt>Guests</dt><dd>${b.guests ?? "—"}</dd>
           <dt>Add-ons</dt><dd>${b.add_ons?.length ? esc(b.add_ons.join(", ")) : "—"}</dd>
+          ${b.custom_items?.length ? `<dt>Custom items</dt><dd>${b.custom_items.map((c) => `${esc(ciText(c))} · AED ${money(ciTotal(c))}`).join("<br>")}</dd>` : ""}
           <dt>Mobile</dt><dd><a href="tel:+${intl(b.phone)}">${esc(b.phone)}</a></dd>
           <dt>Email</dt><dd>${b.email ? `<a href="mailto:${esc(b.email)}">${esc(b.email)}</a>` : "—"}</dd>
           ${b.customer_address ? `<dt>Address</dt><dd style="white-space:pre-wrap">${esc(b.customer_address)}</dd>` : ""}
@@ -306,20 +356,23 @@
     const v = S.venues.find((x) => x.id === b.venue_id);
     const items = isServices(b) ? [] : [{ kind: "hall", description: hallLine(b), amount: v?.price_from ? Number(v.price_from) : 0 }];
     (b.add_ons || []).forEach((a) => items.push({ description: a, amount: 0 }));
-    return items;
+    return [...items, ...customLines(b)];
   }
 
   function openInvoice(b) {
     // the hall-rental line always reflects the booking's current hall, occasion, date and session
+    // hall line and custom items always mirror the booking; other lines keep what was saved on the invoice
+    const cur = new Map(customLines(b).map((l) => [l.cid, l]));
     const items = (b.invoice_items?.length ? b.invoice_items : defaultItems(b))
-      .filter((x) => !(x.kind === "hall" && isServices(b)))
-      .map((x) => (x.kind === "hall" ? { ...x, description: hallLine(b) } : { ...x }));
+      .filter((x) => !(x.kind === "hall" && isServices(b)) && !(x.kind === "custom" && !cur.has(x.cid)))
+      .map((x) => (x.kind === "hall" ? { ...x, description: hallLine(b) } : x.kind === "custom" ? { ...cur.get(x.cid) } : { ...x }));
+    cur.forEach((l, id) => { if (!items.some((x) => x.cid === id)) items.push(l); });
     const d = $("#drawer");
     const itemRow = (it, i) => `
-      <div class="inv-row" data-i="${i}" data-kind="${esc(it.kind || "")}">
-        <textarea class="inv-desc" rows="1" placeholder="Description, e.g. 15 pieces Scented Candles">${esc(it.description)}</textarea>
-        <input class="inv-amt" type="number" step="0.01" min="0" value="${it.amount || ""}" placeholder="0.00" aria-label="Amount (AED)">
-        <button type="button" class="xbtn inv-del" aria-label="Remove line">×</button>
+      <div class="inv-row ${it.kind === "custom" ? "locked" : ""}" data-i="${i}" data-kind="${esc(it.kind || "")}" data-cid="${esc(it.cid || "")}" ${it.kind === "custom" ? 'title="Custom item from the booking — change it with Edit booking"' : ""}>
+        <textarea class="inv-desc" rows="1" placeholder="Description, e.g. 15 pieces Scented Candles" ${it.kind === "custom" ? "readonly" : ""}>${esc(it.description)}</textarea>
+        <input class="inv-amt" type="number" step="0.01" min="0" value="${it.amount || ""}" placeholder="0.00" aria-label="Amount (AED)" ${it.kind === "custom" ? "readonly" : ""}>
+        ${it.kind === "custom" ? `<span class="inv-lock" aria-hidden="true">Booking</span>` : `<button type="button" class="xbtn inv-del" aria-label="Remove line">×</button>`}
       </div>`;
     d.innerHTML = `
       <div class="drawer-head"><div><span class="eyebrow">${b.invoice_no ? "Invoice " + esc(b.invoice_no) : "New invoice"} · ${esc(b.ref)}</span><h3>${esc(b.name)}</h3></div><button class="xbtn" data-close aria-label="Close">×</button></div>
@@ -351,7 +404,7 @@
     const f = $("#invForm");
     const t0 = invTotals(b);
     if (b.invoice_no && t0.paid > 0 && t0.balance === 0) f.doc_type.value = "Receipt";
-    const read = () => $$(".inv-row", d).map((r) => ({ ...(r.dataset.kind ? { kind: r.dataset.kind } : {}), description: $(".inv-desc", r).value.trim(), amount: Number($(".inv-amt", r).value) || 0 })).filter((x) => x.description || x.amount);
+    const read = () => $$(".inv-row", d).map((r) => ({ ...(r.dataset.kind ? { kind: r.dataset.kind } : {}), ...(r.dataset.cid ? { cid: r.dataset.cid } : {}), description: $(".inv-desc", r).value.trim(), amount: Number($(".inv-amt", r).value) || 0 })).filter((x) => x.description || x.amount);
     const sum = () => {
       const t = invTotals({ invoice_items: read(), discount: f.discount.value, amount_paid: f.amount_paid.value });
       $("#invSum").innerHTML = `<div><span>Subtotal</span><b>AED ${money(t.subtotal)}</b></div>${+f.discount.value ? `<div><span>Discount</span><b>− AED ${money(f.discount.value)}</b></div>` : ""}<div><span>Total</span><b>AED ${money(t.total)}</b></div><div><span>Paid</span><b>AED ${money(t.paid)}</b></div><div class="due"><span>Balance due</span><b>AED ${money(t.balance)}</b></div>`;
