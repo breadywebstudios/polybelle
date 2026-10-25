@@ -17,7 +17,14 @@
   // ---------- helpers
   const imgFor = (v, i) => v.image_url || C.fallbackImages[i % C.fallbackImages.length];
   const telLink = (n) => "tel:+971" + n.replace(/\D/g, "").replace(/^0/, "");
-  const waLink = (num, text) => `https://wa.me/${num.replace(/\D/g, "")}${text ? "?text=" + encodeURIComponent(text) : ""}`;
+  // plain-text WhatsApp messages: some WhatsApp apps show emojis and typographic symbols as broken characters
+  const waClean = (t) => String(t)
+    .replace(/[\u2013\u2014\u2012\u2212]/g, "-").replace(/[\u00B7\u2022\u2219]/g, "-")
+    .replace(/[\u2018\u2019\u201B]/g, "'").replace(/[\u201C\u201D]/g, '"').replace(/\u2026/g, "...")
+    .replace(/[\u00A0\u2009\u202F]/g, " ")
+    .replace(/\p{Extended_Pictographic}|[\uFE0E\uFE0F\u200D]/gu, "")
+    .replace(/[ \t]{2,}/g, " ").replace(/ +\n/g, "\n").trim();
+  const waLink = (num, text) => `https://wa.me/${num.replace(/\D/g, "")}${text ? "?text=" + encodeURIComponent(waClean(text)) : ""}`;
   const fmtDate = (d) => d ? new Date(d + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" }) : "—";
   const todayDubai = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Dubai" }).format(new Date());
   const money = (n) => "AED " + Number(n).toLocaleString("en-US", { maximumFractionDigits: 0 });
@@ -201,7 +208,7 @@
   function buildMessage(d, ref) {
     const sess = C.sessions.find((s) => s.id === d.session);
     return [
-      `Hi Polybelle! I'd like to book an event 🎉`,
+      `Hi Polybelle! I'd like to book an event.`,
       ``,
       `*Booking Ref:* ${ref}`,
       d.booking_type === "Services" ? `*Booking:* Package / services only` : `*Hall:* ${d.venue.name}`,

@@ -9,7 +9,14 @@
   const fmtDate = (d) => new Date(d + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
   const fmtStamp = (t) => new Date(t).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Dubai" });
   const intl = (n) => { let d = String(n || "").replace(/\D/g, ""); if (d.startsWith("00")) d = d.slice(2); if (d.startsWith("0")) d = "971" + d.slice(1); else if (d.length === 9 && d.startsWith("5")) d = "971" + d; return d; };
-  const waLink = (num, text) => `https://wa.me/${intl(num)}${text ? "?text=" + encodeURIComponent(text) : ""}`;
+  // plain-text WhatsApp messages: some WhatsApp apps show emojis and typographic symbols as broken characters
+  const waClean = (t) => String(t)
+    .replace(/[\u2013\u2014\u2012\u2212]/g, "-").replace(/[\u00B7\u2022\u2219]/g, "-")
+    .replace(/[\u2018\u2019\u201B]/g, "'").replace(/[\u201C\u201D]/g, '"').replace(/\u2026/g, "...")
+    .replace(/[\u00A0\u2009\u202F]/g, " ")
+    .replace(/\p{Extended_Pictographic}|[\uFE0E\uFE0F\u200D]/gu, "")
+    .replace(/[ \t]{2,}/g, " ").replace(/ +\n/g, "\n").trim();
+  const waLink = (num, text) => `https://wa.me/${intl(num)}${text ? "?text=" + encodeURIComponent(waClean(text)) : ""}`;
   const S = { bookings: [], venues: [], admins: [], statusFilter: "", user: null };
 
   function toast(msg) { const t = $("#toast"); t.textContent = msg; t.classList.add("on"); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("on"), 2600); }
@@ -145,9 +152,9 @@
   function customerMsg(b, status) {
     const when = `${fmtDate(b.event_date)} (${b.session})`;
     const msgs = {
-      Confirmed: `Hi ${b.name}! 🎉 Your booking at Polybelle Event Halls & Studio is CONFIRMED.\n\nRef: ${b.ref}\n${isServices(b) ? "Booking: " + whereText(b) : "Hall: " + b.venue_name}\nDate: ${when}\nOccasion: ${b.event_type}\n\nThank you for choosing Polybelle! 💛`,
-      Cancelled: `Hi ${b.name}, regarding your booking request ${b.ref} for ${whereText(b)} on ${when}: unfortunately we're unable to accommodate it. Please message us and we'll gladly help you find another date or hall. 💛`,
-      Pending: `Hi ${b.name}! Thank you for your booking request at Polybelle 💛\n\nRef: ${b.ref}\n${isServices(b) ? "Booking: " + whereText(b) : "Hall: " + b.venue_name}\nDate: ${when}\n\nWe're checking availability and will get back to you shortly.`
+      Confirmed: `Hi ${b.name}! Your booking at Polybelle Event Halls & Studio is CONFIRMED.\n\nRef: ${b.ref}\n${isServices(b) ? "Booking: " + whereText(b) : "Hall: " + b.venue_name}\nDate: ${when}\nOccasion: ${b.event_type}\n\nThank you for choosing Polybelle!`,
+      Cancelled: `Hi ${b.name}, regarding your booking request ${b.ref} for ${whereText(b)} on ${when}: unfortunately we're unable to accommodate it. Please message us and we'll gladly help you find another date or hall.`,
+      Pending: `Hi ${b.name}! Thank you for your booking request at Polybelle.\n\nRef: ${b.ref}\n${isServices(b) ? "Booking: " + whereText(b) : "Hall: " + b.venue_name}\nDate: ${when}\n\nWe're checking availability and will get back to you shortly.`
     };
     return msgs[status] || msgs.Pending;
   }
