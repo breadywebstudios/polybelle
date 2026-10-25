@@ -55,6 +55,7 @@ header.nav .wrap { display: flex; align-items: center; justify-content: space-be
 .brand { display: grid; line-height: 1; text-decoration: none; }
 .brand b { font-family: var(--serif); font-weight: 600; font-size: 1.85rem; font-style: italic; color: var(--cocoa); }
 .brand small { font-size: .6rem; letter-spacing: .32em; text-transform: uppercase; color: var(--gold); margin-top: 4px; }
+.brand-logo { width: 220px; height: 50px; object-fit: cover; object-position: center; border-radius: 3px; }
 .nav-links { display: flex; gap: 28px; align-items: center; }
 .nav-links a { text-decoration: none; font-size: .92rem; color: var(--muted); }
 .nav-links a:hover { color: var(--rose); }
@@ -64,6 +65,7 @@ header.nav .wrap { display: flex; align-items: center; justify-content: space-be
   .menu-btn { display: block; }
   .nav-links { position: absolute; top: 74px; left: 0; right: 0; background: var(--ivory); flex-direction: column; padding: 18px 16px 24px; gap: 16px; border-bottom: 1px solid var(--line); display: none; }
   .nav-links.open { display: flex; }
+  header.nav .brand-logo { width: 200px; height: 46px; }
 }
 
 /* Hero */
