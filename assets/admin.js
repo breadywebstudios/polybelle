@@ -179,12 +179,14 @@
       Confirmed: `Hi ${b.name}! 🎉 Your booking at Polybelle Event Halls & Studio is *CONFIRMED*.`,
       Pending: `Hi ${b.name}! Thank you for your booking request at Polybelle Event Halls & Studio 💛 Here are the details we received:`,
       Completed: `Hi ${b.name}! Thank you for celebrating with Polybelle Event Halls & Studio 💛 Here is a summary of your event:`,
+      Updated: `Hi ${b.name}! Your booking at Polybelle Event Halls & Studio has been updated ✨ Here are the latest details:`,
       Cancelled: `Hi ${b.name}, regarding your booking request at Polybelle Event Halls & Studio: unfortunately we're unable to accommodate it on this date.`
     }[status] || "";
     const outro = {
       Confirmed: `Thank you for choosing Polybelle! 💛 Message us anytime if you have questions.`,
       Pending: `We're checking availability and will get back to you shortly.`,
       Completed: `We'd love to hear how it went, and hope to celebrate with you again soon!`,
+      Updated: `Please let us know if anything needs changing. Thank you for choosing Polybelle! 💛`,
       Cancelled: `Please message us and we'll gladly help you find another date or hall. 💛`
     }[status] || "";
     return `${intro}\n\n${details}${status === "Cancelled" ? "" : pay}\n\n${outro}`;
@@ -306,13 +308,21 @@
       if (res.error) return toast(res.error.message.includes("already has a confirmed") ? "That hall already has a confirmed booking for this date & session." : res.error.message);
       toast(isNew ? "Booking added" : "Booking updated");
       await loadBookings();
-      openBooking(fresh(res.data.id));
+      const saved = fresh(res.data.id);
+      openBooking(saved, isNew ? (saved.status === "Confirmed" ? "Confirmed" : null) : "Updated");
     });
     openDrawer("#drawer");
   }
 
   // ---------- booking details
-  function openBooking(b) {
+  // notice: "Confirmed" | "Cancelled" | "Completed" | "Updated" — shows a prompt to message the customer
+  const NOTICE = {
+    Confirmed: "Booking confirmed. Send the confirmation and full details to the customer:",
+    Updated: "Booking updated. Send the latest details to the customer:",
+    Cancelled: "Booking cancelled. Let the customer know:",
+    Completed: "Event marked as completed. Send a thank-you with the event summary:"
+  };
+  function openBooking(b, notice) {
     if (!b) return openBookingForm(null);
     const d = $("#drawer");
     const t = invTotals(b);
@@ -322,6 +332,7 @@
         <button class="xbtn" data-close aria-label="Close">×</button>
       </div>
       <div class="drawer-body">
+        ${notice && NOTICE[notice] ? `<div class="notify"><p>${NOTICE[notice]}</p><a class="btn btn-wa sm" target="_blank" rel="noopener" href="${waLink(b.phone, customerMsg(b, notice))}">Send on WhatsApp</a></div>` : ""}
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn btn-outline sm" id="editBtn" type="button">✎ Edit booking</button>
           <button class="btn btn-outline sm" id="invBtn" type="button">🧾 Invoice${b.invoice_no ? " " + esc(b.invoice_no) : ""}</button>
@@ -364,8 +375,8 @@
       const { error } = await sb.from("pb_bookings").update({ status: st }).eq("id", b.id);
       if (error) return toast(error.message.includes("already has a confirmed") ? "Can't confirm: this hall already has a confirmed booking for that date & session." : error.message);
       await loadBookings();
-      openBooking(fresh(b.id));
-      toast(st === "Confirmed" || st === "Cancelled" ? `Marked as ${st} — tap “WhatsApp customer” to let them know` : `Marked as ${st}`);
+      openBooking(fresh(b.id), NOTICE[st] ? st : null);
+      toast(`Marked as ${st}`);
     }));
     $("#saveNotes").addEventListener("click", async () => {
       const { error } = await sb.from("pb_bookings").update({ admin_notes: $("#adminNotes").value }).eq("id", b.id);

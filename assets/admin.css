@@ -165,3 +165,7 @@ dl.kv dd { margin: 0; word-break: break-word; }
   .adm-head .who { gap: 6px; }
   .adm-head .who a, .adm-head .who button { padding: 6px 10px; font-size: .74rem; }
 }
+
+.notify { background: #F6EEDF; border: 1px solid #E6D3B0; padding: 14px 16px; display: grid; gap: 10px; justify-items: start; animation: notifyIn .5s cubic-bezier(.22,.68,.18,1); }
+.notify p { margin: 0; font-size: .9rem; color: var(--ink); }
+@keyframes notifyIn { from { opacity: 0; transform: translateY(-6px); } }
