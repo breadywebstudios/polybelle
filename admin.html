@@ -24,20 +24,7 @@
         <div class="msg" id="loginMsg"></div>
         <button class="btn btn-primary" type="submit">Sign in</button>
       </form>
-      <button class="linkbtn" id="forgotBtn" type="button">Forgot password?</button>
       <a class="linkbtn" href="./" target="_blank" rel="noopener">View website ↗</a>
-    </div>
-  </section>
-
-  <!-- Reset password (after email link) -->
-  <section class="login" id="resetView" style="display:none">
-    <div class="login-card">
-      <div class="wordmark adm-mark" aria-label="Polybelle"><b>POLYBELLE</b><small>Set a new password</small></div>
-      <form id="resetForm">
-        <label class="field">New password<input type="password" name="password" minlength="8" autocomplete="new-password" required></label>
-        <div class="msg" id="resetMsg"></div>
-        <button class="btn btn-primary" type="submit">Save password</button>
-      </form>
     </div>
   </section>
 
@@ -180,10 +167,11 @@
         </form>
         <div class="card">
           <h3>Admin access</h3>
-          <p class="hint" style="margin:0">People listed here can sign in to this page. They need an account with the same email — use “Forgot password?” on the sign-in screen to set one up.</p>
+          <p class="hint" style="margin:0">Add an email and set its initial password here. Share the password securely with the new admin.</p>
           <ul class="admins-list" id="adminsList"></ul>
           <form class="toolbar" id="addAdminForm" style="margin:0">
             <input type="email" name="email" placeholder="name@example.com" required style="flex:1">
+            <input type="password" name="password" placeholder="Initial password (8+ characters)" minlength="8" autocomplete="new-password" required style="flex:1">
             <button class="btn btn-outline sm" type="submit">Add admin</button>
           </form>
         </div>

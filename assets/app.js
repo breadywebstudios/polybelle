@@ -31,7 +31,35 @@
 
   // ---------- static bits
   $("#year").textContent = new Date().getFullYear();
-  $("#heroBg").style.backgroundImage = `url("${C.heroImage}")`;
+  const heroImages = Array.from({ length: 16 }, (_, i) => `assets/parade-images/pic${i + 1}.jpg`);
+  const heroParade = $("#heroParade");
+  const paradeOrders = [
+    heroImages,
+    [...heroImages.slice(5), ...heroImages.slice(0, 5)].reverse(),
+    [...heroImages.slice(10), ...heroImages.slice(0, 10)]
+  ];
+  paradeOrders.forEach((order, rowIndex) => {
+    const row = document.createElement("div");
+    row.className = "hero-parade-row";
+    const fragment = document.createDocumentFragment();
+    [false, true].forEach((duplicate) => {
+      const group = document.createElement("div");
+      group.className = "hero-parade-group";
+      order.forEach((src, imageIndex) => {
+        const img = document.createElement("img");
+        img.src = src;
+        img.alt = "";
+        img.loading = "eager";
+        img.decoding = "async";
+        img.draggable = false;
+        if (!duplicate && rowIndex === 0 && imageIndex === 0) img.fetchPriority = "high";
+        group.append(img);
+      });
+      fragment.append(group);
+    });
+    row.append(fragment);
+    heroParade.append(row);
+  });
   const nav = $("#nav"), menuBtn = $("#menuBtn");
   const setMenu = (open) => { $("#navLinks").classList.toggle("open", open); nav.classList.toggle("menu-open", open); menuBtn.setAttribute("aria-expanded", open); };
   menuBtn.addEventListener("click", () => setMenu(!$("#navLinks").classList.contains("open")));

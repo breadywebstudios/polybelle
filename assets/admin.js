@@ -24,15 +24,11 @@
 
   // ---------------- auth
   async function boot() {
-    const isRecovery = location.hash.includes("type=recovery");
-    sb.auth.onAuthStateChange((evt) => { if (evt === "PASSWORD_RECOVERY") showReset(); });
     const { data: { session } } = await sb.auth.getSession();
-    if (isRecovery && session) return showReset();
     if (session) return enter(session.user);
     showLogin();
   }
-  function showLogin() { $("#loginView").style.display = ""; $("#resetView").style.display = "none"; $("#appView").classList.remove("on"); }
-  function showReset() { $("#loginView").style.display = "none"; $("#resetView").style.display = ""; $("#appView").classList.remove("on"); }
+  function showLogin() { $("#loginView").style.display = ""; $("#appView").classList.remove("on"); }
 
   async function enter(user) {
     const { data: ok, error } = await sb.rpc("pb_is_admin");
@@ -43,7 +39,7 @@
     }
     S.user = user;
     $("#whoEmail").textContent = user.email;
-    $("#loginView").style.display = "none"; $("#resetView").style.display = "none";
+    $("#loginView").style.display = "none";
     $("#appView").classList.add("on");
     await Promise.all([loadVenues(), loadBookings(), loadSettings(), loadAdmins(), loadGallery(), loadReviews(), loadServices(), loadPromos()]);
     setInterval(() => { if (!document.hidden) loadBookings(true); }, 60000);
@@ -57,19 +53,6 @@
     const { data, error } = await sb.auth.signInWithPassword({ email: fd.get("email").trim(), password: fd.get("password") });
     btn.disabled = false;
     if (error) return setMsg($("#loginMsg"), error.message === "Invalid login credentials" ? "Wrong email or password." : error.message, "err");
-    enter(data.user);
-  });
-  $("#forgotBtn").addEventListener("click", async () => {
-    const email = $("#loginForm").email.value.trim();
-    if (!email) return setMsg($("#loginMsg"), "Type your email above first, then tap “Forgot password?”.", "err");
-    const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
-    setMsg($("#loginMsg"), error ? error.message : "Check your email for a link to set your password.", error ? "err" : "ok");
-  });
-  $("#resetForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const { data, error } = await sb.auth.updateUser({ password: e.target.password.value });
-    if (error) return setMsg($("#resetMsg"), error.message, "err");
-    history.replaceState(null, "", location.pathname);
     enter(data.user);
   });
   $("#logoutBtn").addEventListener("click", async () => { await sb.auth.signOut(); location.reload(); });
@@ -994,10 +977,35 @@
   }
   $("#addAdminForm").addEventListener("submit", async (e) => {
     e.preventDefault();
-    const email = e.target.email.value.trim().toLowerCase();
-    const { error } = await sb.from("pb_admins").insert({ email });
-    if (error) return toast(error.code === "23505" ? "Already an admin." : error.message);
-    e.target.reset(); toast("Admin added"); loadAdmins();
+    const form = e.target;
+    const email = form.email.value.trim().toLowerCase();
+    const password = form.password.value;
+    if (password.length < 8) return toast("Use a password with at least 8 characters.");
+    const button = form.querySelector("button[type='submit']");
+    button.disabled = true;
+    let result;
+    try {
+      result = await sb.functions.invoke("admin-create-user", { body: { email, password } });
+    } catch (error) {
+      button.disabled = false;
+      return toast("Couldn't add admin: " + (error.message || "The admin service could not be reached."));
+    }
+    button.disabled = false;
+    const { data, error } = result;
+    if (error) {
+      let message = error.message;
+      try {
+        const details = await error.context?.json?.();
+        if (details?.error) message = details.error;
+      } catch (parseError) {
+        console.warn("Could not read the admin creation error response:", parseError);
+      }
+      return toast("Couldn't add admin: " + message);
+    }
+    if (!data?.email) return toast("The admin service did not confirm the new account.");
+    form.reset();
+    toast(`Admin ${data.email} added`);
+    loadAdmins();
   });
 
   // ---------------- promo codes
