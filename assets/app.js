@@ -25,12 +25,17 @@
   // ---------- static bits
   $("#year").textContent = new Date().getFullYear();
   $("#heroBg").style.backgroundImage = `url("${C.heroImage}")`;
-  $("#packagePhoto").style.backgroundImage = `url("${C.fallbackImages[1]}")`;
-  $("#menuBtn").addEventListener("click", (e) => {
-    const open = $("#navLinks").classList.toggle("open");
-    e.currentTarget.setAttribute("aria-expanded", open);
-  });
-  document.querySelectorAll("#navLinks a").forEach((a) => a.addEventListener("click", () => $("#navLinks").classList.remove("open")));
+  const nav = $("#nav"), menuBtn = $("#menuBtn");
+  const setMenu = (open) => { $("#navLinks").classList.toggle("open", open); nav.classList.toggle("menu-open", open); menuBtn.setAttribute("aria-expanded", open); };
+  menuBtn.addEventListener("click", () => setMenu(!$("#navLinks").classList.contains("open")));
+  $$("#navLinks a").forEach((a) => a.addEventListener("click", () => setMenu(false)));
+  // header turns solid and WhatsApp button appears once past the hero
+  const onScroll = () => {
+    const y = window.scrollY, heroH = $(".hero").offsetHeight;
+    nav.classList.toggle("solid", y > 40);
+    $("#waFloat").classList.toggle("show", y > heroH * .6);
+  };
+  window.addEventListener("scroll", onScroll, { passive: true }); onScroll();
 
   $("#typeInput").innerHTML = `<option value="">Select occasion…</option>` + C.eventTypes.map((t) => `<option>${esc(t)}</option>`).join("");
   $("#addonPick").innerHTML = C.addOns.map((a) => `<label class="addon"><input type="checkbox" name="add_ons" value="${esc(a)}"><span>${esc(a)}</span></label>`).join("");
@@ -38,15 +43,9 @@
 
   function renderContact() {
     const phones = state.phones.split("|").map((p) => p.trim()).filter(Boolean);
-    $("#topPhones").textContent = "📲 " + phones.join(" | ");
     $("#asidePhones").textContent = phones[0] || "";
     $("#asidePhones").href = phones[0] ? telLink(phones[0]) : "#contact";
-    $("#contactPhones").textContent = `Call or WhatsApp ${phones.join(" | ")} — we're always happy to help.`;
-    $("#footContact").innerHTML =
-      phones.map((p) => `<li><a href="${telLink(p)}">📞 ${esc(p)}</a></li>`).join("") +
-      `<li><a href="${waLink(state.whatsapp)}" target="_blank" rel="noopener">💬 WhatsApp us</a></li>` +
-      `<li><a href="https://www.instagram.com/${C.instagram}" target="_blank" rel="noopener">📷 @${C.instagram}</a></li>` +
-      `<li><a href="${C.facebook}" target="_blank" rel="noopener">👍 Facebook</a></li>`;
+    $("#contactPhones").innerHTML = "Call or WhatsApp " + phones.map((p) => `<a href="${telLink(p)}">${esc(p)}</a>`).join(" &nbsp;·&nbsp; ");
     const ICONS = {
       Facebook: '<path d="M14 8h3V4h-3c-2.8 0-4.5 1.8-4.5 4.6V11H7v4h2.5v9h4v-9H17l.5-4h-4V8.9c0-.6.3-.9.9-.9Z"/>',
       Instagram: '<path d="M12 7.3A4.7 4.7 0 1 0 12 16.7 4.7 4.7 0 0 0 12 7.3Zm0 7.7a3 3 0 1 1 0-6 3 3 0 0 1 0 6Zm6-7.9a1.1 1.1 0 1 1-2.2 0 1.1 1.1 0 0 1 2.2 0ZM12 3.6c2.7 0 3 0 4.1.1 2.7.1 4 1.4 4.1 4.1.1 1.1.1 1.4.1 4.1s0 3-.1 4.1c-.1 2.7-1.4 4-4.1 4.1-1.1.1-1.4.1-4.1.1s-3 0-4.1-.1c-2.7-.1-4-1.4-4.1-4.1C3.7 15 3.6 14.7 3.6 12s0-3 .1-4.1c.1-2.7 1.4-4 4.1-4.1C8.9 3.6 9.3 3.6 12 3.6ZM12 2C9.3 2 8.9 2 7.9 2.1 4.2 2.2 2.2 4.2 2.1 7.9 2 8.9 2 9.3 2 12s0 3.1.1 4.1c.1 3.6 2.1 5.7 5.8 5.8 1 .1 1.4.1 4.1.1s3.1 0 4.1-.1c3.6-.1 5.7-2.1 5.8-5.8.1-1 .1-1.4.1-4.1s0-3.1-.1-4.1c-.1-3.6-2.1-5.7-5.8-5.8C15.1 2 14.7 2 12 2Z"/>',
@@ -57,31 +56,29 @@
     $$("[data-socials]").forEach((el) => (el.innerHTML = socials.map((s) =>
       `<a href="${esc(s.url)}" target="_blank" rel="noopener" aria-label="${esc(s.name)}" title="${esc(s.name)}"><svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[s.name] || ""}</svg></a>`).join("")));
     $("#waFloat").href =waLink(state.whatsapp, "Hi Polybelle! I'd like to ask about booking an event.");
-    $("#locGrid").innerHTML = C.branches.map((b) => `
-      <div class="loc fade">
-        <span class="eyebrow">Branch</span>
+    $("#locGrid").innerHTML = C.branches.map((b, i) => `
+      <div class="loc reveal" style="--d:${i}">
         <h3>${esc(b.name)}</h3>
         <p>${esc(b.address)}</p>
         <p>${esc(b.landmark)}</p>
-        <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(b.landmark + ", " + b.name + ", Abu Dhabi")}" target="_blank" rel="noopener">Get directions →</a>
+        <a class="link-line" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(b.landmark + ", " + b.name + ", Abu Dhabi")}" target="_blank" rel="noopener">Directions</a>
       </div>`).join("");
     observe();
   }
 
   function renderVenues() {
-    $("#statHalls").textContent = state.venues.length;
     $("#venueGrid").innerHTML = state.venues.map((v, i) => `
-      <article class="venue fade">
-        <div class="venue-img" style="background-image:url('${esc(imgFor(v, i))}')" role="img" aria-label="${esc(v.name)}">
+      <article class="venue" style="--d:${i % 4}">
+        <div class="venue-img">
+          <img src="${esc(imgFor(v, i))}" alt="${esc(v.name)}" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'ph'}))">
           <span class="cap">Up to ${v.capacity} guests</span>
         </div>
         <div class="venue-body">
           ${v.tagline ? `<span class="tag">${esc(v.tagline)}</span>` : ""}
           <h3>${esc(v.name)}</h3>
           ${v.description ? `<p>${esc(v.description)}</p>` : ""}
-          ${v.branch ? `<span class="meta">📍 ${esc(v.branch)}</span>` : ""}
-          ${v.price_from ? `<span class="price">From ${money(v.price_from)}</span>` : ""}
-          <button class="btn btn-outline" data-book="${esc(v.id || v.name)}">Book this hall</button>
+          ${v.branch || v.price_from ? `<span class="meta">${[v.branch, v.price_from ? "From " + money(v.price_from) : ""].filter(Boolean).map(esc).join(" · ")}</span>` : ""}
+          <button class="link-line" type="button" data-book="${esc(v.id || v.name)}">Reserve this hall</button>
         </div>
       </article>`).join("");
     $("#hallPick").innerHTML = state.venues.map((v) => `
@@ -244,7 +241,7 @@
     G.view = G.items.filter((g) => G.filter === "All" || g.category === G.filter);
     const list = G.view.slice(0, G.shown);
     $("#gGrid").innerHTML = list.length ? list.map((g, i) => `
-      <button class="g-item" type="button" data-i="${i}" aria-label="View ${esc(g.caption || g.category)}">
+      <button class="g-item" type="button" data-i="${i}" style="--d:${i % 9}" aria-label="View ${esc(g.caption || g.category)}">
         <img src="${esc(g.image_url)}" alt="${esc(g.caption || g.category)}" loading="lazy" onerror="this.style.visibility='hidden'">
         <span><small>${esc(g.category)}</small>${esc(g.caption || "")}</span>
       </button>`).join("") : `<p class="g-empty">New event photos coming soon.</p>`;
@@ -285,12 +282,11 @@
       const avg = R.items.reduce((s, r) => s + r.rating, 0) / n;
       $("#rSummary").innerHTML = `<b>${avg.toFixed(1)}</b><span class="stars">${starStr(Math.round(avg))}</span><span>from ${n} review${n > 1 ? "s" : ""}</span>`;
     }
-    $("#rGrid").innerHTML = R.items.slice(0, R.shown).map((r) => `
-      <article class="r-card fade">
+    $("#rGrid").innerHTML = R.items.slice(0, R.shown).map((r, i) => `
+      <article class="r-card reveal" style="--d:${i % 3}">
         <span class="stars" aria-label="${r.rating} out of 5 stars">${starStr(r.rating)}</span>
         <p>${esc(r.comment)}</p>
-        <div class="who"><span class="av" aria-hidden="true">${esc(r.name.trim()[0] || "?").toUpperCase()}</span>
-          <div><b>${esc(r.name)}</b><small>${[r.event_type, r.source !== "Website" ? "via " + r.source : ""].filter(Boolean).map(esc).join(" · ")}</small></div></div>
+        <div class="who">${esc(r.name)}<small>${[r.event_type, r.source !== "Website" ? "via " + r.source : ""].filter(Boolean).map(esc).join(" · ")}</small></div>
       </article>`).join("");
     $("#rMore").hidden = n <= R.shown;
     observe();
@@ -314,7 +310,7 @@
     btn.disabled = false;
     if (error) return fail(error.message);
     f.reset();
-    f.innerHTML = `<div class="tick" style="margin:0 auto">✓</div><h3 style="text-align:center">Thank you!</h3><p style="text-align:center">Your review has been sent to our team and will appear on the website once approved. 💛</p><button class="btn btn-primary" type="button" onclick="this.closest('.modal').classList.remove('open')">Close</button>`;
+    f.innerHTML = `<span class="tick" aria-hidden="true"></span><h3 style="text-align:center">Thank you</h3><p style="text-align:center">Your review has been sent to our team and will appear on the website once approved.</p><button class="btn btn-dark" type="button" onclick="this.closest('.modal').classList.remove('open')">Close</button>`;
   });
 
   // ---------- data
@@ -347,10 +343,12 @@
   // ---------- reveal on scroll
   let io;
   function observe() {
-    if (!("IntersectionObserver" in window)) { document.querySelectorAll(".fade").forEach((el) => el.classList.add("in")); return; }
-    io = io || new IntersectionObserver((entries) => entries.forEach((en) => { if (en.isIntersecting) { en.target.classList.add("in"); io.unobserve(en.target); } }), { threshold: .12 });
-    document.querySelectorAll(".fade:not(.in)").forEach((el) => io.observe(el));
+    const sel = ".reveal:not(.in), .venue:not(.in)";
+    if (!("IntersectionObserver" in window)) { $$(sel).forEach((el) => el.classList.add("in")); return; }
+    io = io || new IntersectionObserver((entries) => entries.forEach((en) => { if (en.isIntersecting) { en.target.classList.add("in"); io.unobserve(en.target); } }), { threshold: .12, rootMargin: "0px 0px -6% 0px" });
+    $$(sel).forEach((el) => io.observe(el));
   }
 
   init();
+  observe();
 })();

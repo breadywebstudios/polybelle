@@ -4,264 +4,183 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Polybelle Event Halls &amp; Studio | Event Venues in Abu Dhabi</title>
-  <meta name="description" content="Elegant, affordable event halls in Abu Dhabi for birthdays, weddings, baby showers, christenings and corporate events. Full packages with styling, catering, cake, photo &amp; video. Book on WhatsApp.">
+  <meta name="description" content="Elegant event halls and studio in Abu Dhabi for birthdays, weddings, baby showers, christenings and corporate events. Full packages with styling, catering, cake, photo and video.">
   <meta property="og:title" content="Polybelle Event Halls & Studio">
-  <meta property="og:description" content="Where beautiful memories come to life — event halls in Abu Dhabi for 20 to 100 guests.">
-  <meta name="theme-color" content="#3A2A24">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%233A2A24'/%3E%3Ctext x='50%25' y='56%25' text-anchor='middle' dominant-baseline='middle' font-family='Georgia' font-style='italic' font-size='40' fill='%23E9CFA0'%3EP%3C/text%3E%3C/svg%3E">
+  <meta property="og:description" content="Making memories, one milestone at a time. Event halls and studio in Abu Dhabi.">
+  <meta name="theme-color" content="#2B211D">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%232B211D'/%3E%3Ctext x='50%25' y='54%25' text-anchor='middle' dominant-baseline='middle' font-family='Georgia' font-size='38' fill='%23C2A06A'%3EP%3C/text%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Jost:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/site.css">
 </head>
 <body>
-  <div class="topbar">
+  <header class="nav" id="nav">
     <div class="wrap">
-      <span>📍 Electra · Al Falah · Al Wahda — Abu Dhabi</span>
-      <span class="top-right"><a href="#contact" id="topPhones">📲 052 865 3208 | 054 557 9880</a><span class="socials" data-socials></span></span>
-    </div>
-  </div>
-
-  <header class="nav">
-    <div class="wrap">
-      <a href="#top" class="brand" aria-label="Polybelle home"><img class="brand-logo" src="assets/polybelle-logo.png" alt="Polybelle Event Halls &amp; Studio"></a>
-      <button class="menu-btn" id="menuBtn" aria-label="Open menu" aria-expanded="false">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
-      </button>
-      <nav class="nav-links" id="navLinks">
-        <a href="#venues">Our Halls</a>
+      <a href="#top" class="wordmark" aria-label="Polybelle Event Halls &amp; Studio, home">
+        <b>POLYBELLE</b><small>Event Halls &amp; Studio</small>
+      </a>
+      <nav class="nav-links" id="navLinks" aria-label="Main">
+        <a href="#venues">Halls</a>
         <a href="#packages">Packages</a>
         <a href="#gallery">Gallery</a>
         <a href="#reviews">Reviews</a>
-        <a href="#contact">Locations</a>
-        <a href="#book" class="btn btn-primary">Book Your Event</a>
+        <a href="#contact">Contact</a>
+        <a href="#book" class="btn btn-nav">Reserve</a>
       </nav>
+      <button class="menu-btn" id="menuBtn" aria-label="Open menu" aria-expanded="false" aria-controls="navLinks"><span></span><span></span></button>
     </div>
   </header>
 
   <main id="top">
+    <!-- Hero -->
     <section class="hero">
-      <div class="hero-bg" id="heroBg"></div>
-      <div class="wrap">
-        <span class="eyebrow">Event Halls &amp; Studio · Abu Dhabi</span>
-        <h1>Making memories <em>one milestone</em> at a time</h1>
-        <p>Elegant halls, thoughtful styling and a warm team that takes care of every detail — at packages made to fit your budget.</p>
-        <div class="hero-cta">
-          <a href="#book" class="btn btn-primary">Check Availability</a>
-          <a href="#venues" class="btn btn-ghost">View Our Halls</a>
+      <div class="hero-media"><div class="hero-bg" id="heroBg"></div></div>
+      <div class="wrap hero-inner">
+        <span class="eyebrow rise" style="--d:1">Event Halls &amp; Studio · Abu Dhabi</span>
+        <h1><span class="line"><span class="rise" style="--d:2">Making memories,</span></span><span class="line"><em class="rise" style="--d:3">one milestone at a time</em></span></h1>
+        <p class="rise" style="--d:4">Elegant halls, thoughtful styling and a team that takes care of every detail, from the first surprise to the last keepsake.</p>
+        <div class="hero-cta rise" style="--d:5">
+          <a href="#book" class="btn btn-light">Reserve your date</a>
+          <a href="#venues" class="link-line light">Explore the halls</a>
         </div>
-        <div class="hero-stats">
-          <div><b id="statHalls">4</b><span>Event Halls</span></div>
-          <div><b>3</b><span>Locations</span></div>
-          <div><b>21K+</b><span>Happy Followers</span></div>
-        </div>
+      </div>
+      <a href="#intro" class="scroll-cue" aria-label="Scroll down"><span></span></a>
+    </section>
+
+    <!-- Intro -->
+    <section class="section intro" id="intro">
+      <div class="wrap narrow center">
+        <p class="statement reveal">From intimate gatherings to grand celebrations, Polybelle brings the venue, styling, catering and keepsakes together, so you can simply enjoy the moment.</p>
+        <p class="occasions reveal" style="--d:1"><span>Birthdays</span><span>Weddings</span><span>Baby showers</span><span>Christenings</span><span>Gender reveals</span><span>Corporate events</span></p>
       </div>
     </section>
 
-    <div class="occasions" aria-label="Occasions we host">
+    <!-- Halls -->
+    <section class="section halls" id="venues">
       <div class="wrap">
-        <span>Birthdays</span><span>Weddings</span><span>Baby Showers</span><span>Christenings</span><span>Gender Reveals</span><span>Corporate &amp; Seminars</span>
-      </div>
-    </div>
-
-    <section class="section" id="venues">
-      <div class="wrap">
-        <div class="section-head fade">
+        <header class="section-head reveal">
           <span class="eyebrow">Our Halls</span>
           <h2>A beautiful space for every celebration</h2>
-          <div class="ornament"></div>
-          <p class="lead">From intimate gatherings to grand milestones, choose the hall that fits your guest list.</p>
-        </div>
+          <span class="rule"></span>
+        </header>
         <div class="venue-grid" id="venueGrid" aria-live="polite"></div>
       </div>
     </section>
 
-    <section class="section package" id="packages">
-      <div class="wrap package-grid">
-        <div class="package-photo fade" id="packagePhoto" role="img" aria-label="Styled celebration table"></div>
-        <div class="fade">
-          <span class="eyebrow">All-in-One Packages</span>
-          <h2 style="margin:12px 0 14px">Everything you need, in one place</h2>
-          <p class="lead">Enjoy a hassle-free celebration. Book the hall on its own, or let our team handle the whole event with a personalized theme.</p>
-          <ul class="service-list">
-            <li>Event halls</li>
-            <li>Event styling &amp; themes</li>
-            <li>Catering services</li>
-            <li>Customized cake</li>
-            <li>Photography &amp; videography</li>
-            <li>Professional host</li>
-            <li>Photobooth &amp; guestbook</li>
-            <li>Souvenirs, direct supplier</li>
-            <li>Mascot surprise</li>
-            <li>Face painting &amp; activities</li>
-          </ul>
-          <a href="#book" class="btn btn-primary">Request a Package Quote</a>
+    <!-- Packages -->
+    <section class="section packages" id="packages">
+      <div class="wrap pk-grid">
+        <div class="pk-intro reveal">
+          <span class="eyebrow">Packages</span>
+          <h2>Everything you need, in one place</h2>
+          <span class="rule left"></span>
+          <p>Book the hall on its own, or let our team plan the whole celebration with a personalized theme, from intimate to grand.</p>
+          <p class="pay">Book now, pay later with <b>Tabby</b> or <b>Tamara</b>. Visa and Mastercard accepted.</p>
+          <a href="#book" class="btn btn-dark">Request a package</a>
         </div>
-      </div>
-    </section>
-
-    <section class="section experiences" id="experiences">
-      <div class="wrap">
-        <div class="section-head fade">
-          <span class="eyebrow">Packages, made personal</span>
-          <h2>Little details. Once-in-a-lifetime moments.</h2>
-          <div class="ornament"></div>
-          <p class="lead">From the first surprise to the last keepsake, bring every part of your celebration together with Polybelle.</p>
-        </div>
-
-        <div class="experience-grid">
-          <article class="experience-card experience-card-featured fade">
-            <span class="experience-kicker">01 / Celebrate your way</span>
-            <h3>Great deal full packages</h3>
-            <p>Thoughtful celebrations for all the milestones worth remembering.</p>
-            <div class="experience-tags">
-              <span>Gender reveal</span><span>Baby shower</span><span>Newborn</span><span>Pre-birthday</span><span>Birthday</span>
-              <span>Pre-debut</span><span>Family portrait</span><span>Engagement</span><span>Prenup</span><span>Wedding</span>
+        <div class="pk-list">
+          <article class="pk-item reveal" style="--d:1">
+            <span class="pk-num">01</span>
+            <div>
+              <h3>Celebration packages</h3>
+              <p>Gender reveal, baby shower, newborn, pre-birthday and birthday, pre-debut, family portrait and engagement.</p>
             </div>
-            <a href="#book" class="experience-link">Plan your celebration <span aria-hidden="true">→</span></a>
           </article>
-
-          <article class="experience-card experience-card-wedding fade">
-            <span class="experience-kicker">02 / Your wedding story</span>
-            <h3>From “yes” to “I do”</h3>
-            <p>Choose one moment or let us help make the whole journey feel effortless.</p>
-            <ol class="wedding-steps">
-              <li>Proposal</li><li>Registration</li><li>Prenup</li><li>Ceremony</li><li>Reception</li>
-            </ol>
-            <a href="#book" class="experience-link">Explore wedding packages <span aria-hidden="true">→</span></a>
+          <article class="pk-item reveal" style="--d:2">
+            <span class="pk-num">02</span>
+            <div>
+              <h3>Wedding journeys</h3>
+              <p>Proposal, registration, prenup, ceremony and reception. Choose one moment or let us shape the whole story.</p>
+            </div>
           </article>
-
-          <article class="experience-card experience-card-venues fade">
-            <span class="experience-kicker">03 / Spaces &amp; snapshots</span>
-            <h3>A place for every gathering</h3>
-            <p>Celebrate at Electra Tower A1802, Electra Tower B603 or Al Wahda — and make room for fun with our photo booth.</p>
-            <a href="#venues" class="experience-link">Find your hall <span aria-hidden="true">→</span></a>
+          <article class="pk-item reveal" style="--d:3">
+            <span class="pk-num">03</span>
+            <div>
+              <h3>Styling &amp; services</h3>
+              <p>Event styling and themes, catering, customized cakes, photography and videography, a professional host and photo booth.</p>
+            </div>
           </article>
-        </div>
-
-        <div class="service-heading fade">
-          <span class="eyebrow">The finishing touches</span>
-          <h3>Make it unmistakably yours</h3>
-        </div>
-        <div class="service-cards">
-          <article class="service-card fade">
-            <span class="service-number">01</span>
-            <h4>A surprise entrance</h4>
-            <p>Bring a little extra wonder with a mascot surprise. Favorites include Mickey Mouse, Minnie Mouse, Hello Kitty, bear and bunny.</p>
+          <article class="pk-item reveal" style="--d:4">
+            <span class="pk-num">04</span>
+            <div>
+              <h3>Finishing touches</h3>
+              <p>A mascot surprise, a make-your-own scent station, a DIY craft station, and keepsakes from scented candles to custom favors.</p>
+            </div>
           </article>
-          <article class="service-card fade">
-            <span class="service-number">02</span>
-            <h4>Make your own scent</h4>
-            <p>Turn the scent station into an experience, with bottle sizes from 5 ml to 30 ml.</p>
-          </article>
-          <article class="service-card fade">
-            <span class="service-number">03</span>
-            <h4>Keepsakes to take home</h4>
-            <p>Personalize the memories with scented candles, fridge magnets, photo-booth magnets and keychains.</p>
-          </article>
-          <article class="service-card fade">
-            <span class="service-number">04</span>
-            <h4>Make something together</h4>
-            <p>Our on-site DIY craft station lets guests decorate their own tote bags and pouches.</p>
-          </article>
-          <article class="service-card fade">
-            <span class="service-number">05</span>
-            <h4>Party favors, your way</h4>
-            <p>Give little guests a treat to remember with custom chip bags and loot bags.</p>
-          </article>
-        </div>
-
-        <div class="guide-row fade">
-          <div class="guide-copy">
-            <span class="eyebrow">A little inspiration</span>
-            <h3>Browse the package guide</h3>
-            <p>Take a closer look at our celebration packages and extra-special services.</p>
-            <div class="payment-note"><b>Flexible ways to pay</b><span>Tabby · Tamara · Visa · Mastercard</span></div>
-          </div>
-          <a class="guide-card" href="assets/package-guide-celebrations.jpeg" target="_blank" rel="noopener">
-            <img src="assets/package-guide-celebrations.jpeg" alt="Polybelle celebration packages, wedding options and event halls">
-            <span>Packages &amp; celebrations <span aria-hidden="true">↗</span></span>
-          </a>
-          <a class="guide-card" href="assets/package-guide-extras.jpeg" target="_blank" rel="noopener">
-            <img src="assets/package-guide-extras.jpeg" alt="Polybelle mascot surprises, scent station, souvenirs and DIY craft services">
-            <span>Surprises &amp; keepsakes <span aria-hidden="true">↗</span></span>
-          </a>
-        </div>
-        <div class="experience-cta fade">
-          <p>Have something special in mind? Tell us about it and we’ll put together the right package.</p>
-          <a href="#book" class="btn btn-primary">Ask us for a package</a>
         </div>
       </div>
     </section>
 
-    <section class="section" id="gallery">
+    <!-- Gallery -->
+    <section class="section gallery" id="gallery">
       <div class="wrap">
-        <div class="section-head fade">
-          <span class="eyebrow">Events &amp; Gallery</span>
+        <header class="section-head reveal">
+          <span class="eyebrow">Gallery</span>
           <h2>Celebrations we've brought to life</h2>
-          <div class="ornament"></div>
-          <p class="lead">A peek at the birthdays, weddings and milestones our team has styled and hosted.</p>
-        </div>
-        <div class="g-filters" id="gFilters" role="tablist" aria-label="Filter by occasion"></div>
+          <span class="rule"></span>
+        </header>
+        <div class="g-filters reveal" id="gFilters" role="tablist" aria-label="Filter by occasion"></div>
         <div class="g-grid" id="gGrid" aria-live="polite"></div>
-        <div style="text-align:center;margin-top:30px">
-          <button class="btn btn-outline" id="gMore" type="button" hidden>Show more photos</button>
-          <a class="btn btn-outline" id="gFb" target="_blank" rel="noopener" href="#">More on Facebook ↗</a>
+        <div class="center actions">
+          <button class="btn btn-outline" id="gMore" type="button" hidden>Show more</button>
+          <a class="link-line" id="gFb" target="_blank" rel="noopener" href="#">More on Facebook</a>
         </div>
       </div>
     </section>
 
+    <!-- Reviews -->
     <section class="section reviews" id="reviews">
       <div class="wrap">
-        <div class="section-head fade">
+        <header class="section-head reveal">
           <span class="eyebrow">Kind Words</span>
           <h2>What our clients say</h2>
-          <div class="ornament"></div>
+          <span class="rule"></span>
           <div class="r-summary" id="rSummary" hidden></div>
-        </div>
+        </header>
         <div class="r-grid" id="rGrid"></div>
-        <p class="r-empty" id="rEmpty" hidden>Celebrated with us? We'd love to hear how your event went.</p>
-        <div style="text-align:center;margin-top:30px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
-          <button class="btn btn-outline" id="rMore" type="button" hidden>Show more reviews</button>
-          <button class="btn btn-primary" id="rWrite" type="button">Write a review</button>
-          <a class="btn btn-outline" id="rFb" target="_blank" rel="noopener" href="#">Reviews on Facebook ↗</a>
+        <p class="r-empty reveal" id="rEmpty" hidden>Celebrated with us? We'd love to hear how your day went.</p>
+        <div class="center actions">
+          <button class="btn btn-outline" id="rMore" type="button" hidden>More reviews</button>
+          <button class="btn btn-dark" id="rWrite" type="button">Write a review</button>
+          <a class="link-line" id="rFb" target="_blank" rel="noopener" href="#">Reviews on Facebook</a>
         </div>
       </div>
     </section>
 
+    <!-- Booking -->
     <section class="section booking" id="book">
       <div class="wrap">
-        <div class="section-head fade">
+        <header class="section-head reveal">
           <span class="eyebrow">Reserve Your Date</span>
           <h2>Book your celebration</h2>
-          <div class="ornament"></div>
+          <span class="rule"></span>
           <p class="lead">No payment needed now. We'll confirm availability and your package on WhatsApp.</p>
-        </div>
+        </header>
 
-        <div class="book-card">
+        <div class="book-card reveal">
           <aside class="book-aside">
             <h3>Your booking</h3>
-            <p>Check the details on the right, then tap <b>Send on WhatsApp</b>. We usually reply within the day.</p>
-            <div class="summary" id="summary">
-              <div><span>Hall</span><b data-s="hall">—</b></div>
-              <div><span>Date</span><b data-s="date">—</b></div>
-              <div><span>Session</span><b data-s="session">—</b></div>
-              <div><span>Occasion</span><b data-s="type">—</b></div>
-              <div><span>Guests</span><b data-s="guests">—</b></div>
-              <div><span>Add-ons</span><b data-s="addons">—</b></div>
-            </div>
-            <p style="font-size:.85rem">Prefer to call? <a href="#contact" id="asidePhones" style="color:#fff">052 865 3208</a></p>
+            <dl class="summary" id="summary">
+              <div><dt>Hall</dt><dd data-s="hall">—</dd></div>
+              <div><dt>Date</dt><dd data-s="date">—</dd></div>
+              <div><dt>Session</dt><dd data-s="session">—</dd></div>
+              <div><dt>Occasion</dt><dd data-s="type">—</dd></div>
+              <div><dt>Guests</dt><dd data-s="guests">—</dd></div>
+              <div><dt>Add-ons</dt><dd data-s="addons">—</dd></div>
+            </dl>
+            <p class="aside-note">We usually reply within the day. Prefer to call? <a href="#contact" id="asidePhones">052 865 3208</a></p>
           </aside>
 
           <form class="book-form" id="bookForm" novalidate>
-            <div>
-              <div class="fs-title"><i>1</i> Choose a hall</div>
+            <fieldset>
+              <legend><span>01</span>Choose a hall</legend>
               <div class="hall-pick" id="hallPick" role="radiogroup" aria-label="Hall"></div>
-            </div>
+            </fieldset>
 
-            <div>
-              <div class="fs-title"><i>2</i> Date &amp; session</div>
-              <div class="grid-2" style="margin-bottom:12px">
+            <fieldset>
+              <legend><span>02</span>Date &amp; session</legend>
+              <div class="grid-2">
                 <label class="field">Event date
                   <input type="date" name="date" id="dateInput" required>
                 </label>
@@ -271,25 +190,22 @@
               </div>
               <div class="sessions" id="sessionPick" role="radiogroup" aria-label="Session"></div>
               <p class="hint" id="availHint">Pick a hall and date to see open sessions.</p>
-            </div>
+            </fieldset>
 
-            <div>
-              <div class="fs-title"><i>3</i> Event details</div>
+            <fieldset>
+              <legend><span>03</span>Event details</legend>
               <div class="grid-2">
                 <label class="field">Number of guests
                   <input type="number" name="guests" id="guestsInput" min="1" max="2000" inputmode="numeric" placeholder="e.g. 50">
                 </label>
-                <div></div>
               </div>
               <p class="hint" id="capHint"></p>
-              <div style="margin-top:14px">
-                <div style="font-size:.86rem;color:var(--muted);margin-bottom:8px">Add-ons you're interested in (optional)</div>
-                <div class="addons" id="addonPick"></div>
-              </div>
-            </div>
+              <p class="sub-label">Add-ons you're interested in (optional)</p>
+              <div class="addons" id="addonPick"></div>
+            </fieldset>
 
-            <div>
-              <div class="fs-title"><i>4</i> Your contact details</div>
+            <fieldset>
+              <legend><span>04</span>Your details</legend>
               <div class="grid-2">
                 <label class="field">Full name
                   <input type="text" name="name" autocomplete="name" required maxlength="120">
@@ -300,18 +216,17 @@
                 <label class="field">Email (optional)
                   <input type="email" name="email" autocomplete="email" maxlength="160">
                 </label>
-                <div></div>
               </div>
-              <label class="field" style="margin-top:16px">Theme ideas or notes (optional)
-                <textarea name="notes" maxlength="1500" placeholder="Theme, colours, celebrant's name, special requests…"></textarea>
+              <label class="field">Theme ideas or notes (optional)
+                <textarea name="notes" maxlength="1500" placeholder="Theme, colours, celebrant's name, special requests"></textarea>
               </label>
-            </div>
+            </fieldset>
 
             <div class="error-box" id="formError" role="alert"></div>
 
             <div class="form-foot">
-              <p>Your request is saved with a reference number and opens in WhatsApp so you can send it to our team.</p>
-              <button type="submit" class="btn btn-wa" id="submitBtn">
+              <p>Your request is saved with a reference number and opens in WhatsApp, ready to send to our team.</p>
+              <button type="submit" class="btn btn-dark" id="submitBtn">
                 <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm5.3 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .1-3.3-.8-2.8-1.1-4.5-3.9-4.7-4.1-.1-.2-1.1-1.5-1.1-2.9s.7-2 1-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.4 0 .5l-.3.5-.4.4c-.1.1-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.4 2.4 1.5.3.1.5.1.6-.1l.9-1c.2-.3.4-.2.6-.1l1.9.9c.3.1.5.2.5.3.1.2.1.6-.1 1.1Z"/></svg>
                 Send on WhatsApp
               </button>
@@ -321,56 +236,32 @@
       </div>
     </section>
 
-    <section class="section" id="contact">
+    <!-- Contact -->
+    <section class="section contact" id="contact">
       <div class="wrap">
-        <div class="section-head fade">
+        <header class="section-head reveal">
           <span class="eyebrow">Visit Us</span>
-          <h2>Our locations in Abu Dhabi</h2>
-          <div class="ornament"></div>
-          <p class="lead" id="contactPhones">Call or WhatsApp 052 865 3208 | 054 557 9880 — we're always open for inquiries.</p>
-        </div>
+          <h2>Your vision. Our passion.</h2>
+          <span class="rule"></span>
+          <p class="lead" id="contactPhones">Call or WhatsApp 052 865 3208 | 054 557 9880</p>
+        </header>
         <div class="loc-grid" id="locGrid"></div>
-      </div>
-    </section>
-
-    <section class="section cta">
-      <div class="wrap fade">
-        <h2>Your vision. Our passion.</h2>
-        <p>Let's make memories that last. Dates fill quickly on weekends — reserve yours today.</p>
-        <div class="socials socials-lg socials-center" data-socials style="margin-bottom:26px"></div>
-        <a href="#book" class="btn btn-ghost">Book Your Event</a>
+        <div class="socials center reveal" data-socials aria-label="Follow Polybelle"></div>
       </div>
     </section>
   </main>
 
-  <footer>
-    <div class="wrap">
-      <div class="foot-grid">
-        <div>
-          <a href="#top" class="brand"><b>Polybelle</b><small>Event Halls &amp; Studio</small></a>
-          <p style="margin-top:16px;max-width:320px">Elegant and affordable event halls in Abu Dhabi for weddings, birthdays, baby showers, christenings and corporate events.</p>
-          <div class="socials socials-lg" data-socials aria-label="Follow Polybelle"></div>
-        </div>
-        <div>
-          <h4>Contact</h4>
-          <ul id="footContact"></ul>
-        </div>
-        <div>
-          <h4>Explore</h4>
-          <ul>
-            <li><a href="#venues">Our Halls</a></li>
-            <li><a href="#packages">Packages</a></li>
-            <li><a href="#gallery">Gallery</a></li>
-            <li><a href="#book">Book an Event</a></li>
-            <li><a href="#contact">Locations</a></li>
-            <li><a href="admin.html" target="_blank" rel="noopener">Admin login</a></li>
-          </ul>
-        </div>
-      </div>
-      <div class="foot-bottom">
-        <span>© <span id="year"></span> Polybelle Event Halls &amp; Studio · Abu Dhabi, UAE</span>
-        <a class="powered" href="https://breadywebstudio.vercel.app" target="_blank" rel="noopener">Powered by <b style="color:#E9CFA0;font-weight:500">Bready Web Studios</b></a>
-      </div>
+  <footer class="footer">
+    <div class="wrap foot-row">
+      <a href="#top" class="wordmark small" aria-label="Back to top"><b>POLYBELLE</b><small>Event Halls &amp; Studio</small></a>
+      <nav class="foot-links" aria-label="Footer">
+        <a href="#venues">Halls</a><a href="#packages">Packages</a><a href="#gallery">Gallery</a><a href="#book">Reserve</a>
+        <a href="admin.html" target="_blank" rel="noopener">Admin login</a>
+      </nav>
+    </div>
+    <div class="wrap foot-bottom">
+      <span>© <span id="year"></span> Polybelle Event Halls &amp; Studio · Abu Dhabi, UAE</span>
+      <a href="https://breadywebstudio.vercel.app" target="_blank" rel="noopener">Powered by <b>Bready Web Studios</b></a>
     </div>
   </footer>
 
@@ -400,19 +291,19 @@
       <label class="field">Occasion<select name="event_type" id="rType"></select></label>
       <label class="field">Your review<textarea name="comment" maxlength="1200" required placeholder="How was your celebration with Polybelle?"></textarea></label>
       <div class="error-box" id="rError" role="alert"></div>
-      <button class="btn btn-primary" type="submit">Submit review</button>
+      <button class="btn btn-dark" type="submit">Submit review</button>
       <button class="btn btn-outline" type="button" id="rCancel">Cancel</button>
     </form>
   </div>
 
   <div class="modal" id="doneModal" role="dialog" aria-modal="true" aria-labelledby="doneTitle">
     <div class="modal-card">
-      <div class="tick">✓</div>
-      <h3 id="doneTitle">Request saved!</h3>
+      <span class="tick" aria-hidden="true"></span>
+      <h3 id="doneTitle">Request saved</h3>
       <p>Your booking reference</p>
       <div class="ref" id="doneRef">PB-</div>
-      <p>Tap below to send the details to our team on WhatsApp. We'll reply to confirm your date and package.</p>
-      <a class="btn btn-wa" id="doneWa" href="#" target="_blank" rel="noopener">Send on WhatsApp</a>
+      <p>Send the details to our team on WhatsApp and we'll confirm your date and package.</p>
+      <a class="btn btn-dark" id="doneWa" href="#" target="_blank" rel="noopener">Send on WhatsApp</a>
       <button class="btn btn-outline" id="doneClose" type="button">Close</button>
     </div>
   </div>
