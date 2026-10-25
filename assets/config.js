@@ -9,6 +9,12 @@ window.PB_CONFIG = {
   displayPhones: "052 865 3208 | 054 557 9880", // shown on the site
   instagram: "polybelleevents",
   facebook: "https://www.facebook.com/profile.php?id=100089250728671",
+  // Social links shown as icons in the top bar and footer. Leave a url empty ("") to hide it.
+  socials: [
+    { name: "Facebook", url: "https://www.facebook.com/profile.php?id=100089250728671" },
+    { name: "Instagram", url: "https://www.instagram.com/polybelleevents" },
+    { name: "TikTok", url: "" }
+  ],
 
   branches: [
     { name: "Electra", address: "1802, C88, Tower A", landmark: "Back side of City Seasons Hotel" },
