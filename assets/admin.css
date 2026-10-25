@@ -33,6 +33,12 @@ body { background: var(--cream); }
 .sm { padding: 8px 14px !important; font-size: .84rem !important; }
 
 .table-wrap { background: var(--white); border-radius: 16px; border: 1px solid var(--line); overflow-x: auto; }
+.promo-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.promo-table input { min-width: 100px; max-width: 150px; font: inherit; font-size: .88rem; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--ivory); color: var(--cocoa); }
+.promo-table input[type=checkbox] { min-width: 0; width: 18px; height: 18px; accent-color: var(--rose); }
+.promo-table .promo-code { font-weight: 500; letter-spacing: .08em; }
+.promo-table .promo-actions { display: flex; align-items: center; gap: 8px; }
+@media (max-width: 560px) { .promo-form-grid { grid-template-columns: 1fr; } }
 table { width: 100%; border-collapse: collapse; font-size: .9rem; }
 th { text-align: left; font-weight: 500; font-size: .76rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding: 12px 14px; border-bottom: 1px solid var(--line); background: var(--ivory); white-space: nowrap; }
 td { padding: 12px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }

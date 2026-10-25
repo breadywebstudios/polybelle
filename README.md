@@ -19,6 +19,11 @@ Public RPCs: `pb_request_booking`, `pb_booked_slots`, `pb_public_settings`.
 Venue photos go in the public storage bucket `polybelle`.
 Only emails in `pb_admins` can use the admin page (manage them in Admin → Settings).
 
+## Promo codes
+Apply `supabase/migrations/20261025200000_promo_codes.sql` in the Supabase SQL Editor before deploying the promo-code UI. It creates the promo tables and booking RPCs and seeds `MASCOT15` for 15% off Mascot Surprise, limited to 10 successfully submitted bookings.
+
+Admins can create, edit, pause, and cap promo codes in Admin → Promo codes. A use is counted atomically when a booking is submitted, including Pending requests. The selected required package or service and code are recorded with the booking. On its invoice, the discount is calculated against the matching item only; staff can adjust it if needed.
+
 ## Deploy
 Static site with no build step. Import the repo on Vercel (framework: Other) and deploy.
 Add the deployed `/admin.html` URL to Supabase → Authentication → URL Configuration → Redirect URLs so password-reset links work.

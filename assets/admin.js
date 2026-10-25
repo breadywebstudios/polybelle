@@ -17,7 +17,7 @@
     .replace(/[ \t]{2,}/g, " ").replace(/ +\n/g, "\n").trim();
   // api.whatsapp.com keeps emojis intact (the short wa.me redirect can garble them in WhatsApp Desktop/Web)
   const waLink = (num, text) => `https://api.whatsapp.com/send?phone=${intl(num)}${text ? "&text=" + encodeURIComponent(waClean(text)) : ""}`;
-  const S = { bookings: [], venues: [], admins: [], statusFilter: "", user: null };
+  const S = { bookings: [], venues: [], admins: [], promos: [], statusFilter: "", user: null };
 
   function toast(msg) { const t = $("#toast"); t.textContent = msg; t.classList.add("on"); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("on"), 2600); }
   function setMsg(el, text, kind) { el.textContent = text || ""; el.className = "msg" + (text ? " " + kind : ""); }
@@ -45,7 +45,7 @@
     $("#whoEmail").textContent = user.email;
     $("#loginView").style.display = "none"; $("#resetView").style.display = "none";
     $("#appView").classList.add("on");
-    await Promise.all([loadVenues(), loadBookings(), loadSettings(), loadAdmins(), loadGallery(), loadReviews(), loadServices()]);
+    await Promise.all([loadVenues(), loadBookings(), loadSettings(), loadAdmins(), loadGallery(), loadReviews(), loadServices(), loadPromos()]);
     setInterval(() => { if (!document.hidden) loadBookings(true); }, 60000);
   }
 
@@ -82,10 +82,16 @@
 
   // ---------------- bookings
   async function loadBookings(quiet) {
-    const { data, error } = await sb.from("pb_bookings").select("*").order("event_date", { ascending: true }).limit(2000);
+    const [{ data, error }, { data: promos, error: promoError }] = await Promise.all([
+      sb.from("pb_bookings").select("*").order("event_date", { ascending: true }).limit(2000),
+      sb.from("pb_promo_redemptions").select("booking_ref,promo_code,discount_percent,required_item")
+    ]);
     if (error) { if (!quiet) toast("Couldn't load bookings: " + error.message); return; }
-    const newPending = S.bookings.length && data.filter((b) => b.status === "Pending" && !S.bookings.some((o) => o.id === b.id)).length;
-    S.bookings = data;
+    if (promoError) console.error("Couldn't load booking promotions:", promoError.message);
+    const promoByBooking = new Map((promos || []).map((promo) => [promo.booking_ref, promo]));
+    const bookings = data.map((booking) => ({ ...booking, promo: promoByBooking.get(booking.ref) || null }));
+    const newPending = S.bookings.length && bookings.filter((b) => b.status === "Pending" && !S.bookings.some((o) => o.id === b.id)).length;
+    S.bookings = bookings;
     renderBookings();
     if (quiet && newPending) toast(`${newPending} new booking request${newPending > 1 ? "s" : ""}`);
   }
@@ -476,7 +482,14 @@
     const t0 = invTotals(b);
     if (b.invoice_no && t0.paid > 0 && t0.balance === 0) f.doc_type.value = "Receipt";
     const read = () => $$(".inv-row", d).map((r) => ({ ...(r.dataset.kind ? { kind: r.dataset.kind } : {}), ...(r.dataset.cid ? { cid: r.dataset.cid } : {}), description: $(".inv-desc", r).value.trim(), amount: Number($(".inv-amt", r).value) || 0 })).filter((x) => x.description || x.amount);
+    let promoDiscountTouched = Number(b.discount) > 0;
     const sum = () => {
+      if (b.promo && !promoDiscountTouched) {
+        const itemTotal = read()
+          .filter((item) => item.description.toLowerCase() === b.promo.required_item.toLowerCase())
+          .reduce((total, item) => total + item.amount, 0);
+        f.discount.value = (itemTotal * Number(b.promo.discount_percent) / 100).toFixed(2);
+      }
       const t = invTotals({ invoice_items: read(), discount: f.discount.value, amount_paid: f.amount_paid.value });
       $("#invSum").innerHTML = `<div><span>Subtotal</span><b>AED ${money(t.subtotal)}</b></div>${+f.discount.value ? `<div><span>Discount</span><b>− AED ${money(f.discount.value)}</b></div>` : ""}<div><span>Total</span><b>AED ${money(t.total)}</b></div><div><span>Paid</span><b>AED ${money(t.paid)}</b></div><div class="due"><span>Balance due</span><b>AED ${money(t.balance)}</b></div>`;
     };
@@ -484,7 +497,10 @@
       $$(".inv-del", d).forEach((x) => (x.onclick = () => { x.closest(".inv-row").remove(); sum(); }));
       $$(".inv-desc", d).forEach((ta) => { const fit = () => { ta.style.height = "auto"; ta.style.height = ta.scrollHeight + "px"; }; ta.oninput = fit; fit(); });
     };
-    f.addEventListener("input", sum);
+    f.addEventListener("input", (e) => {
+      if (e.target === f.discount) promoDiscountTouched = true;
+      sum();
+    });
     $("#resetLines").onclick = () => { if (!confirm("Replace the current lines with the hall and add-ons from the booking?")) return; $("#invItems").innerHTML = defaultItems(b).map(itemRow).join(""); wire(); sum(); };
     wire(); sum();
     $("[data-close]", d).addEventListener("click", () => openBooking(fresh(b.id)));
@@ -980,6 +996,80 @@
     const { error } = await sb.from("pb_admins").insert({ email });
     if (error) return toast(error.code === "23505" ? "Already an admin." : error.message);
     e.target.reset(); toast("Admin added"); loadAdmins();
+  });
+
+  // ---------------- promo codes
+  async function loadPromos() {
+    const [{ data, error }, { data: stats, error: statsError }] = await Promise.all([
+      sb.from("pb_promo_codes").select("*").order("created_at", { ascending: false }),
+      sb.rpc("pb_admin_promo_stats")
+    ]);
+    if (error || statsError) {
+      const message = error?.message || statsError?.message;
+      $("#promoRows").innerHTML = `<tr><td colspan="6" class="empty">Couldn't load promo codes: ${esc(message)}</td></tr>`;
+      return;
+    }
+    const counts = new Map((stats || []).map((item) => [item.promo_code, Number(item.used_count)]));
+    S.promos = (data || []).map((promo) => ({ ...promo, used_count: counts.get(promo.code) || 0 }));
+    renderPromos();
+  }
+
+  function renderPromos() {
+    $("#promoRows").innerHTML = S.promos.length ? S.promos.map((promo) => `
+      <tr data-promo-row="${esc(promo.code)}">
+        <td class="promo-code">${esc(promo.code)}</td>
+        <td><input type="number" min="0.01" max="100" step="0.01" data-promo-field="discount_percent" value="${esc(promo.discount_percent)}" aria-label="Discount percent for ${esc(promo.code)}">%</td>
+        <td><input type="text" maxlength="120" data-promo-field="required_item" value="${esc(promo.required_item)}" aria-label="Required selection for ${esc(promo.code)}"></td>
+        <td><input type="number" min="1" step="1" data-promo-field="max_uses" value="${esc(promo.max_uses)}" aria-label="Maximum bookings for ${esc(promo.code)}"><small>${promo.used_count} used</small></td>
+        <td><label class="switch"><input type="checkbox" data-promo-field="is_active" ${promo.is_active ? "checked" : ""}> ${promo.is_active ? "Active" : "Paused"}</label></td>
+        <td><div class="promo-actions"><button type="button" class="btn btn-outline sm" data-promo-save="${esc(promo.code)}">Save</button></div></td>
+      </tr>`).join("") : `<tr><td colspan="6" class="empty">No promo codes yet.</td></tr>`;
+    $$("[data-promo-save]").forEach((button) => button.addEventListener("click", () => savePromo(button.dataset.promoSave)));
+    $$("#promoRows [data-promo-field='is_active']").forEach((checkbox) => checkbox.addEventListener("change", () => {
+      checkbox.closest("label").lastChild.textContent = checkbox.checked ? " Active" : " Paused";
+    }));
+  }
+
+  async function savePromo(code) {
+    const row = $(`[data-promo-row="${CSS.escape(code)}"]`);
+    const discount = Number($('[data-promo-field="discount_percent"]', row).value);
+    const maxUses = Number($('[data-promo-field="max_uses"]', row).value);
+    const requiredItem = $('[data-promo-field="required_item"]', row).value.trim();
+    if (!(discount > 0 && discount <= 100) || !Number.isInteger(maxUses) || maxUses < 1 || !requiredItem) {
+      return toast("Enter a discount from 0.01% to 100%, a required selection, and a positive whole-number limit.");
+    }
+    const { error } = await sb.from("pb_promo_codes").update({
+      discount_percent: discount, required_item: requiredItem, max_uses: maxUses,
+      is_active: $('[data-promo-field="is_active"]', row).checked
+    }).eq("code", code);
+    if (error) return toast("Couldn't save promo code: " + error.message);
+    toast(`Promo code ${code} saved`);
+    loadPromos();
+  }
+
+  $("#promoForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const code = form.code.value.trim().toUpperCase();
+    const discount = Number(form.discount_percent.value);
+    const maxUses = Number(form.max_uses.value);
+    const requiredItem = form.required_item.value.trim();
+    if (!/^[A-Z0-9_-]{2,40}$/.test(code)) return toast("Use 2–40 letters, numbers, hyphens, or underscores for the code.");
+    if (!(discount > 0 && discount <= 100) || !Number.isInteger(maxUses) || maxUses < 1 || !requiredItem) {
+      return toast("Enter a discount from 0.01% to 100%, a required selection, and a positive whole-number limit.");
+    }
+    const { error } = await sb.from("pb_promo_codes").insert({
+      code, discount_percent: discount, required_item: requiredItem,
+      max_uses: maxUses, is_active: form.is_active.checked
+    });
+    if (error) return toast(error.code === "23505" ? "That promo code already exists." : "Couldn't create promo code: " + error.message);
+    form.reset();
+    form.discount_percent.value = "15";
+    form.required_item.value = "Mascot Surprise";
+    form.max_uses.value = "10";
+    form.is_active.checked = true;
+    toast(`Promo code ${code} created`);
+    loadPromos();
   });
 
   boot();

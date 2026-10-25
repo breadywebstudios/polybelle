@@ -48,13 +48,6 @@
   // ---------- packages & services picker (photo cards, managed in the admin)
   let services = C.addOns.map((name) => ({ name, kind: /package/i.test(name) ? "Package" : "Service", category: /package/i.test(name) ? "Full Packages" : "Event Services" }));
   let svcTab = null;
-  const compactSvcLabels = {
-    "Full Packages": "Full",
-    "Wedding Packages": "Wedding",
-    "Mascot Surprise": "Mascot",
-    "Souvenirs & Stations": "Gifts",
-    "Event Services": "Services",
-  };
   function renderSvcTabs() {
     const cats = [...(C.serviceCategories || []), ...new Set(services.map((x) => x.category || "Event Services"))]
       .filter((c, i, arr) => arr.indexOf(c) === i && services.some((x) => (x.category || "Event Services") === c));
@@ -62,7 +55,7 @@
     const picked = $$('#addonPick input:checked').map((i) => services.find((x) => x.name === i.value)?.category || "Event Services");
     $("#svcTabs").innerHTML = cats.length > 1 ? cats.map((c) => {
       const n = picked.filter((p) => p === c).length;
-      return `<button type="button" role="tab" aria-label="${esc(c)}" aria-selected="${c === svcTab}" class="${c === svcTab ? "on" : ""}" data-cat="${esc(c)}"><span class="svc-tab-full">${esc(c)}</span><span class="svc-tab-short" aria-hidden="true">${esc(compactSvcLabels[c] || c)}</span>${n ? `<i>${n}</i>` : ""}</button>`;
+      return `<button type="button" role="tab" aria-label="${esc(c)}" aria-selected="${c === svcTab}" class="${c === svcTab ? "on" : ""}" data-cat="${esc(c)}"><span>${esc(c)}</span>${n ? `<i>${n}</i>` : ""}</button>`;
     }).join("") : "";
     $$("#svcTabs button").forEach((b) => b.addEventListener("click", () => { svcTab = b.dataset.cat; renderSvcTabs(); }));
     $$("#addonPick .svc").forEach((el) => (el.hidden = cats.length > 1 && el.dataset.cat !== svcTab));
@@ -184,7 +177,8 @@
       name: (fd.get("name") || "").trim(),
       phone: (fd.get("phone") || "").trim(),
       email: (fd.get("email") || "").trim(),
-      notes: (fd.get("notes") || "").trim()
+      notes: (fd.get("notes") || "").trim(),
+      promo_code: (fd.get("promo_code") || "").trim().toUpperCase()
     };
   }
 
@@ -225,6 +219,7 @@
       `*Occasion:* ${d.event_type}`,
       d.guests ? `*Guests:* ${d.guests}` : null,
       d.add_ons.length ? `*Packages & services:* ${d.add_ons.join(", ")}` : null,
+      d.promo_code ? `*Promo code:* ${d.promo_code}` : null,
       ``,
       `*Name:* ${d.name}`,
       `*Mobile:* ${d.phone}`,
@@ -256,7 +251,7 @@
     if (!d.name) return showError("Please enter your name.");
     if (d.phone.replace(/\D/g, "").length < 7) return showError("Please enter a valid mobile number.");
 
-    const btn = $("#submitBtn");
+    const btn = e.submitter || $("#submitBtn");
     btn.disabled = true;
     btn.lastChild.textContent = " Saving…";
     // open the WhatsApp tab now (inside the click) so popup blockers allow it
@@ -265,15 +260,23 @@
     let ref;
     try {
       if (!sb || (!servicesOnly && !d.venue.id)) throw new Error("offline");
-      const { data, error } = await sb.rpc("pb_request_booking", { p: {
+      const bookingPayload = {
         booking_type: d.booking_type, event_location: d.event_location,
         venue_id: servicesOnly ? null : d.venue.id, date: d.date, session: d.session, event_type: d.event_type,
         guests: d.guests || null, add_ons: d.add_ons, name: d.name, phone: d.phone, email: d.email, notes: d.notes
-      } });
+      };
+      const { data, error } = d.promo_code
+        ? await sb.rpc("pb_request_booking_with_promo", { p: bookingPayload, p_promo_code: d.promo_code })
+        : await sb.rpc("pb_request_booking", { p: bookingPayload });
       if (error) throw error;
       ref = data;
     } catch (err) {
       const msg = err?.message || "";
+      if (d.promo_code && (!msg || msg === "offline" || /fetch|network/i.test(msg))) {
+        if (waWin) waWin.close();
+        btn.disabled = false; btn.lastChild.textContent = " Send on WhatsApp";
+        return showError("We couldn't verify your promo code. Please try again, or remove the code to submit without a discount.");
+      }
       if (msg && msg !== "offline" && !/fetch|network/i.test(msg)) {
         if (waWin) waWin.close();
         btn.disabled = false; btn.lastChild.textContent = " Send on WhatsApp";
@@ -386,10 +389,28 @@
     if (data) state.booked = data;
   }
 
+  async function loadPublicPromos() {
+    const container = $("#promoOffers");
+    if (!sb) {
+      container.innerHTML = `<p class="hint">Current offers could not be loaded. Please ask our team about available promotions.</p>`;
+      return;
+    }
+    const { data, error } = await sb.rpc("pb_public_promos");
+    if (error) {
+      console.error("Couldn't load current promotions:", error.message);
+      container.innerHTML = `<p class="hint">Current offers could not be loaded. Please ask our team about available promotions.</p>`;
+      return;
+    }
+    container.innerHTML = data?.length ? data.map((promo) =>
+      `<div class="promo-offer"><p><strong>${esc(promo.discount_percent)}% off ${esc(promo.required_item)}</strong> with promo code</p><code>${esc(promo.code)}</code></div>`
+    ).join("") : `<p class="hint">No active promo offers right now.</p>`;
+  }
+
   async function init() {
     state.venues = DEFAULT_VENUES;
     renderVenues(); renderContact(); update();
     if (!sb) return;
+    loadPublicPromos();
     sb.from("pb_gallery").select("image_url,caption,category").eq("active", true).order("sort_order").order("created_at", { ascending: false })
       .then(({ data }) => { if (data) { G.items = data; renderGallery(); } });
     sb.from("pb_reviews").select("name,event_type,rating,comment,source,featured,created_at").eq("status", "Approved")

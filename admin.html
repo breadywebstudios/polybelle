@@ -55,6 +55,7 @@
         <button data-tab="venues">Halls &amp; Services</button>
         <button data-tab="gallery">Gallery</button>
         <button data-tab="reviews">Reviews <span class="tab-count" id="rPendingCount" hidden></span></button>
+        <button data-tab="promos">Promo codes</button>
         <button data-tab="settings">Settings</button>
       </div>
     </nav>
@@ -128,6 +129,28 @@
           <button class="btn btn-primary sm" id="rAdd" type="button" style="margin-left:auto">+ Add review</button>
         </div>
         <div class="rlist" id="rAdmin"></div>
+      </section>
+
+      <!-- Promo codes -->
+      <section class="panel" id="tab-promos">
+        <p class="lead" style="margin:0 0 20px">Create discounts for selected packages or services. A use is counted only after a booking is successfully submitted, including Pending bookings. Limits are enforced by Supabase during booking creation.</p>
+        <form class="card" id="promoForm">
+          <h3>Create a promo code</h3>
+          <div class="promo-form-grid">
+            <label class="field">Code<input name="code" required maxlength="40" pattern="[A-Za-z0-9_-]+" placeholder="e.g. MASCOT15"></label>
+            <label class="field">Discount (%)<input name="discount_percent" type="number" min="0.01" max="100" step="0.01" required value="15"></label>
+            <label class="field">Required package / service<input name="required_item" required value="Mascot Surprise"></label>
+            <label class="field">Maximum bookings<input name="max_uses" type="number" min="1" step="1" required value="10"></label>
+          </div>
+          <label class="switch"><input type="checkbox" name="is_active" checked> Active and available to customers</label>
+          <div><button class="btn btn-primary sm" type="submit">Create code</button></div>
+        </form>
+        <div class="table-wrap">
+          <table class="promo-table">
+            <thead><tr><th>Code</th><th>Discount</th><th>Required selection</th><th>Uses</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="promoRows"><tr><td colspan="6" class="empty">Loading promo codes…</td></tr></tbody>
+          </table>
+        </div>
       </section>
 
       <!-- Settings -->

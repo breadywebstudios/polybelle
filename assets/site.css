@@ -216,6 +216,7 @@ b, strong { font-weight: 500; }
 .book-card { display: grid; grid-template-columns: 330px 1fr; background: var(--white); box-shadow: var(--shadow); }
 .book-aside { background: var(--ink); color: #E9DED5; padding: 48px 36px; display: grid; gap: 28px; align-content: start; }
 .book-aside h3 { color: #fff; font-size: 1.9rem; }
+.summary-submit { width: 100%; }
 .summary { margin: 0; display: grid; gap: 14px; font-size: .9rem; }
 .summary div { display: flex; justify-content: space-between; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,.1); }
 .summary dt { color: #A99A90; font-size: .72rem; letter-spacing: .2em; text-transform: uppercase; }
@@ -380,12 +381,18 @@ label.field { display: grid; gap: 7px; font-size: .74rem; letter-spacing: .14em;
 @keyframes svcIn { from { opacity: 0; transform: translateY(8px); } }
 .pay-note { margin: 0; font-size: .82rem; letter-spacing: .06em; color: var(--muted); }
 .pay-note b { color: var(--ink); }
-.svc-tab-short { display: none; }
+.promo-panel { display: grid; gap: 12px; padding: 18px; border: 1px solid var(--line); background: var(--cream); }
+.promo-offers { display: grid; gap: 8px; }
+.promo-offer { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.promo-offer p { margin: 0; color: var(--muted); font-size: .88rem; }
+.promo-offer strong { color: var(--ink); }
+.promo-offer code { padding: 5px 10px; background: var(--ink); color: #fff; font: 500 .8rem var(--sans); letter-spacing: .12em; }
+.promo-offers .hint { margin: 0; }
+.promo-panel .field { max-width: 360px; }
 @media (max-width: 560px) {
   .svc-tabs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; overflow: visible; border-bottom: 0; }
-  .svc-tabs button { min-width: 0; padding: 8px 1px; white-space: nowrap; overflow: hidden; font-size: .5rem; line-height: 1.2; letter-spacing: 0; text-align: center; justify-content: center; }
-  .svc-tab-full { display: none; }
-  .svc-tab-short { display: inline; }
+  .svc-tabs button { min-width: 0; padding: 6px 1px; white-space: normal; font-size: .42rem; line-height: 1.15; letter-spacing: 0; text-align: center; justify-content: center; flex-wrap: wrap; align-content: center; }
+  .svc-tabs button > span { flex: 1 1 100%; min-width: 0; overflow-wrap: normal; word-break: normal; }
   .svc-tabs button i { min-width: 14px; height: 14px; margin-left: 2px; padding: 0 3px; font-size: .55rem; }
 }
 .svc-tabs button { display: inline-flex; align-items: center; min-height: 42px; }
