@@ -334,3 +334,26 @@ label.field { display: grid; gap: 7px; font-size: .74rem; letter-spacing: .14em;
 .brand small { font-size: .6rem; letter-spacing: .32em; text-transform: uppercase; color: var(--gold); margin-top: 4px; }
 .brand-logo { width: 280px; height: 62px; object-fit: cover; object-position: center; }
 @media (max-width: 640px) { .occasions { gap: 12px 22px; } .occasions span + span::before { display: none; } }
+
+/* ---------- Package & service picker ---------- */
+.svc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 12px; }
+.svc { position: relative; display: block; cursor: pointer; }
+.svc input { position: absolute; opacity: 0; width: 0; height: 0; }
+.svc-card { display: flex; flex-direction: column; height: 100%; border: 1px solid var(--line); background: var(--white); transition: border-color .35s var(--ease), box-shadow .35s var(--ease), transform .35s var(--ease); }
+.svc:hover .svc-card { border-color: var(--muted); transform: translateY(-2px); }
+.svc-img { position: relative; aspect-ratio: 4 / 3; overflow: hidden; background: var(--cream); }
+.svc-img img { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; object-fit: cover; transition: transform 1s var(--ease); }
+.svc-tag, .svc-check { z-index: 2; }
+.svc:hover .svc-img img { transform: scale(1.05); }
+.svc-ph { position: absolute; inset: 0; display: grid; place-items: center; background: linear-gradient(150deg, var(--cream), var(--sand)); color: var(--gold); font: italic 400 2.2rem/1 var(--serif); }
+.svc-tag { position: absolute; left: 8px; top: 8px; background: var(--ink); color: #fff; font: 400 .6rem/1 var(--sans); letter-spacing: .2em; text-transform: uppercase; padding: 6px 8px; }
+.svc-body { padding: 12px 12px 14px; display: grid; gap: 3px; }
+.svc-body b { font: 400 1.1rem/1.2 var(--serif); }
+.svc-body small { color: var(--muted); font-size: .76rem; line-height: 1.4; }
+.svc-check { position: absolute; right: 8px; top: 8px; width: 26px; height: 26px; border-radius: 50%; background: rgba(255,255,255,.92); border: 1px solid var(--line); display: grid; place-items: center; transition: background .3s, border-color .3s; }
+.svc-check::after { content: ""; width: 6px; height: 11px; border: solid transparent; border-width: 0 1.5px 1.5px 0; transform: translateY(-1px) rotate(45deg); transition: border-color .3s; }
+.svc input:checked + .svc-card { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.svc input:checked + .svc-card .svc-check { background: var(--ink); border-color: var(--ink); }
+.svc input:checked + .svc-card .svc-check::after { border-color: #fff; }
+.svc input:focus-visible + .svc-card { outline: 2px solid var(--gold); outline-offset: 2px; }
+@media (max-width: 560px) { .svc-grid { grid-template-columns: 1fr 1fr; gap: 10px; } .svc-body small { display: none; } }

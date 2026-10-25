@@ -38,7 +38,7 @@
     $("#whoEmail").textContent = user.email;
     $("#loginView").style.display = "none"; $("#resetView").style.display = "none";
     $("#appView").classList.add("on");
-    await Promise.all([loadVenues(), loadBookings(), loadSettings(), loadAdmins(), loadGallery(), loadReviews()]);
+    await Promise.all([loadVenues(), loadBookings(), loadSettings(), loadAdmins(), loadGallery(), loadReviews(), loadServices()]);
     setInterval(() => { if (!document.hidden) loadBookings(true); }, 60000);
   }
 
@@ -187,7 +187,7 @@
         <label class="field">Customer address / company (shown on invoice)<textarea name="customer_address" rows="2" placeholder="e.g. Cocoa Parties & Events SPC LLC&#10;Abu Dhabi, UAE">${esc(b.customer_address || "")}</textarea></label>
         <div>
           <div style="font-size:.86rem;color:var(--muted);margin-bottom:8px">Add-ons</div>
-          <div class="addons">${[...new Set([...C.addOns, ...(b.add_ons || [])])].map((a) => `<label class="addon"><input type="checkbox" name="add_ons" value="${esc(a)}" ${(b.add_ons || []).includes(a) ? "checked" : ""}><span>${esc(a)}</span></label>`).join("")}</div>
+          <div class="addons">${[...new Set([...(S.services?.length ? S.services.map((x) => x.name) : C.addOns), ...(b.add_ons || [])])].map((a) => `<label class="addon"><input type="checkbox" name="add_ons" value="${esc(a)}" ${(b.add_ons || []).includes(a) ? "checked" : ""}><span>${esc(a)}</span></label>`).join("")}</div>
         </div>
         <label class="field">Customer notes<textarea name="notes">${esc(b.notes || "")}</textarea></label>
         ${isNew ? `<label class="field">Status<select name="status">${STATUSES.map((s) => `<option ${s === b.status ? "selected" : ""}>${s}</option>`).join("")}</select></label>` : ""}
@@ -549,6 +549,83 @@
       if (error) return toast(error.message);
       toast(isNew ? "Hall added — it's live on the website" : "Hall updated");
       closeDrawers(); loadVenues();
+    });
+    openDrawer("#vdrawer");
+  }
+
+  // ---------------- packages & services
+  async function loadServices() {
+    const { data, error } = await sb.from("pb_services").select("*").order("sort_order").order("name");
+    if (error) return toast(error.message);
+    S.services = data; renderServicesAdmin();
+  }
+  function renderServicesAdmin() {
+    $("#sgrid").innerHTML = S.services.map((sv) => `
+      <div class="vcard">
+        <div class="vimg" style="${sv.image_url ? `background-image:url('${esc(sv.image_url)}')` : ""}">
+          <span class="badge ${sv.active ? "b-Confirmed" : "b-Cancelled"}">${sv.active ? "Shown" : "Hidden"}</span>
+          ${sv.kind === "Package" ? `<span class="badge" style="left:auto;right:10px;background:var(--ink);color:#fff">Package</span>` : ""}
+        </div>
+        <div class="vb">
+          <h3>${esc(sv.name)}</h3>
+          ${sv.description ? `<p>${esc(sv.description)}</p>` : ""}
+          ${sv.image_url ? "" : `<p style="color:var(--gold)">No photo yet — add one.</p>`}
+        </div>
+        <div class="vf"><button class="btn btn-outline sm" data-sedit="${sv.id}">Edit</button></div>
+      </div>`).join("") + `<button class="vcard add" id="addService"><span><b>+</b>Add a package or service</span></button>`;
+    $$("[data-sedit]").forEach((b) => b.addEventListener("click", () => openService(S.services.find((x) => x.id === b.dataset.sedit))));
+    $("#addService").addEventListener("click", () => openService(null));
+  }
+  function openService(sv) {
+    const isNew = !sv;
+    sv = sv || { name: "", kind: "Service", description: "", image_url: "", sort_order: (S.services.at(-1)?.sort_order || 0) + 1, active: true };
+    const d = $("#vdrawer");
+    d.innerHTML = `
+      <div class="drawer-head"><div><span class="eyebrow">${isNew ? "New" : "Edit"} package / service</span><h3>${esc(sv.name || "Add an item")}</h3></div><button class="xbtn" data-close aria-label="Close">×</button></div>
+      <form class="drawer-body" id="svcForm">
+        <div class="preview-img" id="sPrev" style="${sv.image_url ? `background-image:url('${esc(sv.image_url)}')` : ""}"></div>
+        <label class="field">Photo (JPG/PNG/WebP, max 5 MB)<input type="file" id="sFile" accept="image/jpeg,image/png,image/webp"></label>
+        <input type="hidden" name="image_url" value="${esc(sv.image_url || "")}">
+        <label class="field">Name<input name="name" required maxlength="60" value="${esc(sv.name)}" placeholder="e.g. Balloon Arch"></label>
+        <div class="grid-2">
+          <label class="field">Type<select name="kind">${["Package", "Service"].map((k) => `<option ${k === sv.kind ? "selected" : ""}>${k}</option>`).join("")}</select></label>
+          <label class="field">Display order<input type="number" name="sort_order" value="${sv.sort_order}"></label>
+        </div>
+        <label class="field">Short description<input name="description" maxlength="90" value="${esc(sv.description || "")}" placeholder="One line shown under the name"></label>
+        <label class="switch"><input type="checkbox" name="active" ${sv.active ? "checked" : ""}> Show in the booking form</label>
+        ${isNew ? "" : `<p class="hint" style="margin:0">Renaming won't change bookings already made with the old name.</p>`}
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-primary" type="submit">${isNew ? "Add" : "Save changes"}</button>
+          ${isNew ? "" : `<button class="btn btn-outline" type="button" id="sDel">Delete</button>`}
+        </div>
+      </form>`;
+    $("[data-close]", d).addEventListener("click", closeDrawers);
+    $("#sFile").addEventListener("change", async (e) => {
+      const f = e.target.files[0]; if (!f) return;
+      if (f.size > 5 * 1024 * 1024) return toast("Photo is over 5 MB — please use a smaller one.");
+      toast("Uploading photo…");
+      const path = `services/${Date.now()}-${f.name.replace(/[^a-z0-9.]+/gi, "-").toLowerCase()}`;
+      const { error } = await sb.storage.from(C.storageBucket).upload(path, f, { cacheControl: "31536000" });
+      if (error) return toast("Upload failed: " + error.message);
+      const url = sb.storage.from(C.storageBucket).getPublicUrl(path).data.publicUrl;
+      $("#svcForm").image_url.value = url; $("#sPrev").style.backgroundImage = `url('${url}')`;
+      toast("Photo uploaded — remember to save");
+    });
+    $("#sDel")?.addEventListener("click", async () => {
+      if (!confirm(`Delete “${sv.name}”? Tip: untick “Show in the booking form” to hide it instead.`)) return;
+      const { error } = await sb.from("pb_services").delete().eq("id", sv.id);
+      if (error) return toast(error.message);
+      toast("Deleted"); closeDrawers(); loadServices();
+    });
+    $("#svcForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const f = e.target;
+      const row = { name: f.name.value.trim(), kind: f.kind.value, description: f.description.value.trim() || null,
+        image_url: f.image_url.value || null, sort_order: +f.sort_order.value || 0, active: f.active.checked };
+      if (!row.name) return toast("Name is required.");
+      const { error } = isNew ? await sb.from("pb_services").insert(row) : await sb.from("pb_services").update(row).eq("id", sv.id);
+      if (error) return toast(error.code === "23505" ? "There's already an item with that name." : error.message);
+      toast(isNew ? "Added — it's now in the booking form" : "Saved"); closeDrawers(); loadServices();
     });
     openDrawer("#vdrawer");
   }

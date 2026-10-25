@@ -38,7 +38,21 @@
   window.addEventListener("scroll", onScroll, { passive: true }); onScroll();
 
   $("#typeInput").innerHTML = `<option value="">Select occasion…</option>` + C.eventTypes.map((t) => `<option>${esc(t)}</option>`).join("");
-  $("#addonPick").innerHTML = C.addOns.map((a) => `<label class="addon"><input type="checkbox" name="add_ons" value="${esc(a)}"><span>${esc(a)}</span></label>`).join("");
+  // ---------- packages & services picker (photo cards, managed in the admin)
+  let services = C.addOns.map((name) => ({ name, kind: /package/i.test(name) ? "Package" : "Service" }));
+  function renderServices() {
+    const picked = new Set($$('#addonPick input:checked').map((i) => i.value));
+    $("#addonPick").innerHTML = services.map((sv) => `
+      <label class="svc">
+        <input type="checkbox" name="add_ons" value="${esc(sv.name)}" ${picked.has(sv.name) ? "checked" : ""}>
+        <span class="svc-card">
+          <span class="svc-img">${sv.image_url ? `<img src="${esc(sv.image_url)}" alt="" loading="lazy" onerror="this.remove()">` : ""}<span class="svc-ph" aria-hidden="true">${esc(sv.name.trim()[0] || "")}</span>
+            ${sv.kind === "Package" ? `<span class="svc-tag">Package</span>` : ""}<span class="svc-check" aria-hidden="true"></span></span>
+          <span class="svc-body"><b>${esc(sv.name)}</b>${sv.description ? `<small>${esc(sv.description)}</small>` : ""}</span>
+        </span>
+      </label>`).join("");
+  }
+  renderServices();
   $("#dateInput").min = todayDubai();
 
   function renderContact() {
@@ -352,6 +366,8 @@
     sb.from("pb_reviews").select("name,event_type,rating,comment,source,featured,created_at").eq("status", "Approved")
       .order("featured", { ascending: false }).order("created_at", { ascending: false }).limit(60)
       .then(({ data }) => { R.items = data || []; renderReviews(); });
+    sb.from("pb_services").select("name,kind,description,image_url").eq("active", true).order("sort_order").order("name")
+      .then(({ data }) => { if (data?.length) { services = data; renderServices(); update(); } });
     const [venues, settings] = await Promise.all([
       sb.from("pb_venues").select("id,name,tagline,description,capacity,branch,image_url,price_from,sort_order").eq("active", true).order("sort_order").order("name"),
       sb.rpc("pb_public_settings"),
