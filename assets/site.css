@@ -197,3 +197,27 @@ footer a:hover { color: #fff; }
 .fade { opacity: 0; transform: translateY(16px); transition: .7s ease; }
 .fade.in { opacity: 1; transform: none; }
 @media (prefers-reduced-motion: reduce) { .fade { opacity: 1; transform: none; } html { scroll-behavior: auto; } }
+
+/* Gallery */
+.g-filters { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 28px; }
+.g-filters button { font: inherit; font-size: .88rem; padding: 8px 18px; border-radius: 999px; border: 1px solid var(--line); background: var(--white); color: var(--muted); cursor: pointer; }
+.g-filters button.on { background: var(--cocoa); border-color: var(--cocoa); color: #fff; }
+.g-grid { columns: 3 280px; column-gap: 16px; }
+.g-item { break-inside: avoid; margin: 0 0 16px; border-radius: 16px; overflow: hidden; position: relative; cursor: zoom-in; background: linear-gradient(135deg, var(--blush), var(--sand)); border: 0; padding: 0; width: 100%; display: block; }
+.g-item img { width: 100%; height: auto; transition: transform .5s ease; min-height: 160px; object-fit: cover; }
+.g-item:hover img { transform: scale(1.04); }
+.g-item span { position: absolute; left: 0; right: 0; bottom: 0; padding: 30px 16px 14px; background: linear-gradient(transparent, rgba(40,26,21,.75)); color: #fff; font-family: var(--serif); font-size: 1.15rem; text-align: left; }
+.g-item span small { display: block; font-family: var(--sans); font-size: .7rem; letter-spacing: .16em; text-transform: uppercase; color: #E9CFA0; }
+.g-empty { text-align: center; color: var(--muted); padding: 30px 0; column-span: all; }
+.lightbox { position: fixed; inset: 0; z-index: 70; background: rgba(20,13,10,.92); display: none; align-items: center; justify-content: center; padding: 16px; }
+.lightbox.open { display: flex; }
+.lightbox figure { margin: 0; max-width: min(1100px, 100%); text-align: center; }
+.lightbox img { max-height: 80vh; max-width: 100%; margin: 0 auto; border-radius: 10px; }
+.lightbox figcaption { color: #F1E5DC; font-family: var(--serif); font-size: 1.3rem; margin-top: 12px; }
+.lb-btn { position: absolute; background: rgba(255,255,255,.12); color: #fff; border: 0; width: 48px; height: 48px; border-radius: 50%; font-size: 1.8rem; line-height: 1; cursor: pointer; }
+.lb-btn:hover { background: rgba(255,255,255,.25); }
+.lb-close { top: 16px; right: 16px; }
+.lb-prev { left: 16px; top: 50%; transform: translateY(-50%); }
+.lb-next { right: 16px; top: 50%; transform: translateY(-50%); }
+@media (max-width: 600px) { .lb-prev, .lb-next { top: auto; bottom: 20px; transform: none; } }
+[hidden] { display: none !important; }

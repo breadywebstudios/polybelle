@@ -29,6 +29,8 @@ window.PB_CONFIG = {
   addOns: ["Event Styling", "Catering", "Customized Cake", "Photo & Video", "Professional Host",
     "Photobooth", "Souvenirs", "Mascot Surprise", "Face Painting", "Video / Audio Guestbook"],
 
+  galleryCategories: ["Birthday", "Wedding", "Baby Shower", "Christening", "Gender Reveal", "Cake Smash", "Photobooth", "Corporate"],
+
   // Shown when a venue has no photo yet
   fallbackImages: [
     "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=1200&q=70",

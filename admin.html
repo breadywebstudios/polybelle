@@ -53,6 +53,7 @@
       <div class="wrap">
         <button class="active" data-tab="bookings">Bookings</button>
         <button data-tab="venues">Halls / Venues</button>
+        <button data-tab="gallery">Gallery</button>
         <button data-tab="settings">Settings</button>
       </div>
     </nav>
@@ -88,6 +89,26 @@
       <section class="panel" id="tab-venues">
         <p class="lead" style="margin:0 0 20px">Add a new hall anytime — it appears on the website and in the booking form straight away. Hide a hall to stop new bookings without losing its history.</p>
         <div class="vgrid" id="vgrid"></div>
+      </section>
+
+      <!-- Gallery -->
+      <section class="panel" id="tab-gallery">
+        <form class="card" id="gUpload" style="max-width:none">
+          <h3>Add event photos</h3>
+          <p class="hint" style="margin:0">Photos appear in the website's Events &amp; Gallery section straight away. JPG, PNG or WebP up to 5 MB each; you can pick several at once.</p>
+          <div class="toolbar" style="margin:0">
+            <input type="file" name="files" accept="image/jpeg,image/png,image/webp" multiple required>
+            <select name="category"></select>
+            <input name="caption" placeholder="Caption, e.g. Princess-themed 7th Birthday" maxlength="80" style="flex:1 1 240px">
+            <button class="btn btn-primary sm" type="submit">Upload</button>
+          </div>
+          <p class="hint" id="gProgress" style="margin:0"></p>
+        </form>
+        <div class="toolbar">
+          <select id="gFilter"><option value="">All occasions</option></select>
+          <span class="hint" id="gCount" style="margin:0"></span>
+        </div>
+        <div class="ggrid" id="gAdmin"></div>
       </section>
 
       <!-- Settings -->

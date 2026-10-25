@@ -38,7 +38,7 @@
     $("#whoEmail").textContent = user.email;
     $("#loginView").style.display = "none"; $("#resetView").style.display = "none";
     $("#appView").classList.add("on");
-    await Promise.all([loadVenues(), loadBookings(), loadSettings(), loadAdmins()]);
+    await Promise.all([loadVenues(), loadBookings(), loadSettings(), loadAdmins(), loadGallery()]);
     setInterval(() => { if (!document.hidden) loadBookings(true); }, 60000);
   }
 
@@ -542,6 +542,80 @@
     });
     openDrawer("#vdrawer");
   }
+
+  // ---------------- gallery
+  const catOpts = (sel) => C.galleryCategories.map((c) => `<option ${c === sel ? "selected" : ""}>${esc(c)}</option>`).join("");
+  $("#gUpload").category.innerHTML = catOpts("Birthday");
+  $("#gFilter").innerHTML = `<option value="">All occasions</option>` + catOpts("");
+  $("#gFilter").value = "";
+  $("#gFilter").addEventListener("input", renderGalleryAdmin);
+
+  async function loadGallery() {
+    const { data, error } = await sb.from("pb_gallery").select("*").order("sort_order").order("created_at", { ascending: false });
+    if (error) return toast(error.message);
+    S.gallery = data; renderGalleryAdmin();
+  }
+  function renderGalleryAdmin() {
+    const f = $("#gFilter").value;
+    const list = (S.gallery || []).filter((g) => !f || g.category === f);
+    const samples = (S.gallery || []).filter((g) => g.is_sample).length;
+    $("#gCount").textContent = `${list.length} photo${list.length === 1 ? "" : "s"}` + (samples ? ` · ${samples} sample photo${samples > 1 ? "s" : ""} to replace with real event photos` : "");
+    $("#gAdmin").innerHTML = list.map((g) => `
+      <div class="gcard ${g.active ? "" : "dim"}" data-id="${g.id}">
+        <div class="gimg" style="background-image:url('${esc(g.image_url)}')">${g.is_sample ? `<span class="badge b-Pending">Sample</span>` : g.active ? "" : `<span class="badge b-Cancelled">Hidden</span>`}</div>
+        <div class="gb">
+          <input data-f="caption" value="${esc(g.caption || "")}" placeholder="Caption" maxlength="80">
+          <select data-f="category">${catOpts(g.category)}</select>
+          <div class="gf">
+            <label><input type="checkbox" data-f="active" ${g.active ? "checked" : ""} style="width:auto"> Show</label>
+            <input type="number" data-f="sort_order" value="${g.sort_order}" title="Order (lower shows first)" style="width:64px">
+            <button class="linkbtn" data-del type="button">Delete</button>
+          </div>
+        </div>
+      </div>`).join("") || `<p class="hint">No photos yet.</p>`;
+    $$("#gAdmin .gcard").forEach((card) => {
+      const id = card.dataset.id;
+      $$("[data-f]", card).forEach((el) => el.addEventListener("change", async () => {
+        const v = el.type === "checkbox" ? el.checked : el.type === "number" ? +el.value || 0 : el.value.trim() || null;
+        const { error } = await sb.from("pb_gallery").update({ [el.dataset.f]: v }).eq("id", id);
+        if (error) return toast(error.message);
+        Object.assign(S.gallery.find((g) => g.id === id), { [el.dataset.f]: v });
+        if (el.dataset.f === "active") renderGalleryAdmin();
+        toast("Saved");
+      }));
+      $("[data-del]", card).addEventListener("click", async () => {
+        if (!confirm("Delete this photo from the gallery?")) return;
+        const g = S.gallery.find((x) => x.id === id);
+        const { error } = await sb.from("pb_gallery").delete().eq("id", id);
+        if (error) return toast(error.message);
+        const marker = `/object/public/${C.storageBucket}/`;
+        if (g.image_url.includes(marker)) sb.storage.from(C.storageBucket).remove([decodeURIComponent(g.image_url.split(marker)[1])]);
+        S.gallery = S.gallery.filter((x) => x.id !== id); renderGalleryAdmin(); toast("Photo deleted");
+      });
+    });
+  }
+  $("#gUpload").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const f = e.target, files = [...f.files.files], btn = f.querySelector("button");
+    const big = files.filter((x) => x.size > 5 * 1024 * 1024);
+    if (big.length) return toast(`${big.length} photo(s) are over 5 MB — please resize them first.`);
+    btn.disabled = true;
+    const minOrder = Math.min(0, ...(S.gallery || []).map((g) => g.sort_order)) - files.length;
+    let done = 0, failed = 0;
+    for (const [i, file] of files.entries()) {
+      $("#gProgress").textContent = `Uploading ${i + 1} of ${files.length}…`;
+      const path = `gallery/${Date.now()}-${i}-${file.name.replace(/[^a-z0-9.]+/gi, "-").toLowerCase()}`;
+      const up = await sb.storage.from(C.storageBucket).upload(path, file, { cacheControl: "31536000" });
+      if (up.error) { failed++; continue; }
+      const url = sb.storage.from(C.storageBucket).getPublicUrl(path).data.publicUrl;
+      const { error } = await sb.from("pb_gallery").insert({ image_url: url, caption: f.caption.value.trim() || null, category: f.category.value, sort_order: minOrder + i });
+      error ? failed++ : done++;
+    }
+    btn.disabled = false;
+    $("#gProgress").textContent = `${done} photo${done === 1 ? "" : "s"} added${failed ? `, ${failed} failed` : ""}.`;
+    f.files.value = ""; f.caption.value = "";
+    loadGallery();
+  });
 
   // ---------------- settings & admins
   async function loadSettings() {

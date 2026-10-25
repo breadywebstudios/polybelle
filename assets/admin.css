@@ -103,3 +103,14 @@ dl.kv dd { margin: 0; word-break: break-word; }
 .inv-sum .due span { color: var(--rose); }
 .adm-head .site-link { color: #fff; text-decoration: none; border: 1px solid rgba(255,255,255,.35); border-radius: 999px; padding: 6px 14px; font-size: .8rem; white-space: nowrap; }
 .adm-head .site-link:hover { background: rgba(255,255,255,.12); }
+
+/* Gallery admin */
+.ggrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+.gcard { background: var(--white); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; }
+.gcard .gimg { aspect-ratio: 4/3; background: var(--cream) center/cover no-repeat; position: relative; }
+.gcard .gimg .badge { position: absolute; top: 8px; left: 8px; }
+.gcard .gb { padding: 12px; display: grid; gap: 8px; }
+.gcard input, .gcard select { font: inherit; font-size: .86rem; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--ivory); color: var(--cocoa); width: 100%; }
+.gcard .gf { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.gcard .gf label { font-size: .82rem; display: flex; gap: 6px; align-items: center; margin-right: auto; }
+.gcard.dim .gimg { opacity: .5; }

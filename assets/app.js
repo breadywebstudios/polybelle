@@ -1,6 +1,7 @@
 (() => {
   const C = window.PB_CONFIG;
   const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => [...el.querySelectorAll(s)];
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const sb = window.supabase ? window.supabase.createClient(C.supabaseUrl, C.supabaseKey) : null;
 
@@ -224,6 +225,44 @@
   $("#doneClose").addEventListener("click", () => $("#doneModal").classList.remove("open"));
   $("#doneModal").addEventListener("click", (e) => { if (e.target.id === "doneModal") e.currentTarget.classList.remove("open"); });
 
+  // ---------- gallery
+  const G = { items: [], filter: "All", shown: 9, view: [], idx: 0 };
+  $("#gFb").href = C.facebook;
+  function renderGallery() {
+    const cats = ["All", ...C.galleryCategories.filter((c) => G.items.some((g) => g.category === c))];
+    $("#gFilters").innerHTML = cats.length > 2 ? cats.map((c) => `<button type="button" role="tab" aria-selected="${c === G.filter}" class="${c === G.filter ? "on" : ""}" data-c="${esc(c)}">${esc(c === "All" ? "All events" : c)}</button>`).join("") : "";
+    $$("#gFilters button").forEach((b) => b.addEventListener("click", () => { G.filter = b.dataset.c; G.shown = 9; renderGallery(); }));
+    G.view = G.items.filter((g) => G.filter === "All" || g.category === G.filter);
+    const list = G.view.slice(0, G.shown);
+    $("#gGrid").innerHTML = list.length ? list.map((g, i) => `
+      <button class="g-item" type="button" data-i="${i}" aria-label="View ${esc(g.caption || g.category)}">
+        <img src="${esc(g.image_url)}" alt="${esc(g.caption || g.category)}" loading="lazy" onerror="this.style.visibility='hidden'">
+        <span><small>${esc(g.category)}</small>${esc(g.caption || "")}</span>
+      </button>`).join("") : `<p class="g-empty">New event photos coming soon.</p>`;
+    $$("#gGrid .g-item").forEach((b) => b.addEventListener("click", () => openLb(+b.dataset.i)));
+    $("#gMore").hidden = G.view.length <= G.shown;
+  }
+  $("#gMore").addEventListener("click", () => { G.shown += 9; renderGallery(); });
+  function openLb(i) {
+    G.idx = (i + G.view.length) % G.view.length;
+    const g = G.view[G.idx];
+    $("#lbImg").src = g.image_url; $("#lbImg").alt = g.caption || g.category;
+    $("#lbCap").textContent = [g.caption, g.category].filter(Boolean).join(" · ");
+    $("#lightbox").classList.add("open"); document.body.style.overflow = "hidden";
+  }
+  const closeLb = () => { $("#lightbox").classList.remove("open"); document.body.style.overflow = ""; };
+  $("#lbClose").addEventListener("click", closeLb);
+  $("#lbPrev").addEventListener("click", () => openLb(G.idx - 1));
+  $("#lbNext").addEventListener("click", () => openLb(G.idx + 1));
+  $("#lightbox").addEventListener("click", (e) => { if (e.target.id === "lightbox") closeLb(); });
+  document.addEventListener("keydown", (e) => {
+    if (!$("#lightbox").classList.contains("open")) return;
+    if (e.key === "Escape") closeLb(); if (e.key === "ArrowLeft") openLb(G.idx - 1); if (e.key === "ArrowRight") openLb(G.idx + 1);
+  });
+  let touchX = null;
+  $("#lightbox").addEventListener("touchstart", (e) => (touchX = e.touches[0].clientX), { passive: true });
+  $("#lightbox").addEventListener("touchend", (e) => { if (touchX === null) return; const dx = e.changedTouches[0].clientX - touchX; if (Math.abs(dx) > 50) openLb(G.idx + (dx < 0 ? 1 : -1)); touchX = null; });
+
   // ---------- data
   async function loadBooked() {
     if (!sb) return;
@@ -235,6 +274,8 @@
     state.venues = DEFAULT_VENUES;
     renderVenues(); renderContact(); update();
     if (!sb) return;
+    sb.from("pb_gallery").select("image_url,caption,category").eq("active", true).order("sort_order").order("created_at", { ascending: false })
+      .then(({ data }) => { if (data) { G.items = data; renderGallery(); } });
     const [venues, settings] = await Promise.all([
       sb.from("pb_venues").select("id,name,tagline,description,capacity,branch,image_url,price_from,sort_order").eq("active", true).order("sort_order").order("name"),
       sb.rpc("pb_public_settings"),
