@@ -385,6 +385,8 @@ label.field { display: grid; gap: 7px; font-size: .74rem; letter-spacing: .14em;
 .pay-brand { display: inline-flex; align-items: center; justify-content: center; min-width: 112px; min-height: 46px; padding: 8px 18px; border: 1px solid var(--line); border-radius: 12px; background: #fff; box-shadow: 0 5px 18px rgba(40, 32, 28, .08); }
 .pay-brand img { display: block; width: auto; max-width: 86px; height: 24px; }
 .pay-note > small { font-size: .72rem; letter-spacing: .04em; }
+.pay-note .pay-card-note { display: inline-flex; align-items: center; gap: 7px; }
+.pay-card-note svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.7; }
 .promo-panel { display: grid; gap: 12px; padding: 18px; border: 1px solid var(--line); background: var(--cream); }
 .promo-offers { display: grid; gap: 8px; }
 .promo-offer { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
