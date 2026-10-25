@@ -85,6 +85,7 @@
       <label class="chip-radio"><input type="radio" name="venue" value="${esc(v.id || v.name)}" required>
         <span><b>${esc(v.name)}</b><small>Up to ${v.capacity} guests${v.branch ? " · " + esc(v.branch) : ""}</small></span></label>`).join("");
     document.querySelectorAll("[data-book]").forEach((b) => b.addEventListener("click", () => {
+      setType("Hall");
       const r = document.querySelector(`#hallPick input[value="${CSS.escape(b.dataset.book)}"]`);
       if (r) { r.checked = true; update(); }
       $("#book").scrollIntoView({ behavior: "smooth" });
@@ -95,22 +96,32 @@
   function renderSessions() {
     const venue = selectedVenue();
     const date = $("#dateInput").value;
+    const servicesOnly = bookingType() === "Services";
     const taken = state.booked.filter((b) => venue && b.venue_id === venue.id && b.event_date === date).map((b) => b.session);
     const wholeTaken = taken.includes("Whole day");
     const current = document.querySelector('#sessionPick input:checked')?.value;
     $("#sessionPick").innerHTML = C.sessions.map((s) => {
-      const blocked = wholeTaken || taken.includes(s.id) || (s.id === "Whole day" && taken.length > 0);
+      const blocked = !servicesOnly && (wholeTaken || taken.includes(s.id) || (s.id === "Whole day" && taken.length > 0));
       return `<label class="chip-radio"><input type="radio" name="session" value="${esc(s.id)}" ${blocked ? "disabled" : ""} ${current === s.id && !blocked ? "checked" : ""} required>
         <span><b>${esc(s.id)}</b><small>${blocked ? "Already booked" : esc(s.time)}</small></span></label>`;
     }).join("");
     const hint = $("#availHint");
-    if (!venue || !date) { hint.textContent = "Pick a hall and date to see open sessions."; hint.className = "hint"; }
+    if (servicesOnly) { hint.textContent = "Choose the time of your event so our team can plan around it."; hint.className = "hint"; }
+    else if (!venue || !date) { hint.textContent = "Pick a hall and date to see open sessions."; hint.className = "hint"; }
     else if (taken.length === 0) { hint.textContent = `Good news — ${venue.name} is open all day on ${fmtDate(date)}.`; hint.className = "hint"; }
     else if (wholeTaken || C.sessions.every((s) => s.id === "Whole day" || taken.includes(s.id))) { hint.textContent = `${venue.name} is fully booked on this date. Please try another date or hall.`; hint.className = "hint warn"; }
     else { hint.textContent = "Some sessions are already booked — open ones are still available."; hint.className = "hint"; }
   }
 
+  const bookingType = () => document.querySelector('#bookForm input[name="booking_type"]:checked')?.value || "Hall";
+  function setType(t) {
+    const r = document.querySelector(`#bookForm input[name="booking_type"][value="${t}"]`);
+    if (r) r.checked = true;
+    update();
+  }
+  $$("[data-book-type]").forEach((b) => b.addEventListener("click", () => setType(b.dataset.bookType)));
   const selectedVenue = () => {
+    if (bookingType() !== "Hall") return undefined;
     const val = document.querySelector('#hallPick input:checked')?.value;
     return state.venues.find((v) => (v.id || v.name) === val);
   };
@@ -119,6 +130,8 @@
     const f = $("#bookForm");
     const fd = new FormData(f);
     return {
+      booking_type: bookingType(),
+      event_location: (fd.get("event_location") || "").trim(),
       venue: selectedVenue(),
       date: fd.get("date"),
       session: fd.get("session"),
@@ -133,10 +146,15 @@
   }
 
   function update() {
+    const servicesOnly = bookingType() === "Services";
+    $("#hallWrap").hidden = servicesOnly;
+    $("#locWrap").hidden = !servicesOnly;
+    $("#addonLabel").textContent = servicesOnly ? "Choose the packages and services you'd like (at least one)" : "Packages and services you're interested in (optional)";
     renderSessions();
     const d = readForm();
     const set = (k, v) => ($(`[data-s="${k}"]`).textContent = v || "—");
-    set("hall", d.venue?.name);
+    set("kind", servicesOnly ? "Package / services" : "Hall");
+    set("hall", servicesOnly ? (d.event_location || "Your venue") : d.venue?.name);
     set("date", d.date ? fmtDate(d.date) : "");
     set("session", d.session);
     set("type", d.event_type);
@@ -148,7 +166,7 @@
       cap.className = "hint warn";
     } else cap.textContent = "";
   }
-  $("#bookForm").addEventListener("change", update);
+  $("#bookForm").addEventListener("change", () => { $("#formError").style.display = "none"; update(); });
   $("#bookForm").addEventListener("input", (e) => { if (e.target.name === "guests") update(); });
 
   function buildMessage(d, ref) {
@@ -157,12 +175,13 @@
       `Hi Polybelle! I'd like to book an event 🎉`,
       ``,
       `*Booking Ref:* ${ref}`,
-      `*Hall:* ${d.venue.name}`,
+      d.booking_type === "Services" ? `*Booking:* Package / services only` : `*Hall:* ${d.venue.name}`,
+      d.booking_type === "Services" ? `*Event location:* ${d.event_location || "To be confirmed"}` : null,
       `*Date:* ${fmtDate(d.date)}`,
       `*Session:* ${d.session}${sess ? ` (${sess.time})` : ""}`,
       `*Occasion:* ${d.event_type}`,
       d.guests ? `*Guests:* ${d.guests}` : null,
-      d.add_ons.length ? `*Add-ons:* ${d.add_ons.join(", ")}` : null,
+      d.add_ons.length ? `*Packages & services:* ${d.add_ons.join(", ")}` : null,
       ``,
       `*Name:* ${d.name}`,
       `*Mobile:* ${d.phone}`,
@@ -184,7 +203,9 @@
     e.preventDefault();
     showError("");
     const d = readForm();
-    if (!d.venue) return showError("Please choose a hall.");
+    const servicesOnly = d.booking_type === "Services";
+    if (!servicesOnly && !d.venue) return showError("Please choose a hall, or select “Package or services only”.");
+    if (servicesOnly && !d.add_ons.length) return showError("Please choose at least one package or service.");
     if (!d.date) return showError("Please choose your event date.");
     if (d.date < todayDubai()) return showError("Please choose a future date.");
     if (!d.session) return showError("Please choose a session.");
@@ -200,9 +221,10 @@
 
     let ref;
     try {
-      if (!sb || !d.venue.id) throw new Error("offline");
+      if (!sb || (!servicesOnly && !d.venue.id)) throw new Error("offline");
       const { data, error } = await sb.rpc("pb_request_booking", { p: {
-        venue_id: d.venue.id, date: d.date, session: d.session, event_type: d.event_type,
+        booking_type: d.booking_type, event_location: d.event_location,
+        venue_id: servicesOnly ? null : d.venue.id, date: d.date, session: d.session, event_type: d.event_type,
         guests: d.guests || null, add_ons: d.add_ons, name: d.name, phone: d.phone, email: d.email, notes: d.notes
       } });
       if (error) throw error;
@@ -225,6 +247,7 @@
     $("#doneModal").classList.add("open");
     btn.disabled = false; btn.lastChild.textContent = " Send on WhatsApp";
     $("#bookForm").reset();
+    update();
     $("#dateInput").min = todayDubai();
     loadBooked().then(update);
   });

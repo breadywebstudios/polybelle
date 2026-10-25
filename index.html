@@ -75,9 +75,9 @@
           <span class="eyebrow">Packages</span>
           <h2>Everything you need, in one place</h2>
           <span class="rule left"></span>
-          <p>Book the hall on its own, or let our team plan the whole celebration with a personalized theme, from intimate to grand.</p>
+          <p>Book a hall on its own, or let our team plan the whole celebration with a personalized theme. Our packages and services are also available for events at your own venue or home.</p>
           <p class="pay">Book now, pay later with <b>Tabby</b> or <b>Tamara</b>. Visa and Mastercard accepted.</p>
-          <a href="#book" class="btn btn-dark">Request a package</a>
+          <a href="#book" class="btn btn-dark" data-book-type="Services">Request a package</a>
         </div>
         <div class="pk-list">
           <article class="pk-item reveal" style="--d:1">
@@ -162,20 +162,33 @@
           <aside class="book-aside">
             <h3>Your booking</h3>
             <dl class="summary" id="summary">
-              <div><dt>Hall</dt><dd data-s="hall">—</dd></div>
+              <div><dt>Booking</dt><dd data-s="kind">—</dd></div>
+              <div><dt>Venue</dt><dd data-s="hall">—</dd></div>
               <div><dt>Date</dt><dd data-s="date">—</dd></div>
               <div><dt>Session</dt><dd data-s="session">—</dd></div>
               <div><dt>Occasion</dt><dd data-s="type">—</dd></div>
               <div><dt>Guests</dt><dd data-s="guests">—</dd></div>
-              <div><dt>Add-ons</dt><dd data-s="addons">—</dd></div>
+              <div><dt>Services</dt><dd data-s="addons">—</dd></div>
             </dl>
             <p class="aside-note">We usually reply within the day. Prefer to call? <a href="#contact" id="asidePhones">052 865 3208</a></p>
           </aside>
 
           <form class="book-form" id="bookForm" novalidate>
             <fieldset>
-              <legend><span>01</span>Choose a hall</legend>
-              <div class="hall-pick" id="hallPick" role="radiogroup" aria-label="Hall"></div>
+              <legend><span>01</span>What would you like to book?</legend>
+              <div class="type-pick" role="radiogroup" aria-label="Booking type">
+                <label class="chip-radio"><input type="radio" name="booking_type" value="Hall" checked><span><b>A hall</b><small>Book one of our halls, with or without packages and services</small></span></label>
+                <label class="chip-radio"><input type="radio" name="booking_type" value="Services"><span><b>Package or services only</b><small>For your event at your own venue or home</small></span></label>
+              </div>
+              <div id="hallWrap">
+                <p class="sub-label">Choose a hall</p>
+                <div class="hall-pick" id="hallPick" role="radiogroup" aria-label="Hall"></div>
+              </div>
+              <div id="locWrap" hidden>
+                <label class="field">Event location (optional)
+                  <input type="text" name="event_location" id="locInput" maxlength="200" placeholder="e.g. home, villa or another venue in Abu Dhabi">
+                </label>
+              </div>
             </fieldset>
 
             <fieldset>
@@ -193,14 +206,14 @@
             </fieldset>
 
             <fieldset>
-              <legend><span>03</span>Event details</legend>
+              <legend><span>03</span>Packages &amp; event details</legend>
               <div class="grid-2">
                 <label class="field">Number of guests
                   <input type="number" name="guests" id="guestsInput" min="1" max="2000" inputmode="numeric" placeholder="e.g. 50">
                 </label>
               </div>
               <p class="hint" id="capHint"></p>
-              <p class="sub-label">Add-ons you're interested in (optional)</p>
+              <p class="sub-label" id="addonLabel">Packages and services you're interested in (optional)</p>
               <div class="addons" id="addonPick"></div>
             </fieldset>
 

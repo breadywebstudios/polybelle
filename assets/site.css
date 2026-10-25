@@ -230,6 +230,10 @@ label.field { display: grid; gap: 7px; font-size: .74rem; letter-spacing: .14em;
 .field input, .field select, .field textarea { font: 300 1rem var(--sans); letter-spacing: 0; text-transform: none; color: var(--ink); padding: 13px 14px; border: 1px solid var(--line); border-radius: 0; background: var(--ivory); width: 100%; transition: border-color .3s, background .3s; }
 .field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: var(--ink); background: #fff; }
 .field textarea { min-height: 100px; resize: vertical; }
+.type-pick { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.type-pick .chip-radio span { padding: 18px 18px; }
+.type-pick .chip-radio b { font: 400 1.25rem/1.2 var(--serif); }
+@media (max-width: 560px) { .type-pick { grid-template-columns: 1fr; } }
 .hall-pick, .sessions { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
 .chip-radio { position: relative; }
 .chip-radio input { position: absolute; opacity: 0; inset: 0; }

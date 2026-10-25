@@ -88,9 +88,9 @@
     const v = $("#fVenue").value, when = $("#fWhen").value, t = today();
     let list = S.bookings.filter((b) =>
       (!S.statusFilter || b.status === S.statusFilter) &&
-      (!v || b.venue_id === v) &&
+      (!v || (v === "__services" ? isServices(b) : b.venue_id === v)) &&
       (when === "all" || (when === "upcoming" ? b.event_date >= t : b.event_date < t)) &&
-      (!q || [b.ref, b.name, b.phone, b.email, b.venue_name, b.event_type].join(" ").toLowerCase().includes(q)));
+      (!q || [b.ref, b.name, b.phone, b.email, b.venue_name, b.event_location, b.event_type].join(" ").toLowerCase().includes(q)));
     if ($("#fSort").value === "new") list = list.slice().sort((a, b) => b.created_at.localeCompare(a.created_at));
     else if (when === "past") list = list.slice().reverse();
     return list;
@@ -115,7 +115,7 @@
     $("#rows").innerHTML = list.length ? list.map((b) => `
       <tr class="row" data-id="${b.id}">
         <td><b>${esc(fmtDate(b.event_date))}</b><small>${esc(b.session)}</small></td>
-        <td>${esc(b.venue_name)}</td>
+        <td>${isServices(b) ? `Services only<small>${esc(b.event_location || "Customer's venue")}</small>` : esc(b.venue_name)}</td>
         <td>${esc(b.name)}<small>${esc(b.phone)}</small></td>
         <td class="hide-sm">${esc(b.event_type)}</td>
         <td class="hide-sm">${b.guests ?? "—"}</td>
@@ -128,7 +128,7 @@
   $("#refreshBtn").addEventListener("click", () => loadBookings().then(() => toast("Bookings refreshed")));
 
   $("#csvBtn").addEventListener("click", () => {
-    const cols = ["ref", "status", "event_date", "session", "venue_name", "event_type", "guests", "add_ons", "name", "phone", "email", "notes", "admin_notes", "created_at"];
+    const cols = ["ref", "status", "booking_type", "event_date", "session", "venue_name", "event_location", "event_type", "guests", "add_ons", "name", "phone", "email", "notes", "admin_notes", "created_at"];
     const cell = (v) => `"${String(Array.isArray(v) ? v.join("; ") : v ?? "").replace(/"/g, '""')}"`;
     const csv = [cols.join(","), ...filtered().map((b) => cols.map((c) => cell(b[c])).join(","))].join("\n");
     const a = document.createElement("a");
@@ -145,9 +145,9 @@
   function customerMsg(b, status) {
     const when = `${fmtDate(b.event_date)} (${b.session})`;
     const msgs = {
-      Confirmed: `Hi ${b.name}! 🎉 Your booking at Polybelle Event Halls & Studio is CONFIRMED.\n\nRef: ${b.ref}\nHall: ${b.venue_name}\nDate: ${when}\nOccasion: ${b.event_type}\n\nThank you for choosing Polybelle! 💛`,
-      Cancelled: `Hi ${b.name}, regarding your booking request ${b.ref} for ${b.venue_name} on ${when}: unfortunately we're unable to accommodate it. Please message us and we'll gladly help you find another date or hall. 💛`,
-      Pending: `Hi ${b.name}! Thank you for your booking request at Polybelle 💛\n\nRef: ${b.ref}\nHall: ${b.venue_name}\nDate: ${when}\n\nWe're checking availability and will get back to you shortly.`
+      Confirmed: `Hi ${b.name}! 🎉 Your booking at Polybelle Event Halls & Studio is CONFIRMED.\n\nRef: ${b.ref}\n${isServices(b) ? "Booking: " + whereText(b) : "Hall: " + b.venue_name}\nDate: ${when}\nOccasion: ${b.event_type}\n\nThank you for choosing Polybelle! 💛`,
+      Cancelled: `Hi ${b.name}, regarding your booking request ${b.ref} for ${whereText(b)} on ${when}: unfortunately we're unable to accommodate it. Please message us and we'll gladly help you find another date or hall. 💛`,
+      Pending: `Hi ${b.name}! Thank you for your booking request at Polybelle 💛\n\nRef: ${b.ref}\n${isServices(b) ? "Booking: " + whereText(b) : "Hall: " + b.venue_name}\nDate: ${when}\n\nWe're checking availability and will get back to you shortly.`
     };
     return msgs[status] || msgs.Pending;
   }
@@ -159,6 +159,8 @@
     return { subtotal, total, paid: Number(b.amount_paid) || 0, balance: Math.max(0, total - (Number(b.amount_paid) || 0)) };
   };
   const fresh = (id) => S.bookings.find((x) => x.id === id);
+  const isServices = (b) => b.booking_type === "Services" || !b.venue_id;
+  const whereText = (b) => (isServices(b) ? "Package / services" + (b.event_location ? " · " + b.event_location : "") : b.venue_name || "");
   const nextInvoiceNo = () => today().slice(2, 4) + "-" + ((S.settings?.invoice_counter ?? 0) + 1);
 
   // ---------- booking add / edit form
@@ -166,12 +168,13 @@
     const isNew = !b;
     b = b || { venue_id: S.venues.find((v) => v.active)?.id, event_date: "", session: "Evening", event_type: C.eventTypes[0], guests: "", name: "", phone: "", email: "", customer_address: "", notes: "", add_ons: [], status: "Confirmed" };
     const d = $("#drawer");
-    const venueOpts = S.venues.map((v) => `<option value="${v.id}" ${v.id === b.venue_id ? "selected" : ""}>${esc(v.name)} (up to ${v.capacity})${v.active ? "" : " – hidden"}</option>`).join("");
+    const venueOpts = `<option value="" ${b.venue_id ? "" : "selected"}>No hall – package / services only</option>` + S.venues.map((v) => `<option value="${v.id}" ${v.id === b.venue_id ? "selected" : ""}>${esc(v.name)} (up to ${v.capacity})${v.active ? "" : " – hidden"}</option>`).join("");
     const typeOpts = [...new Set([...C.eventTypes, b.event_type].filter(Boolean))].map((t) => `<option ${t === b.event_type ? "selected" : ""}>${esc(t)}</option>`).join("");
     d.innerHTML = `
       <div class="drawer-head"><div><span class="eyebrow">${isNew ? "New booking" : "Edit · " + esc(b.ref)}</span><h3>${isNew ? "Add a booking" : esc(b.name)}</h3></div><button class="xbtn" data-close aria-label="Close">×</button></div>
       <form class="drawer-body" id="bkForm">
-        <label class="field">Hall<select name="venue_id" required>${venueOpts}</select></label>
+        <label class="field">Hall<select name="venue_id" id="bkVenue">${venueOpts}</select></label>
+        <label class="field" id="bkLocWrap">Event location (for bookings without a hall)<input name="event_location" maxlength="200" value="${esc(b.event_location || "")}" placeholder="e.g. customer's villa, Khalifa City"></label>
         <div class="grid-2">
           <label class="field">Event date<input type="date" name="event_date" required value="${esc(b.event_date)}"></label>
           <label class="field">Session<select name="session">${C.sessions.map((s) => `<option value="${s.id}" ${s.id === b.session ? "selected" : ""}>${s.id} · ${s.time}</option>`).join("")}</select></label>
@@ -190,13 +193,17 @@
         ${isNew ? `<label class="field">Status<select name="status">${STATUSES.map((s) => `<option ${s === b.status ? "selected" : ""}>${s}</option>`).join("")}</select></label>` : ""}
         <button class="btn btn-primary" type="submit">${isNew ? "Save booking" : "Save changes"}</button>
       </form>`;
+    const syncLoc = () => ($("#bkLocWrap").hidden = !!$("#bkVenue").value);
+    $("#bkVenue").addEventListener("change", syncLoc); syncLoc();
     $("[data-close]", d).addEventListener("click", () => (isNew ? closeDrawers() : openBooking(fresh(b.id))));
     $("#bkForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       const f = e.target, fd = new FormData(f);
       const v = S.venues.find((x) => x.id === fd.get("venue_id"));
+      if (!v && !fd.getAll("add_ons").length) return toast("Choose a hall, or at least one package or service.");
       const row = {
-        venue_id: v.id, venue_name: v.name, event_date: fd.get("event_date"), session: fd.get("session"),
+        booking_type: v ? "Hall" : "Services", venue_id: v ? v.id : null, venue_name: v ? v.name : null,
+        event_location: v ? null : fd.get("event_location").trim() || null, event_date: fd.get("event_date"), session: fd.get("session"),
         event_type: fd.get("event_type"), guests: fd.get("guests") || null, name: fd.get("name").trim(), phone: fd.get("phone").trim(),
         email: fd.get("email").trim() || null, customer_address: fd.get("customer_address").trim() || null,
         notes: fd.get("notes").trim() || null, add_ons: fd.getAll("add_ons")
@@ -233,7 +240,8 @@
           <button class="btn btn-outline sm" id="invBtn" type="button">🧾 Invoice${b.invoice_no ? " " + esc(b.invoice_no) : ""}</button>
         </div>
         <dl class="kv">
-          <dt>Hall</dt><dd>${esc(b.venue_name)}</dd>
+          <dt>Booking</dt><dd>${isServices(b) ? "Package / services only" : "Hall · " + esc(b.venue_name)}</dd>
+          ${isServices(b) ? `<dt>Location</dt><dd>${esc(b.event_location || "Not given yet")}</dd>` : ""}
           <dt>Event date</dt><dd>${esc(fmtDate(b.event_date))}</dd>
           <dt>Session</dt><dd>${esc(b.session)} <small style="color:var(--muted)">${esc(C.sessions.find((s) => s.id === b.session)?.time || "")}</small></dd>
           <dt>Occasion</dt><dd>${esc(b.event_type)}</dd>
@@ -289,14 +297,16 @@
   const hallLine = (b) => `${b.venue_name} rental · ${b.event_type} · ${fmtDate(b.event_date)} (${b.session})`;
   function defaultItems(b) {
     const v = S.venues.find((x) => x.id === b.venue_id);
-    const items = [{ kind: "hall", description: hallLine(b), amount: v?.price_from ? Number(v.price_from) : 0 }];
+    const items = isServices(b) ? [] : [{ kind: "hall", description: hallLine(b), amount: v?.price_from ? Number(v.price_from) : 0 }];
     (b.add_ons || []).forEach((a) => items.push({ description: a, amount: 0 }));
     return items;
   }
 
   function openInvoice(b) {
     // the hall-rental line always reflects the booking's current hall, occasion, date and session
-    const items = (b.invoice_items?.length ? b.invoice_items : defaultItems(b)).map((x) => (x.kind === "hall" ? { ...x, description: hallLine(b) } : { ...x }));
+    const items = (b.invoice_items?.length ? b.invoice_items : defaultItems(b))
+      .filter((x) => !(x.kind === "hall" && isServices(b)))
+      .map((x) => (x.kind === "hall" ? { ...x, description: hallLine(b) } : { ...x }));
     const d = $("#drawer");
     const itemRow = (it, i) => `
       <div class="inv-row" data-i="${i}" data-kind="${esc(it.kind || "")}">
@@ -435,7 +445,7 @@
     </div>
     <div class="sec" style="min-width:62mm">
       <h4>Event Details</h4>
-      <p>${esc(b.venue_name)} · ${esc(b.event_type)}</p>
+      <p>${esc(isServices(b) ? whereText(b) : b.venue_name)} · ${esc(b.event_type)}</p>
       <p>${esc(fmtDate(b.event_date))}</p>
       <p>${esc(b.session)}${sess ? " (" + esc(sess.time) + ")" : ""}${b.guests ? " · " + b.guests + " guests" : ""}</p>
     </div>
@@ -470,7 +480,7 @@
     const { data, error } = await sb.from("pb_venues").select("*").order("sort_order").order("name");
     if (error) return toast(error.message);
     S.venues = data;
-    $("#fVenue").innerHTML = `<option value="">All halls</option>` + data.map((v) => `<option value="${v.id}">${esc(v.name)}</option>`).join("");
+    $("#fVenue").innerHTML = `<option value="">All bookings</option>` + data.map((v) => `<option value="${v.id}">${esc(v.name)}</option>`).join("") + `<option value="__services">Services only (no hall)</option>`;
     renderVenues();
   }
   function renderVenues() {

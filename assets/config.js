@@ -32,8 +32,10 @@ window.PB_CONFIG = {
   eventTypes: ["Birthday", "Wedding", "Baby Shower", "Gender Reveal", "Christening / Dedication",
     "Debut", "Anniversary", "Corporate Event", "Seminar / Meeting", "Other"],
 
-  addOns: ["Event Styling", "Catering", "Customized Cake", "Photo & Video", "Professional Host",
-    "Photobooth", "Souvenirs", "Mascot Surprise", "Face Painting", "Video / Audio Guestbook"],
+  // Packages and services customers can pick (with a hall, or on their own)
+  addOns: ["Full Celebration Package", "Wedding Package", "Event Styling", "Catering", "Customized Cake", "Photo & Video",
+    "Professional Host", "Photobooth", "Mascot Surprise", "Scent Station", "DIY Craft Station", "Souvenirs",
+    "Face Painting", "Video / Audio Guestbook"],
 
   galleryCategories: ["Birthday", "Wedding", "Baby Shower", "Christening", "Gender Reveal", "Cake Smash", "Photobooth", "Corporate"],
 
