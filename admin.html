@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Polybelle Admin</title>
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#3A2A24">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%233A2A24'/%3E%3Ctext x='50%25' y='56%25' text-anchor='middle' dominant-baseline='middle' font-family='Georgia' font-style='italic' font-size='40' fill='%23E9CFA0'%3EP%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Jost:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/site.css">
+  <link rel="stylesheet" href="assets/admin.css">
+</head>
+<body>
+  <!-- Login -->
+  <section class="login" id="loginView">
+    <div class="login-card">
+      <div class="brand"><b>Polybelle</b><small>Admin</small></div>
+      <form id="loginForm">
+        <label class="field">Email<input type="email" name="email" autocomplete="username" required></label>
+        <label class="field">Password<input type="password" name="password" autocomplete="current-password" required></label>
+        <div class="msg" id="loginMsg"></div>
+        <button class="btn btn-primary" type="submit">Sign in</button>
+      </form>
+      <button class="linkbtn" id="forgotBtn" type="button">Forgot password?</button>
+    </div>
+  </section>
+
+  <!-- Reset password (after email link) -->
+  <section class="login" id="resetView" style="display:none">
+    <div class="login-card">
+      <div class="brand"><b>Polybelle</b><small>Set a new password</small></div>
+      <form id="resetForm">
+        <label class="field">New password<input type="password" name="password" minlength="8" autocomplete="new-password" required></label>
+        <div class="msg" id="resetMsg"></div>
+        <button class="btn btn-primary" type="submit">Save password</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- App -->
+  <div class="app" id="appView">
+    <header class="adm-head">
+      <div class="wrap">
+        <a class="brand" href="./" target="_blank" rel="noopener"><b>Polybelle</b><small>Bookings Admin</small></a>
+        <div class="who"><span id="whoEmail"></span><button id="logoutBtn" type="button">Sign out</button></div>
+      </div>
+    </header>
+    <nav class="tabs">
+      <div class="wrap">
+        <button class="active" data-tab="bookings">Bookings</button>
+        <button data-tab="venues">Halls / Venues</button>
+        <button data-tab="settings">Settings</button>
+      </div>
+    </nav>
+
+    <main class="wrap">
+      <!-- Bookings -->
+      <section class="panel on" id="tab-bookings">
+        <div class="stats" id="stats"></div>
+        <div class="toolbar">
+          <input type="search" id="q" placeholder="Search name, phone, ref…">
+          <select id="fVenue"><option value="">All halls</option></select>
+          <select id="fWhen">
+            <option value="upcoming">Upcoming events</option>
+            <option value="past">Past events</option>
+            <option value="all">All dates</option>
+          </select>
+          <select id="fSort">
+            <option value="event">Sort: event date</option>
+            <option value="new">Sort: newest request</option>
+          </select>
+          <button class="btn btn-outline" id="refreshBtn" type="button">Refresh</button>
+          <button class="btn btn-outline" id="csvBtn" type="button">Export CSV</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Event date</th><th>Hall</th><th>Customer</th><th class="hide-sm">Occasion</th><th class="hide-sm">Guests</th><th>Status</th><th class="hide-sm">Requested</th></tr></thead>
+            <tbody id="rows"><tr><td colspan="7" class="empty">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Venues -->
+      <section class="panel" id="tab-venues">
+        <p class="lead" style="margin:0 0 20px">Add a new hall anytime — it appears on the website and in the booking form straight away. Hide a hall to stop new bookings without losing its history.</p>
+        <div class="vgrid" id="vgrid"></div>
+      </section>
+
+      <!-- Settings -->
+      <section class="panel" id="tab-settings">
+        <form class="card" id="settingsForm">
+          <h3>WhatsApp &amp; contact</h3>
+          <label class="field">Booking WhatsApp number (receives booking requests)
+            <input name="booking_whatsapp" required placeholder="e.g. 0564851757">
+          </label>
+          <label class="field">Phone numbers shown on the website (separate with | )
+            <input name="display_phones" required>
+          </label>
+          <div><button class="btn btn-primary sm" type="submit">Save settings</button></div>
+        </form>
+        <div class="card">
+          <h3>Admin access</h3>
+          <p class="hint" style="margin:0">People listed here can sign in to this page. They need an account with the same email — use “Forgot password?” on the sign-in screen to set one up.</p>
+          <ul class="admins-list" id="adminsList"></ul>
+          <form class="toolbar" id="addAdminForm" style="margin:0">
+            <input type="email" name="email" placeholder="name@example.com" required style="flex:1">
+            <button class="btn btn-outline sm" type="submit">Add admin</button>
+          </form>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Booking drawer -->
+  <div class="drawer-bg" id="drawerBg"></div>
+  <aside class="drawer" id="drawer" aria-label="Booking details"></aside>
+
+  <!-- Venue drawer -->
+  <aside class="drawer" id="vdrawer" aria-label="Edit hall"></aside>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="assets/config.js"></script>
+  <script src="assets/admin.js"></script>
+</body>
+</html>
