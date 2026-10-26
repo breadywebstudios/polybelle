@@ -214,7 +214,7 @@
           <h3>${esc(v.name)}</h3>
           ${v.description ? `<p>${esc(v.description)}</p>` : ""}
           ${v.branch || v.price_from ? `<span class="meta">${[v.branch, v.price_from ? "From " + money(v.price_from) : ""].filter(Boolean).map(esc).join(" · ")}</span>` : ""}
-          <span class="venue-links"><button class="link-line" type="button" data-book="${esc(v.id || v.name)}">Reserve this hall</button><button class="link-line" type="button" data-avail="${esc(v.id || v.name)}" aria-expanded="false" aria-controls="availPanel">Check availability</button></span>
+          <span class="venue-links"><button class="link-line avail-link" type="button" data-avail="${esc(v.id || v.name)}" aria-expanded="false" aria-controls="availPanel"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="1.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/><circle cx="8.5" cy="14.5" r=".9"/><circle cx="12" cy="14.5" r=".9"/><circle cx="15.5" cy="14.5" r=".9"/></svg>Check availability</button></span>
         </div>
       </article>`).join("");
     $("#hallPick").innerHTML = state.venues.map((v) => `
@@ -225,12 +225,6 @@
       openAvail(b.dataset.avail);
     }));
     if (CAL.open) { const key = CAL.hall; CAL.open = false; openAvail(key, true); }
-    document.querySelectorAll("[data-book]").forEach((b) => b.addEventListener("click", () => {
-      setType("Hall");
-      const r = document.querySelector(`#hallPick input[value="${CSS.escape(b.dataset.book)}"]`);
-      if (r) { r.checked = true; update(); }
-      $("#book").scrollIntoView({ behavior: "smooth" });
-    }));
     observe();
   }
 
@@ -254,6 +248,8 @@
     else { hint.textContent = "Some sessions are already booked — open ones are still available."; hint.className = "hint"; }
   }
 
+  const fullyBooked = (d) => d.booking_type === "Hall" && d.venue?.id && d.date && dayState(takenFor(d.venue.id, d.date)) === "full";
+  const sessionTaken = (venue, date, sess) => { const t = takenFor(venue?.id, date); return t.includes(sess) || t.includes("Whole day") || (sess === "Whole day" && t.length > 0); };
   const bookingType = () => document.querySelector('#bookForm input[name="booking_type"]:checked')?.value || "Hall";
   function setType(t) {
     const r = document.querySelector(`#bookForm input[name="booking_type"][value="${t}"]`);
@@ -294,6 +290,12 @@
     $("#addonLabel").textContent = servicesOnly ? "Choose the packages and services you'd like (at least one)" : "Packages and services you're interested in (optional)";
     renderSessions();
     const d = readForm();
+    // a fully booked hall/date can't be submitted
+    const full = fullyBooked(d);
+    $("#fullWarn").hidden = !full;
+    if (full) $("#fullWarn").textContent = `${d.venue.name} is fully booked on ${fmtDate(d.date)}. Please choose another date or hall.`;
+    $("#dateInput").toggleAttribute("aria-invalid", !!full);
+    $$('#submitBtn, button[type="submit"][form="bookForm"]').forEach((b) => (b.disabled = !!full));
     const set = (k, v) => ($(`[data-s="${k}"]`).textContent = v || "—");
     set("kind", servicesOnly ? "Package / services" : "Hall");
     set("hall", servicesOnly ? (d.event_location || "Your venue") : d.venue?.name);
@@ -351,7 +353,9 @@
     if (servicesOnly && !d.add_ons.length) return showError("Please choose at least one package or service.");
     if (!d.date) return showError("Please choose your event date.");
     if (d.date < todayDubai()) return showError("Please choose a future date.");
+    if (fullyBooked(d)) { update(); $("#fullWarn").scrollIntoView({ behavior: "smooth", block: "center" }); return; }
     if (!d.session) return showError("Please choose a session.");
+    if (d.booking_type === "Hall" && sessionTaken(d.venue, d.date, d.session)) return showError(`The ${d.session.toLowerCase()} session at ${d.venue.name} is already booked on ${fmtDate(d.date)}. Please choose another session, date or hall.`);
     if (!d.event_type) return showError("Please choose the occasion.");
     if (!d.name) return showError("Please enter your name.");
     if (d.phone.replace(/\D/g, "").length < 7) return showError("Please enter a valid mobile number.");
@@ -531,7 +535,7 @@
   }
   function openAvail(key, quiet) {
     const t = todayDubai();
-    if (CAL.hall !== key) { CAL.sel = null; CAL.y = +t.slice(0, 4); CAL.m = +t.slice(5, 7) - 1; }
+    if (CAL.hall !== key) { CAL.sel = null; CAL.sess = null; CAL.y = +t.slice(0, 4); CAL.m = +t.slice(5, 7) - 1; }
     CAL.hall = key; CAL.open = true;
     if (!placeAvail()) { CAL.open = false; return; }
     $$("[data-avail]").forEach((b) => b.setAttribute("aria-expanded", b.dataset.avail === key));
@@ -575,7 +579,7 @@
     }
     const grid = calEl("grid"); grid.innerHTML = html;
     grid.style.animation = "none"; void grid.offsetWidth; grid.style.animation = "";
-    grid.querySelectorAll(".cal-d:not(:disabled)").forEach((b) => b.addEventListener("click", () => { CAL.sel = b.dataset.d; renderCal(); }));
+    grid.querySelectorAll(".cal-d:not(:disabled)").forEach((b) => b.addEventListener("click", () => { if (CAL.sel !== b.dataset.d) CAL.sess = null; CAL.sel = b.dataset.d; renderCal(); }));
     renderCalDay(hall);
   }
   function renderCalDay(hall) {
@@ -588,19 +592,27 @@
     const taken = takenFor(hall.id, CAL.sel), st = dayState(taken);
     const nice = new Date(CAL.sel + "T00:00:00Z").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
     const booked = (s) => taken.includes(s) || taken.includes("Whole day") || (s === "Whole day" && taken.length > 0);
+    if (CAL.sess && booked(CAL.sess)) CAL.sess = null;
     box.innerHTML = `
       <span class="sd-kind">${esc(hall.name)} · up to ${hall.capacity} guests</span>
       <h4>${esc(nice)}</h4>
-      <ul class="cal-sess">${C.sessions.slice().sort((a, b) => SESS_ORDER.indexOf(a.id) - SESS_ORDER.indexOf(b.id)).map((x) => `
-        <li class="${booked(x.id) ? "booked" : ""}"><span>${esc(x.id)}<small>${esc(x.time)}</small></span><span class="st ${booked(x.id) ? "st-booked" : "st-free"}">${booked(x.id) ? "Booked" : "Free"}</span></li>`).join("")}</ul>
+      ${st === "full" ? "" : `<p class="hint">Tap a free session to choose it.</p>`}
+      <div class="cal-sess" role="radiogroup" aria-label="Session">${C.sessions.slice().sort((a, b) => SESS_ORDER.indexOf(a.id) - SESS_ORDER.indexOf(b.id)).map((x) => booked(x.id)
+        ? `<div class="cal-s booked"><span>${esc(x.id)}<small>${esc(x.time)}</small></span><span class="st st-booked">Booked</span></div>`
+        : `<button type="button" class="cal-s ${CAL.sess === x.id ? "on" : ""}" role="radio" aria-checked="${CAL.sess === x.id}" data-sess="${esc(x.id)}"><span>${esc(x.id)}<small>${esc(x.time)}</small></span><span class="st st-free">${CAL.sess === x.id ? "Selected" : "Free"}</span></button>`).join("")}</div>
       ${st === "full" ? `<p class="hint warn">${esc(hall.name)} is fully booked on this date. Please try another date or hall.</p>`
-        : `<button type="button" class="btn btn-dark" data-cal="book">Book this date</button>`}`;
+        : `<button type="button" class="btn btn-dark" data-cal="book">${CAL.sess ? `Book ${esc(CAL.sess.toLowerCase())}` : "Book this date"}</button>`}`;
+    box.querySelectorAll("[data-sess]").forEach((b) => b.addEventListener("click", () => { CAL.sess = CAL.sess === b.dataset.sess ? null : b.dataset.sess; renderCalDay(hall); }));
     calEl("book")?.addEventListener("click", () => {
       setType("Hall");
       const r = document.querySelector(`#hallPick input[value="${CSS.escape(hall.id || hall.name)}"]`);
       if (r) r.checked = true;
       $("#dateInput").value = CAL.sel;
-      update();
+      update();                                   // re-renders the session choices for this hall/date
+      if (CAL.sess) {
+        const s = document.querySelector(`#sessionPick input[value="${CSS.escape(CAL.sess)}"]:not(:disabled)`);
+        if (s) { s.checked = true; update(); }
+      }
       $("#book").scrollIntoView({ behavior: "smooth" });
     });
   }
