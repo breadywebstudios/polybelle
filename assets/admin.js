@@ -294,8 +294,39 @@
     if (other.length) groups.set("Other", other);
     return [...groups].filter(([, names]) => names.length).map(([cat, names]) => `
       <div class="ao-group"><div class="ao-head">${esc(cat)}<i>${names.filter((n) => selected.includes(n)).length || ""}</i></div>
-        <div class="addons">${names.map((a) => `<label class="addon"><input type="checkbox" name="add_ons" value="${esc(a)}" ${selected.includes(a) ? "checked" : ""}><span>${esc(a)}</span></label>`).join("")}</div>
+        <div class="addons ao-items">${names.map((a) => `<span class="ao-item"><input type="checkbox" name="add_ons" value="${esc(a)}" ${selected.includes(a) ? "checked" : ""} aria-label="Include ${esc(a)}"><button type="button" class="ao-name" data-ao="${esc(a)}" aria-expanded="false">${esc(a)}</button></span>`).join("")}</div>
+        <div class="ao-detail" hidden></div>
       </div>`).join("");
+  }
+  // details for an add-on (what's included / description), opened by tapping its name in the booking form
+  function wireAddonDetails(root) {
+    const close = (g) => { const box = $(".ao-detail", g); box.hidden = true; box.innerHTML = ""; $$(".ao-name", g).forEach((x) => x.setAttribute("aria-expanded", "false")); };
+    $$(".ao-name", root).forEach((btn) => btn.addEventListener("click", () => {
+      const g = btn.closest(".ao-group"), box = $(".ao-detail", g), open = btn.getAttribute("aria-expanded") === "true";
+      $$(".ao-group", root).forEach(close);
+      if (open) return;
+      const cb = btn.previousElementSibling, sv = (S.services || []).find((x) => x.name === btn.dataset.ao);
+      const inc = (sv?.inclusions || []).filter(Boolean), pkg = sv?.kind === "Package";
+      const fill = () => {
+        box.innerHTML = `
+          <button type="button" class="ao-x" aria-label="Close details">×</button>
+          <span class="ao-kind">${sv ? `${pkg ? "Package" : "Service"} · ${esc(sv.category || "Event Services")}` : "Not in the catalog"}</span>
+          <b class="ao-title">${esc(btn.dataset.ao)}</b>
+          ${sv?.description ? `<p>${esc(sv.description)}</p>` : sv ? "" : `<p>This item isn't in Halls &amp; Services any more, so there are no details saved for it.</p>`}
+          ${pkg ? (inc.length ? `<span class="ao-sub">What's included</span><ul>${inc.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>`
+            : `<p class="ao-note">No inclusions listed yet — add them in Halls &amp; Services.</p>`) : ""}
+          <button type="button" class="btn ${cb.checked ? "btn-outline" : "btn-primary"} sm" data-ao-toggle>${cb.checked ? "Remove" : "Add"}</button>`;
+        $(".ao-x", box).onclick = () => close(g);
+        $("[data-ao-toggle]", box).onclick = () => { cb.checked = !cb.checked; cb.dispatchEvent(new Event("change", { bubbles: true })); fill(); };
+      };
+      fill();
+      box.hidden = false; btn.setAttribute("aria-expanded", "true");
+    }));
+    // keep the panel's button in sync when the checkbox itself is ticked
+    $$(".ao-item input", root).forEach((cb) => cb.addEventListener("change", () => {
+      const btn = cb.nextElementSibling;
+      if (btn.getAttribute("aria-expanded") === "true") { const t = $(".ao-detail [data-ao-toggle]", cb.closest(".ao-group")); if (t) { t.textContent = cb.checked ? "Remove" : "Add"; t.className = `btn ${cb.checked ? "btn-outline" : "btn-primary"} sm`; } }
+    }));
   }
 
   // ---------- booking add / edit form
@@ -355,6 +386,7 @@
     $$(".ao-group input", d).forEach((cb) => cb.addEventListener("change", () => {
       const g = cb.closest(".ao-group"); $(".ao-head i", g).textContent = $$("input:checked", g).length || "";
     }));
+    wireAddonDetails(d);
     const syncLoc = () => ($("#bkLocWrap").hidden = !!$("#bkVenue").value);
     $("#bkVenue").addEventListener("change", syncLoc); syncLoc();
     $("[data-close]", d).addEventListener("click", () => (isNew ? closeDrawers() : openBooking(fresh(b.id))));

@@ -259,3 +259,25 @@ i.c-Cancelled, .ac-chip.c-Cancelled { background: #F1E4E1; color: #9A4436; text-
 .acal-legend i.c-Completed, .ac-dots i.c-Completed { background: #6F86AD; }
 .ac-dots i.c-Cancelled { background: #C47C6E; }
 .ac-dots i.clash { box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px #C0543F; }
+
+/* booking form: add-on chips with a checkbox + tappable name that opens details */
+.ao-items { display: flex; flex-wrap: wrap; gap: 6px; }
+.ao-item { display: inline-flex; align-items: center; border: 1px solid var(--line); background: var(--ivory); transition: background .2s, border-color .2s; }
+.ao-item input { margin: 0 0 0 10px; width: 15px; height: 15px; accent-color: var(--ink); cursor: pointer; flex: none; }
+.ao-name { border: 0; background: none; font: inherit; font-size: .82rem; padding: 7px 12px 7px 8px; cursor: pointer; color: inherit; text-decoration: underline dotted rgba(0,0,0,.25); text-underline-offset: 3px; }
+.ao-item:has(input:checked) { background: var(--ink); border-color: var(--ink); color: #fff; }
+.ao-item:has(input:checked) input { accent-color: var(--gold-soft); }
+.ao-item:has(input:checked) .ao-name { text-decoration-color: rgba(255,255,255,.4); }
+.ao-name[aria-expanded="true"] { text-decoration: none; font-weight: 500; }
+.ao-item:has(.ao-name[aria-expanded="true"]) { box-shadow: 0 0 0 2px var(--gold-soft); }
+.ao-detail { position: relative; margin-top: 10px; padding: 14px 16px; background: #FBF8F4; border: 1px solid var(--ink); display: grid; gap: 7px; justify-items: start; animation: notifyIn .35s ease; }
+.ao-x { position: absolute; top: 6px; right: 8px; border: 0; background: none; font-size: 1.3rem; line-height: 1; color: var(--muted); cursor: pointer; padding: 4px 6px; }
+.ao-kind { font-size: .62rem; letter-spacing: .18em; text-transform: uppercase; color: var(--gold); }
+.ao-title { font: 400 1.2rem/1.2 var(--serif); padding-right: 24px; }
+.ao-detail p { margin: 0; font-size: .86rem; color: var(--muted); }
+.ao-sub { font-size: .62rem; letter-spacing: .18em; text-transform: uppercase; color: var(--ink); margin-top: 2px; }
+.ao-detail ul { margin: 0; padding-left: 18px; columns: 2; column-gap: 20px; font-size: .84rem; width: 100%; }
+.ao-detail li { break-inside: avoid; margin-bottom: 3px; }
+.ao-note { font-style: italic; }
+@media (max-width: 520px) { .ao-detail ul { columns: 1; } }
+.ao-detail .ao-title { text-transform: none; letter-spacing: 0; color: var(--ink); font-size: 1.3rem; margin: 0; }
