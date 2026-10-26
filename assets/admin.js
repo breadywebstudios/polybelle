@@ -20,6 +20,36 @@
   const S = { bookings: [], venues: [], admins: [], promos: [], statusFilter: "", user: null };
 
   function toast(msg) { const t = $("#toast"); t.textContent = msg; t.classList.add("on"); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("on"), 2600); }
+
+  // Shrink photos in the browser before uploading: fits within maxSide px and saves as WebP
+  // (JPEG on browsers that can't make WebP). Keeps the original if it's already smaller or can't be read.
+  const MAX_ORIGINAL = 25 * 1024 * 1024;
+  async function shrinkImage(file, maxSide = 1600, quality = 0.8) {
+    if (!/^image\/(jpeg|png|webp)$/.test(file.type)) return file;
+    try {
+      const bmp = await createImageBitmap(file, { imageOrientation: "from-image" });
+      const scale = Math.min(1, maxSide / Math.max(bmp.width, bmp.height));
+      const w = Math.max(1, Math.round(bmp.width * scale)), h = Math.max(1, Math.round(bmp.height * scale));
+      const cv = document.createElement("canvas"); cv.width = w; cv.height = h;
+      const ctx = cv.getContext("2d"); ctx.imageSmoothingQuality = "high"; ctx.drawImage(bmp, 0, 0, w, h); bmp.close?.();
+      const toBlob = (c, type) => new Promise((r) => c.toBlob(r, type, quality));
+      let blob = await toBlob(cv, "image/webp");
+      if (!blob || blob.type !== "image/webp") {
+        const flat = document.createElement("canvas"); flat.width = w; flat.height = h;
+        const fx = flat.getContext("2d"); fx.fillStyle = "#fff"; fx.fillRect(0, 0, w, h); fx.drawImage(cv, 0, 0);
+        blob = await toBlob(flat, "image/jpeg");
+      }
+      if (!blob || blob.size >= file.size) return file;
+      const ext = blob.type === "image/webp" ? "webp" : "jpg";
+      return new File([blob], file.name.replace(/\.[^.]+$/, "") + "." + ext, { type: blob.type });
+    } catch { return file; }
+  }
+  async function prepPhoto(f, maxSide) {
+    if (f.size > MAX_ORIGINAL) { toast("Photo is over 25 MB — please use a smaller one."); return null; }
+    const out = await shrinkImage(f, maxSide);
+    if (out.size > 5 * 1024 * 1024) { toast("Photo is still over 5 MB after resizing — please use a smaller one."); return null; }
+    return out;
+  }
   function setMsg(el, text, kind) { el.textContent = text || ""; el.className = "msg" + (text ? " " + kind : ""); }
 
   // ---------------- auth
@@ -740,7 +770,7 @@
       <div class="drawer-head"><div><span class="eyebrow">${isNew ? "New hall" : "Edit hall"}</span><h3>${esc(v.name || "Add a hall")}</h3></div><button class="xbtn" data-close aria-label="Close">×</button></div>
       <form class="drawer-body" id="venueForm">
         <div class="preview-img" id="vPrev" style="background-image:url('${esc(v.image_url || "")}')"></div>
-        <label class="field">Photo (JPG/PNG/WebP, max 5 MB)<input type="file" id="vFile" accept="image/jpeg,image/png,image/webp"></label>
+        <label class="field">Photo (JPG/PNG/WebP — resized automatically)<input type="file" id="vFile" accept="image/jpeg,image/png,image/webp"></label>
         <input type="hidden" name="image_url" value="${esc(v.image_url || "")}">
         <label class="field">Hall name<input name="name" required maxlength="60" value="${esc(v.name)}" placeholder="e.g. Hall E"></label>
         <label class="field">Short tagline<input name="tagline" maxlength="60" value="${esc(v.tagline || "")}" placeholder="e.g. Garden-themed & bright"></label>
@@ -756,8 +786,9 @@
       </form>`;
     $("[data-close]", d).addEventListener("click", closeDrawers);
     $("#vFile").addEventListener("change", async (e) => {
-      const f = e.target.files[0]; if (!f) return;
-      if (f.size > 5 * 1024 * 1024) return toast("Photo is over 5 MB — please use a smaller one.");
+      let f = e.target.files[0]; if (!f) return;
+      toast("Optimizing photo…");
+      f = await prepPhoto(f, 1600); if (!f) return;
       toast("Uploading photo…");
       const path = `venues/${Date.now()}-${f.name.replace(/[^a-z0-9.]+/gi, "-").toLowerCase()}`;
       const { error } = await sb.storage.from(C.storageBucket).upload(path, f, { cacheControl: "31536000", upsert: false });
@@ -821,7 +852,7 @@
       <div class="drawer-head"><div><span class="eyebrow">${isNew ? "New" : "Edit"} package / service</span><h3>${esc(sv.name || "Add an item")}</h3></div><button class="xbtn" data-close aria-label="Close">×</button></div>
       <form class="drawer-body" id="svcForm">
         <div class="preview-img" id="sPrev" style="${sv.image_url ? `background-image:url('${esc(sv.image_url)}')` : ""}"></div>
-        <label class="field">Photo (JPG/PNG/WebP, max 5 MB)<input type="file" id="sFile" accept="image/jpeg,image/png,image/webp"></label>
+        <label class="field">Photo (JPG/PNG/WebP — resized automatically)<input type="file" id="sFile" accept="image/jpeg,image/png,image/webp"></label>
         <input type="hidden" name="image_url" value="${esc(sv.image_url || "")}">
         <label class="field">Name<input name="name" required maxlength="60" value="${esc(sv.name)}" placeholder="e.g. Balloon Arch"></label>
         <div class="grid-2">
@@ -845,8 +876,9 @@
     const syncInc = () => ($("#incWrap").hidden = $("#svcForm").kind.value !== "Package");
     $("#svcForm").kind.addEventListener("change", syncInc); syncInc();
     $("#sFile").addEventListener("change", async (e) => {
-      const f = e.target.files[0]; if (!f) return;
-      if (f.size > 5 * 1024 * 1024) return toast("Photo is over 5 MB — please use a smaller one.");
+      let f = e.target.files[0]; if (!f) return;
+      toast("Optimizing photo…");
+      f = await prepPhoto(f, 1000); if (!f) return;
       toast("Uploading photo…");
       const path = `services/${Date.now()}-${f.name.replace(/[^a-z0-9.]+/gi, "-").toLowerCase()}`;
       const { error } = await sb.storage.from(C.storageBucket).upload(path, f, { cacheControl: "31536000" });
@@ -929,13 +961,15 @@
   $("#gUpload").addEventListener("submit", async (e) => {
     e.preventDefault();
     const f = e.target, files = [...f.files.files], btn = f.querySelector("button");
-    const big = files.filter((x) => x.size > 5 * 1024 * 1024);
-    if (big.length) return toast(`${big.length} photo(s) are over 5 MB — please resize them first.`);
+    const big = files.filter((x) => x.size > MAX_ORIGINAL);
+    if (big.length) return toast(`${big.length} photo(s) are over 25 MB — please use smaller ones.`);
     btn.disabled = true;
     const minOrder = Math.min(0, ...(S.gallery || []).map((g) => g.sort_order)) - files.length;
     let done = 0, failed = 0;
-    for (const [i, file] of files.entries()) {
-      $("#gProgress").textContent = `Uploading ${i + 1} of ${files.length}…`;
+    for (let [i, file] of files.entries()) {
+      $("#gProgress").textContent = `Optimizing & uploading ${i + 1} of ${files.length}…`;
+      file = await shrinkImage(file, 1600);
+      if (file.size > 5 * 1024 * 1024) { failed++; continue; }
       const path = `gallery/${Date.now()}-${i}-${file.name.replace(/[^a-z0-9.]+/gi, "-").toLowerCase()}`;
       const up = await sb.storage.from(C.storageBucket).upload(path, file, { cacheControl: "31536000" });
       if (up.error) { failed++; continue; }

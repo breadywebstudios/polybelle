@@ -31,7 +31,7 @@
 
   // ---------- static bits
   $("#year").textContent = new Date().getFullYear();
-  const heroImages = Array.from({ length: 16 }, (_, i) => `assets/parade-images/pic${i + 1}.jpg`);
+  const heroImages = Array.from({ length: 16 }, (_, i) => `assets/parade-images/pic${i + 1}.webp`);
   const heroParade = $("#heroParade");
   const paradeOrders = [
     heroImages,
