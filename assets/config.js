@@ -5,7 +5,7 @@ window.PB_CONFIG = {
   // false = the website is live
   // While it's on, you can still view the real site by opening it with ?preview at the end of the address
   // (e.g. https://polybelle.vercel.app/?preview). Use ?preview=off to see the coming-soon page again.
-  underConstruction: true,
+  underConstruction: false,
   underConstructionMessage: "Our new website is almost ready. In the meantime, we'd love to help you plan your celebration on WhatsApp.",
 
   supabaseUrl: "https://ntohdxudxfggsmhxhvho.supabase.co",
