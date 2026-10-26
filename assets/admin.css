@@ -281,3 +281,15 @@ i.c-Cancelled, .ac-chip.c-Cancelled { background: #F1E4E1; color: #9A4436; text-
 .ao-note { font-style: italic; }
 @media (max-width: 520px) { .ao-detail ul { columns: 1; } }
 .ao-detail .ao-title { text-transform: none; letter-spacing: 0; color: var(--ink); font-size: 1.3rem; margin: 0; }
+
+/* "+" add booking on each calendar day */
+.ac-top { display: flex; justify-content: space-between; align-items: center; gap: 4px; }
+.ac-add { width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--line); background: var(--white); color: var(--ink); font: 300 1rem/1 var(--sans); cursor: pointer; display: grid; place-items: center; padding: 0; opacity: .55; transition: opacity .2s, background .2s, color .2s, border-color .2s; flex: none; }
+.ac-d:hover .ac-add, .ac-add:focus-visible { opacity: 1; }
+.ac-add:hover { background: var(--ink); color: #fff; border-color: var(--ink); }
+@media (hover: none) { .ac-add { opacity: 1; } }
+@media (max-width: 760px) {
+  .ac-top { flex-direction: column; gap: 2px; }
+  .ac-add { width: 20px; height: 20px; font-size: .85rem; }
+}
+@media (max-width: 760px) { .ac-d { min-height: 72px; } }
