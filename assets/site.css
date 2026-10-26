@@ -516,7 +516,7 @@ label.field { display: grid; gap: 7px; font-size: .74rem; font-weight: 500; lett
 .venue-map { color: var(--gold-soft); }
 .venue-map-embed { position: relative; width: 100%; overflow: hidden; border-radius: 4px; background: var(--sand); }
 .venue-map-embed iframe { display: block; width: 100%; height: clamp(120px, 12vw, 190px); border: 0; }
-.venue-map-hint { display: grid; min-height: clamp(120px, 12vw, 190px); place-items: center; padding: 16px; text-align: center; font-size: .8rem; }
+.venue-map-hint { display: grid; min-height: clamp(120px, 12vw, 190px); place-items: center; padding: 16px 12px 52px; margin: 0; text-align: center; font-size: .78rem; overflow-wrap: anywhere; }
 .venue-map-link { position: absolute; right: 10px; bottom: 10px; z-index: 1; display: inline-flex; align-items: center; gap: 7px; padding: 8px 11px; border-radius: 3px; background: var(--ivory); color: var(--ink); font: 500 .68rem/1 var(--sans); letter-spacing: .08em; text-decoration: none; box-shadow: 0 1px 5px #0003; }
 .venue-map-link:hover { color: var(--gold-soft); }
 .venue-map-link svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.5; flex: 0 0 auto; }
@@ -527,14 +527,15 @@ label.field { display: grid; gap: 7px; font-size: .74rem; font-weight: 500; lett
   .venue-img .cap, .venue-body .tag, .venue-body p, .venue-body .meta { display: none; }
   .venue-body { gap: 2px; }
   .venue-body h3 { font-size: .72rem; line-height: 1.15; overflow-wrap: anywhere; }
-  .venue-footer { gap: 4px; }
-  .venue-links { gap: 0; }
+  /* phones: cards are too narrow for a map, so the map becomes a pin icon beside the calendar icon */
+  .venue-footer { display: flex; align-items: center; gap: 12px; }
+  .venue-links { gap: 0; order: -1; }
   .venue-links .link-line { gap: 0; padding: 4px 0; font-size: 0; letter-spacing: 0; }
   .venue-links .link-line svg { width: 14px; height: 14px; margin: 0; }
-  .venue-map-embed iframe { height: clamp(90px, 24vw, 130px); }
-  .venue-map-hint { min-height: clamp(90px, 24vw, 130px); }
-  .venue-map-link { right: 6px; bottom: 6px; gap: 5px; padding: 6px 8px; font-size: .6rem; }
-  .venue-map-link svg { width: 13px; height: 13px; }
+  .venue-map-embed { width: auto; overflow: visible; background: none; border-radius: 0; }
+  .venue-map-embed iframe, .venue-map-hint { display: none; }
+  .venue-map-link { position: static; gap: 0; padding: 4px 0; font-size: 0; letter-spacing: 0; background: none; box-shadow: none; color: var(--ink); }
+  .venue-map-link svg { width: 15px; height: 15px; }
 }
 .avail-panel { padding-top: 48px; }
 .avail-panel .sd-x { top: 8px; right: 10px; }
