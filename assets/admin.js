@@ -877,7 +877,7 @@
           <label class="field">Starting price (AED, optional)<input type="number" name="price_from" min="0" step="1" value="${v.price_from ?? ""}"></label>
           <label class="field">Display order<input type="number" name="sort_order" value="${v.sort_order}"></label>
         </div>
-        <label class="field">Google Maps location URL (optional)<input type="url" name="google_maps_url" maxlength="500" value="${esc(v.google_maps_url || "")}" placeholder="https://maps.app.goo.gl/…"></label>
+        <label class="field">Google Maps location URL (optional)<input type="url" name="google_maps_url" maxlength="2000" value="${esc(v.google_maps_url || "")}" placeholder="https://www.google.com/maps/embed?pb=…"><small class="hint">For the embedded map, use Google Maps → Share → Embed a map, then copy its link.</small></label>
         <label class="switch"><input type="checkbox" name="active" ${v.active ? "checked" : ""}> Show on website &amp; accept bookings</label>
         <div class="venue-form-actions">
           <button class="btn btn-primary" type="submit">${isNew ? "Add hall" : "Save changes"}</button>

@@ -35,11 +35,15 @@
     const validUrl = googleMapsUrl(value);
     if (!validUrl) return "";
     const url = new URL(validUrl);
+    if (/\/maps\/(?:d\/)?embed(?:\/|$)/.test(url.pathname)) return url.href;
     const coords = url.pathname.match(/@(-?\d+(?:\.\d+)?,-?\d+(?:\.\d+)?)/);
+    const routeCoords = url.pathname.match(/!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/);
     const placePath = url.pathname.match(/\/maps\/place\/([^/]+)/);
+    const searchPath = url.pathname.match(/\/maps\/search\/([^/]+)/);
     let query = url.searchParams.get("query") || url.searchParams.get("q") ||
       url.searchParams.get("destination") || url.searchParams.get("ll") ||
-      url.searchParams.get("center") || coords?.[1];
+      url.searchParams.get("center") || coords?.[1] ||
+      (routeCoords ? `${routeCoords[1]},${routeCoords[2]}` : "");
     if (!query && placePath) {
       try {
         query = decodeURIComponent(placePath[1].replace(/\+/g, " "));
@@ -47,7 +51,14 @@
         query = placePath[1];
       }
     }
-    if (!query) query = url.href;
+    if (!query && searchPath) {
+      try {
+        query = decodeURIComponent(searchPath[1].replace(/\+/g, " "));
+      } catch {
+        query = searchPath[1];
+      }
+    }
+    if (!query) return "";
     return `https://www.google.com/maps?output=embed&q=${encodeURIComponent(query)}`;
   };
   // "Other venues" (customer's own location): a pseudo-hall that books packages/services with a typed location
@@ -267,7 +278,7 @@
             <button class="link-line avail-link" type="button" data-avail="${esc(v.id || v.name)}" aria-label="Check availability for ${esc(v.name)}" aria-expanded="false" aria-controls="availPanel"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="1.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/><circle cx="8.5" cy="14.5" r=".9"/><circle cx="12" cy="14.5" r=".9"/><circle cx="15.5" cy="14.5" r=".9"/></svg>Check availability</button>
           </span>
         </div>
-        ${googleMapsUrl(v.google_maps_url) ? `<div class="venue-map-embed"><iframe src="${esc(googleMapsEmbedUrl(v.google_maps_url))}" title="Map showing ${esc(v.name)} location" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe><a class="venue-map-link" href="${esc(googleMapsUrl(v.google_maps_url))}" target="_blank" rel="noopener noreferrer" aria-label="Open ${esc(v.name)} location in Google Maps"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>Open in Google Maps</a></div>` : ""}
+        ${googleMapsUrl(v.google_maps_url) ? `<div class="venue-map-embed">${googleMapsEmbedUrl(v.google_maps_url) ? `<iframe src="${esc(googleMapsEmbedUrl(v.google_maps_url))}" title="Map showing ${esc(v.name)} location" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>` : `<p class="venue-map-hint">For an embedded map, add a Google Maps “Embed a map” URL in the admin.</p>`}<a class="venue-map-link" href="${esc(googleMapsUrl(v.google_maps_url))}" target="_blank" rel="noopener noreferrer" aria-label="Open ${esc(v.name)} location in Google Maps"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>Open in Google Maps</a></div>` : ""}
       </article>`).join("");
     const keep = document.querySelector('#hallPick input:checked')?.value;
     $("#hallPick").innerHTML = allVenues().map((v) => `
