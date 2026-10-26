@@ -139,7 +139,7 @@ b, strong { font-weight: 500; }
 /* ---------- Halls ---------- */
 
 .venue-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 28px 24px; }
-.venue { display: grid; grid-template-rows: auto 1fr; gap: 18px; }
+.venue { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 18px; }
 .venue-img { position: relative; aspect-ratio: 3 / 4; overflow: hidden; background: var(--sand); }
 .venue-img img, .venue-img .ph { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scale(1.12); transition: transform 1.4s var(--ease); }
 .venue-img .ph { background: linear-gradient(140deg, var(--blush), var(--sand)); }
@@ -153,7 +153,8 @@ b, strong { font-weight: 500; }
 .venue-body h3 { font-size: 1.85rem; }
 .venue-body p { margin: 0; color: var(--muted); font-size: .94rem; }
 .venue-body .meta { color: var(--muted); font-size: .85rem; }
-.venue-body .link-line { margin-top: auto; padding-top: 14px; }
+.venue-body { min-width: 0; }
+.venue-footer { display: grid; align-content: end; gap: 8px; min-width: 0; }
 /* ---------- Packages ---------- */
 .packages { background: var(--cream); }
 .pk-grid { display: grid; grid-template-columns: .9fr 1.1fr; gap: clamp(40px, 7vw, 110px); align-items: start; }
@@ -508,7 +509,7 @@ label.field { display: grid; gap: 7px; font-size: .74rem; font-weight: 500; lett
 .cal-day .btn { justify-self: start; }
 .cal-day-empty { color: var(--muted); font: italic 400 1.2rem/1.4 var(--serif); margin: 0; }
 @media (max-width: 860px) { .cal { grid-template-columns: 1fr; } .cal-box { padding: 16px 12px 14px; } .cal-week, .cal-grid { gap: 4px; } .cal-d { font-size: .95rem; } }
-.venue-links { display: flex; gap: 20px; flex-wrap: wrap; margin-top: auto; padding-top: 14px; }
+.venue-links { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 0; padding-top: 0; }
 .venue-links .link-line { margin-top: 0; padding-top: 8px; }
 .venue-links .link-line svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.5; flex: 0 0 auto; }
 .venue-map { color: var(--gold-soft); }
@@ -525,7 +526,8 @@ label.field { display: grid; gap: 7px; font-size: .74rem; font-weight: 500; lett
   .venue-img .cap, .venue-body .tag, .venue-body p, .venue-body .meta { display: none; }
   .venue-body { gap: 2px; }
   .venue-body h3 { font-size: .72rem; line-height: 1.15; overflow-wrap: anywhere; }
-  .venue-links { gap: 0; padding-top: 2px; }
+  .venue-footer { gap: 4px; }
+  .venue-links { gap: 0; }
   .venue-links .link-line { gap: 0; padding: 4px 0; font-size: 0; letter-spacing: 0; }
   .venue-links .link-line svg { width: 14px; height: 14px; margin: 0; }
   .venue-map-embed iframe { height: clamp(90px, 24vw, 130px); }

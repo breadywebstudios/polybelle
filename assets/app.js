@@ -292,11 +292,13 @@
           <h3>${esc(v.name)}</h3>
           ${v.description ? `<p>${esc(v.description)}</p>` : ""}
           ${v.branch || v.price_from ? `<span class="meta">${[v.branch, v.price_from ? "From " + money(v.price_from) : ""].filter(Boolean).map(esc).join(" · ")}</span>` : ""}
+        </div>
+        <div class="venue-footer">
+          ${googleMapsUrl(v.google_maps_url) ? `<div class="venue-map-embed">${googleMapsEmbedUrl(v.google_maps_url) ? `<iframe src="${esc(googleMapsEmbedUrl(v.google_maps_url))}" title="Map showing ${esc(v.name)} location" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>` : `<p class="venue-map-hint">For an embedded map, add a Google Maps “Embed a map” URL in the admin.</p>`}<a class="venue-map-link" href="${esc(googleMapsOpenUrl(v.google_maps_url, v))}" target="_blank" rel="noopener noreferrer" aria-label="Open ${esc(v.name)} location in Google Maps"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>Open in Google Maps</a></div>` : ""}
           <span class="venue-links">
             <button class="link-line avail-link" type="button" data-avail="${esc(v.id || v.name)}" aria-label="Check availability for ${esc(v.name)}" aria-expanded="false" aria-controls="availPanel"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="1.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/><circle cx="8.5" cy="14.5" r=".9"/><circle cx="12" cy="14.5" r=".9"/><circle cx="15.5" cy="14.5" r=".9"/></svg>Check availability</button>
           </span>
         </div>
-        ${googleMapsUrl(v.google_maps_url) ? `<div class="venue-map-embed">${googleMapsEmbedUrl(v.google_maps_url) ? `<iframe src="${esc(googleMapsEmbedUrl(v.google_maps_url))}" title="Map showing ${esc(v.name)} location" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>` : `<p class="venue-map-hint">For an embedded map, add a Google Maps “Embed a map” URL in the admin.</p>`}<a class="venue-map-link" href="${esc(googleMapsOpenUrl(v.google_maps_url, v))}" target="_blank" rel="noopener noreferrer" aria-label="Open ${esc(v.name)} location in Google Maps"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>Open in Google Maps</a></div>` : ""}
       </article>`).join("");
     const keep = document.querySelector('#hallPick input:checked')?.value;
     $("#hallPick").innerHTML = allVenues().map((v) => `
