@@ -111,12 +111,9 @@
     svcOpen = null;
     $$("#addonPick .svc").forEach((el) => {
       const cb = $("input", el);
-      $(".svc-card", el).addEventListener("click", () => {
-        if (!cb.checked) { setPicked(el, true); openSvcDetail(el); }
-        else if (svcOpen === el) closeSvcDetail();
-        else openSvcDetail(el);
-      });
-      $(".svc-check", el).addEventListener("click", () => { setPicked(el, !cb.checked); if (cb.checked) openSvcDetail(el); });
+      // tapping the card only shows its details; adding happens with the Add button or the round check
+      $(".svc-card", el).addEventListener("click", () => (svcOpen === el ? closeSvcDetail() : openSvcDetail(el)));
+      $(".svc-check", el).addEventListener("click", () => setPicked(el, !cb.checked));
     });
     renderSvcTabs();
     if (reopen) { const el = $(`#addonPick .svc[data-i="${reopen.dataset.i}"]`); if (el && !el.hidden) openSvcDetail(el); }
