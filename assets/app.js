@@ -65,12 +65,19 @@
   menuBtn.addEventListener("click", () => setMenu(!$("#navLinks").classList.contains("open")));
   $$("#navLinks a").forEach((a) => a.addEventListener("click", () => setMenu(false)));
   // header turns solid and WhatsApp button appears once past the hero
+  // (batched to one update per frame, hero height cached so scrolling never forces a layout)
+  let heroH = $(".hero").offsetHeight, scrollQueued = false;
+  const waFloat = $("#waFloat");
   const onScroll = () => {
-    const y = window.scrollY, heroH = $(".hero").offsetHeight;
+    scrollQueued = false;
+    const y = window.scrollY;
     nav.classList.toggle("solid", y > 40);
-    $("#waFloat").classList.toggle("show", y > heroH * .6);
+    waFloat.classList.toggle("show", y > heroH * .6);
+    document.body.classList.toggle("past-hero", y > heroH);   // pauses the hero's slow zoom once it's off screen
   };
-  window.addEventListener("scroll", onScroll, { passive: true }); onScroll();
+  window.addEventListener("scroll", () => { if (!scrollQueued) { scrollQueued = true; requestAnimationFrame(onScroll); } }, { passive: true });
+  window.addEventListener("resize", () => { heroH = $(".hero").offsetHeight; }, { passive: true });
+  onScroll();
 
   $("#typeInput").innerHTML = `<option value="">Select occasion…</option>` + C.eventTypes.map((t) => `<option>${esc(t)}</option>`).join("");
   // ---------- packages & services picker (photo cards, managed in the admin)
@@ -532,7 +539,7 @@
   function observe() {
     const sel = ".reveal:not(.in), .venue:not(.in)";
     if (!("IntersectionObserver" in window)) { $$(sel).forEach((el) => el.classList.add("in")); return; }
-    io = io || new IntersectionObserver((entries) => entries.forEach((en) => { if (en.isIntersecting) { en.target.classList.add("in"); io.unobserve(en.target); } }), { threshold: .12, rootMargin: "0px 0px -6% 0px" });
+    io = io || new IntersectionObserver((entries) => entries.forEach((en) => { if (en.isIntersecting) { en.target.classList.add("in"); io.unobserve(en.target); } }), { threshold: 0.01, rootMargin: "0px 0px 8% 0px" });
     $$(sel).forEach((el) => io.observe(el));
   }
 

@@ -154,7 +154,9 @@ b, strong { font-weight: 500; }
 .venue-body .meta { color: var(--muted); font-size: .85rem; }
 .venue-body .link-line { margin-top: auto; padding-top: 14px; }
 @media (max-width: 700px) {
-  .venue-grid { grid-auto-flow: column; grid-auto-columns: 76%; grid-template-columns: none; overflow-x: auto; scroll-snap-type: x mandatory; gap: 16px; margin-right: -20px; padding-right: 20px; padding-bottom: 8px; scrollbar-width: none; }
+  .venue-grid { grid-auto-flow: column; grid-auto-columns: 76%; grid-template-columns: none; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; touch-action: pan-x pan-y; -webkit-overflow-scrolling: touch; scroll-snap-type: x mandatory; gap: 16px; margin-right: -20px; padding-right: 20px; padding-bottom: 8px; scrollbar-width: none; }
+  /* sideways row: fade only, no vertical drop (the drop made the row scroll up/down and catch page swipes) */
+  .venue-grid .venue, .venue-grid .venue.in { transform: none; }
   .venue-grid::-webkit-scrollbar { display: none; }
   .venue { scroll-snap-align: start; }
 }
@@ -450,3 +452,11 @@ label.field { display: grid; gap: 7px; font-size: .74rem; letter-spacing: .14em;
 }
 .svc-tabs button { display: inline-flex; align-items: center; min-height: 42px; }
 .sd-actions .btn { min-width: 132px; }
+
+/* ---------- scroll performance ---------- */
+.past-hero .hero-bg { animation-play-state: paused; }
+.reveal { transition-duration: .9s; }
+@media (max-width: 900px) {
+  /* blur behind a fixed header is costly on phones; a near-solid header looks the same */
+  .nav.solid { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(250, 246, 241, .98); }
+}
