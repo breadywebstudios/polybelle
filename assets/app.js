@@ -577,8 +577,15 @@
   const CAL = { hall: null, open: false, y: +todayDubai().slice(0, 4), m: +todayDubai().slice(5, 7) - 1, sel: null };
   const SESS_ORDER = ["Morning", "Afternoon", "Evening", "Whole day"];
   // Other venues: sessions our team already has confirmed at customers' own locations (bookings with no hall)
+  // Halls that share space (e.g. "Hall A&B" and "Hall B") block each other: a booking in one takes that session in both
+  function linkedIds(venueId) {
+    const v = state.venues.find((x) => x.id === venueId);
+    return new Set([venueId, ...(v?.shares_with || []), ...state.venues.filter((x) => (x.shares_with || []).includes(venueId)).map((x) => x.id)]);
+  }
   function takenFor(venueId, date) {
-    return state.booked.filter((b) => venueId && (venueId === OTHER ? !b.venue_id : b.venue_id === venueId) && b.event_date === date).map((b) => b.session);
+    if (!venueId) return [];
+    const ids = venueId === OTHER ? null : linkedIds(venueId);
+    return state.booked.filter((b) => (ids ? ids.has(b.venue_id) : !b.venue_id) && b.event_date === date).map((b) => b.session);
   }
   function dayState(taken) {
     if (taken.includes("Whole day") || ["Morning", "Afternoon", "Evening"].every((x) => taken.includes(x))) return "full";
@@ -736,7 +743,11 @@
     sb.from("pb_services").select("name,kind,category,description,image_url,image_pos,inclusions").eq("active", true).order("sort_order").order("name")
       .then(({ data }) => { if (data?.length) { services = data; renderServices(); update(); } });
     const [venues, settings, otherVenueSettings] = await Promise.all([
+<<<<<<< HEAD
       sb.from("pb_venues").select("id,name,tagline,description,venue_address,capacity,branch,google_maps_url,image_url,image_pos,price_from,sort_order").eq("active", true).order("sort_order").order("name"),
+=======
+      sb.from("pb_venues").select("id,name,tagline,description,capacity,branch,google_maps_url,image_url,image_pos,price_from,sort_order,shares_with").eq("active", true).order("sort_order").order("name"),
+>>>>>>> 7989396df97f40779a614768ac6b7f77c08e4068
       sb.rpc("pb_public_settings"),
       sb.rpc("pb_public_other_venue"),
       loadBooked()

@@ -308,3 +308,8 @@ i.c-Cancelled, .ac-chip.c-Cancelled { background: #F1E4E1; color: #9A4436; text-
 /* Other venues: event location under the booking in the calendar */
 .ac-chip .ac-loc { display: block; overflow: hidden; text-overflow: ellipsis; opacity: .85; }
 .acd-list .ac-loc { display: block; color: var(--muted); font-size: .8rem; }
+
+/* hall form: shares space with */
+.share-set { border: 0; padding: 0; margin: 0; min-width: 0; }
+.share-set legend { padding: 0; margin-bottom: 6px; }
+.share-opts { display: flex; flex-wrap: wrap; gap: 6px 18px; }
