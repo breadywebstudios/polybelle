@@ -743,11 +743,7 @@
     sb.from("pb_services").select("name,kind,category,description,image_url,image_pos,inclusions").eq("active", true).order("sort_order").order("name")
       .then(({ data }) => { if (data?.length) { services = data; renderServices(); update(); } });
     const [venues, settings, otherVenueSettings] = await Promise.all([
-<<<<<<< HEAD
-      sb.from("pb_venues").select("id,name,tagline,description,venue_address,capacity,branch,google_maps_url,image_url,image_pos,price_from,sort_order").eq("active", true).order("sort_order").order("name"),
-=======
-      sb.from("pb_venues").select("id,name,tagline,description,capacity,branch,google_maps_url,image_url,image_pos,price_from,sort_order,shares_with").eq("active", true).order("sort_order").order("name"),
->>>>>>> 7989396df97f40779a614768ac6b7f77c08e4068
+      sb.from("pb_venues").select("id,name,tagline,description,venue_address,capacity,branch,google_maps_url,image_url,image_pos,price_from,sort_order,shares_with").eq("active", true).order("sort_order").order("name"),
       sb.rpc("pb_public_settings"),
       sb.rpc("pb_public_other_venue"),
       loadBooked()
