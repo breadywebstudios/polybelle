@@ -142,7 +142,7 @@
         ? `<div class="sd-inc"><span class="sd-sub">What's included</span><ul>${inc.map((x, k) => `<li style="--k:${k}">${esc(x)}</li>`).join("")}</ul></div>`
         : `<div class="sd-inc"><span class="sd-sub">What's included</span><p class="sd-note">Our team will share the full inclusions and rates for this package on WhatsApp.</p></div>`) : ""}
       <div class="sd-actions">
-        <button type="button" class="btn ${on ? "btn-outline" : "btn-dark"} sm" data-sd-toggle>${on ? "Remove from my booking" : `Add ${pkg ? "this package" : "this service"}`}</button>
+        <button type="button" class="btn ${on ? "btn-outline" : "btn-dark"} sm" data-sd-toggle>${on ? "Remove" : "Add"}</button>
         ${on ? `<span class="sd-added">Added to your booking</span>` : ""}
       </div>`;
     $(".sd-x", svcDetail).onclick = closeSvcDetail;

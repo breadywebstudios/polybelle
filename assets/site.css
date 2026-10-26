@@ -449,4 +449,4 @@ label.field { display: grid; gap: 7px; font-size: .74rem; letter-spacing: .14em;
   .svc-tabs button i { min-width: 14px; height: 14px; margin-left: 2px; padding: 0 3px; font-size: .55rem; }
 }
 .svc-tabs button { display: inline-flex; align-items: center; min-height: 42px; }
-@media (max-width: 700px) { .sd-actions .btn { width: 100%; letter-spacing: .14em; } .sd-added { width: 100%; text-align: center; } }
+.sd-actions .btn { min-width: 132px; }
