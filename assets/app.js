@@ -85,22 +85,90 @@
       const n = picked.filter((p) => p === c).length;
       return `<button type="button" role="tab" aria-label="${esc(c)}" aria-selected="${c === svcTab}" class="${c === svcTab ? "on" : ""}" data-cat="${esc(c)}"><span>${esc(c)}</span>${n ? `<i>${n}</i>` : ""}</button>`;
     }).join("") : "";
-    $$("#svcTabs button").forEach((b) => b.addEventListener("click", () => { svcTab = b.dataset.cat; renderSvcTabs(); }));
+    $$("#svcTabs button").forEach((b) => b.addEventListener("click", () => { svcTab = b.dataset.cat; closeSvcDetail(); renderSvcTabs(); }));
     $$("#addonPick .svc").forEach((el) => (el.hidden = cats.length > 1 && el.dataset.cat !== svcTab));
   }
   function renderServices() {
     const picked = new Set($$('#addonPick input:checked').map((i) => i.value));
-    $("#addonPick").innerHTML = services.map((sv) => `
-      <label class="svc" data-cat="${esc(sv.category || "Event Services")}">
-        <input type="checkbox" name="add_ons" value="${esc(sv.name)}" ${picked.has(sv.name) ? "checked" : ""}>
-        <span class="svc-card">
+    const reopen = svcOpen;
+    $("#addonPick").innerHTML = services.map((sv, i) => `
+      <div class="svc" data-cat="${esc(sv.category || "Event Services")}" data-i="${i}">
+        <input type="checkbox" name="add_ons" value="${esc(sv.name)}" ${picked.has(sv.name) ? "checked" : ""} tabindex="-1" aria-hidden="true">
+        <button type="button" class="svc-card" aria-expanded="false" aria-controls="svcDetail">
           <span class="svc-img">${sv.image_url ? `<img src="${esc(sv.image_url)}" alt="" loading="lazy" onerror="this.remove()">` : ""}<span class="svc-ph" aria-hidden="true">${esc(sv.name.trim()[0] || "")}</span>
-            ${sv.kind === "Package" ? `<span class="svc-tag">Package</span>` : ""}<span class="svc-check" aria-hidden="true"></span></span>
-          <span class="svc-body"><b>${esc(sv.name)}</b>${sv.description ? `<small>${esc(sv.description)}</small>` : ""}</span>
-        </span>
-      </label>`).join("");
+            ${sv.kind === "Package" ? `<span class="svc-tag">Package</span>` : ""}</span>
+          <span class="svc-body"><b>${esc(sv.name)}</b><small>${sv.kind === "Package" ? "See what's included" : "Details"}</small></span>
+        </button>
+        <button type="button" class="svc-check" aria-pressed="${picked.has(sv.name)}" aria-label="Add ${esc(sv.name)} to my booking"></button>
+      </div>`).join("");
+    svcOpen = null;
+    $$("#addonPick .svc").forEach((el) => {
+      const cb = $("input", el);
+      $(".svc-card", el).addEventListener("click", () => {
+        if (!cb.checked) { setPicked(el, true); openSvcDetail(el); }
+        else if (svcOpen === el) closeSvcDetail();
+        else openSvcDetail(el);
+      });
+      $(".svc-check", el).addEventListener("click", () => { setPicked(el, !cb.checked); if (cb.checked) openSvcDetail(el); });
+    });
     renderSvcTabs();
+    if (reopen) { const el = $(`#addonPick .svc[data-i="${reopen.dataset.i}"]`); if (el && !el.hidden) openSvcDetail(el); }
   }
+
+  // ---------- package / service details panel (opens under the tapped card's row)
+  let svcOpen = null;
+  const svcDetail = document.createElement("div");
+  svcDetail.className = "svc-detail"; svcDetail.id = "svcDetail"; svcDetail.setAttribute("role", "region");
+  function setPicked(el, on) {
+    const cb = $("input", el);
+    cb.checked = on;
+    $(".svc-check", el).setAttribute("aria-pressed", on);
+    $(".svc-check", el).setAttribute("aria-label", `${on ? "Remove" : "Add"} ${cb.value} ${on ? "from" : "to"} my booking`);
+    cb.dispatchEvent(new Event("change", { bubbles: true }));
+    if (svcOpen === el) fillSvcDetail(el);
+  }
+  function fillSvcDetail(el) {
+    const sv = services[+el.dataset.i], on = $("input", el).checked, pkg = sv.kind === "Package";
+    const inc = (sv.inclusions || []).filter(Boolean);
+    svcDetail.setAttribute("aria-label", `${sv.name} details`);
+    svcDetail.innerHTML = `
+      <button type="button" class="sd-x" aria-label="Close details">×</button>
+      <div class="sd-main">
+        <span class="sd-kind">${pkg ? "Package" : "Service"} · ${esc(sv.category || "Event Services")}</span>
+        <h4>${esc(sv.name)}</h4>
+        ${sv.description ? `<p class="sd-desc">${esc(sv.description)}</p>` : ""}
+      </div>
+      ${pkg ? (inc.length
+        ? `<div class="sd-inc"><span class="sd-sub">What's included</span><ul>${inc.map((x, k) => `<li style="--k:${k}">${esc(x)}</li>`).join("")}</ul></div>`
+        : `<div class="sd-inc"><span class="sd-sub">What's included</span><p class="sd-note">Our team will share the full inclusions and rates for this package on WhatsApp.</p></div>`) : ""}
+      <div class="sd-actions">
+        <button type="button" class="btn ${on ? "btn-outline" : "btn-dark"} sm" data-sd-toggle>${on ? "Remove from my booking" : `Add ${pkg ? "this package" : "this service"}`}</button>
+        ${on ? `<span class="sd-added">Added to your booking</span>` : ""}
+      </div>`;
+    $(".sd-x", svcDetail).onclick = closeSvcDetail;
+    $("[data-sd-toggle]", svcDetail).onclick = () => setPicked(el, !$("input", el).checked);
+  }
+  function openSvcDetail(el) {
+    if (svcOpen) $(".svc-card", svcOpen).setAttribute("aria-expanded", "false");
+    svcDetail.remove();
+    const row = $$("#addonPick .svc:not([hidden])").filter((c) => c.offsetTop === el.offsetTop);
+    (row[row.length - 1] || el).after(svcDetail);
+    svcDetail.style.setProperty("--arrow-x", `${el.offsetLeft - $("#addonPick").offsetLeft + el.offsetWidth / 2}px`);
+    svcOpen = el;
+    $(".svc-card", el).setAttribute("aria-expanded", "true");
+    fillSvcDetail(el);
+    svcDetail.classList.remove("in"); void svcDetail.offsetWidth; svcDetail.classList.add("in");
+    const r = svcDetail.getBoundingClientRect();
+    if (r.bottom > window.innerHeight) svcDetail.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+  function closeSvcDetail() {
+    if (svcOpen) $(".svc-card", svcOpen).setAttribute("aria-expanded", "false");
+    svcOpen = null; svcDetail.remove();
+  }
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && svcOpen) { const el = svcOpen; closeSvcDetail(); $(".svc-card", el).focus(); } });
+  let svcResize;
+  window.addEventListener("resize", () => { clearTimeout(svcResize); svcResize = setTimeout(() => { if (svcOpen) openSvcDetail(svcOpen); }, 150); });
+
   renderServices();
   $("#addonPick").addEventListener("change", renderSvcTabs);
   $("#dateInput").min = todayDubai();
@@ -321,6 +389,8 @@
     $("#doneModal").classList.add("open");
     btn.disabled = false; btn.lastChild.textContent = " Send on WhatsApp";
     $("#bookForm").reset();
+    closeSvcDetail();
+    $$("#addonPick .svc-check").forEach((b) => b.setAttribute("aria-pressed", "false"));
     update();
     $("#dateInput").min = todayDubai();
     loadBooked().then(update);
@@ -444,7 +514,7 @@
     sb.from("pb_reviews").select("name,event_type,rating,comment,source,featured,created_at").eq("status", "Approved")
       .order("featured", { ascending: false }).order("created_at", { ascending: false }).limit(60)
       .then(({ data }) => { R.items = data || []; renderReviews(); });
-    sb.from("pb_services").select("name,kind,category,description,image_url").eq("active", true).order("sort_order").order("name")
+    sb.from("pb_services").select("name,kind,category,description,image_url,inclusions").eq("active", true).order("sort_order").order("name")
       .then(({ data }) => { if (data?.length) { services = data; renderServices(); update(); } });
     const [venues, settings] = await Promise.all([
       sb.from("pb_venues").select("id,name,tagline,description,capacity,branch,image_url,price_from,sort_order").eq("active", true).order("sort_order").order("name"),

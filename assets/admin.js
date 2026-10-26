@@ -704,6 +704,7 @@
         <div class="vb">
           <h3>${esc(sv.name)}</h3>
           ${sv.description ? `<p>${esc(sv.description)}</p>` : ""}
+          ${sv.kind === "Package" ? `<p>${(sv.inclusions || []).length ? `${sv.inclusions.length} included item${sv.inclusions.length > 1 ? "s" : ""}` : `<span style="color:var(--gold)">No inclusions listed yet</span>`}</p>` : ""}
           ${sv.image_url ? "" : `<p style="color:var(--gold)">No photo yet — add one.</p>`}
         </div>
         <div class="vf"><button class="btn btn-outline sm" data-sedit="${sv.id}">Edit</button></div>
@@ -728,7 +729,11 @@
           <label class="field">Type<select name="kind">${["Package", "Service"].map((k) => `<option ${k === sv.kind ? "selected" : ""}>${k}</option>`).join("")}</select></label>
           <label class="field">Display order<input type="number" name="sort_order" value="${sv.sort_order}"></label>
         </div>
-        <label class="field">Short description<input name="description" maxlength="90" value="${esc(sv.description || "")}" placeholder="One line shown under the name"></label>
+        <label class="field">Short description<input name="description" maxlength="140" value="${esc(sv.description || "")}" placeholder="One or two lines, shown when a customer taps the card"></label>
+        <label class="field" id="incWrap">What's included (one item per line)
+          <textarea name="inclusions" rows="8" placeholder="Event hall&#10;Balloon decorations&#10;Tables and chairs&#10;Catering&#10;Photobooth">${esc((sv.inclusions || []).join("\n"))}</textarea>
+          <span class="hint" style="text-transform:none;letter-spacing:0">Shown to customers when they tap this package. Leave empty to say the team will share the inclusions.</span>
+        </label>
         <label class="switch"><input type="checkbox" name="active" ${sv.active ? "checked" : ""}> Show in the booking form</label>
         ${isNew ? "" : `<p class="hint" style="margin:0">Renaming won't change bookings already made with the old name.</p>`}
         <div style="display:flex;gap:10px;flex-wrap:wrap">
@@ -737,6 +742,8 @@
         </div>
       </form>`;
     $("[data-close]", d).addEventListener("click", closeDrawers);
+    const syncInc = () => ($("#incWrap").hidden = $("#svcForm").kind.value !== "Package");
+    $("#svcForm").kind.addEventListener("change", syncInc); syncInc();
     $("#sFile").addEventListener("change", async (e) => {
       const f = e.target.files[0]; if (!f) return;
       if (f.size > 5 * 1024 * 1024) return toast("Photo is over 5 MB — please use a smaller one.");
@@ -758,7 +765,8 @@
       e.preventDefault();
       const f = e.target;
       const row = { name: f.name.value.trim(), kind: f.kind.value, category: f.category.value, description: f.description.value.trim() || null,
-        image_url: f.image_url.value || null, sort_order: +f.sort_order.value || 0, active: f.active.checked };
+        image_url: f.image_url.value || null, sort_order: +f.sort_order.value || 0, active: f.active.checked,
+        inclusions: f.kind.value === "Package" ? f.inclusions.value.split("\n").map((x) => x.trim()).filter(Boolean).slice(0, 40) : [] };
       if (!row.name) return toast("Name is required.");
       const { error } = isNew ? await sb.from("pb_services").insert(row) : await sb.from("pb_services").update(row).eq("id", sv.id);
       if (error) return toast(error.code === "23505" ? "There's already an item with that name." : error.message);
