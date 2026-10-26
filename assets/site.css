@@ -247,6 +247,11 @@ label.field { display: grid; gap: 7px; font-size: .74rem; font-weight: 500; lett
 .hall-pick .chip-radio span b { font-size: .88rem; }
 .hall-pick .chip-radio span small { font-size: .68rem; line-height: 1.3; }
 .hall-pick .chip-radio span .venue-address { margin-top: 3px; }
+@media (max-width: 600px) {   /* phones: one row is too narrow to read, so two columns; Other venues spans the row */
+  .hall-pick { display: grid; grid-template-columns: 1fr 1fr; }
+  .hall-pick .chip-radio.other { grid-column: 1 / -1; }
+  .hall-pick .chip-radio span { overflow-wrap: normal; }
+}
 .sessions { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
 .chip-radio { position: relative; }
 .chip-radio input { position: absolute; opacity: 0; inset: 0; }

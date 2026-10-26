@@ -342,6 +342,7 @@
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeDrawers(); });
 
   // full booking summary for the "WhatsApp customer" button
+  const hallAddress = (b) => (S.venues || []).find((v) => v.id === b.venue_id)?.venue_address || "";
   function customerMsg(b, status) {
     const sess = C.sessions.find((x) => x.id === b.session);
     const t = invTotals(b);
@@ -349,6 +350,7 @@
     const details = [
       `*Booking Ref:* ${b.ref}`,
       isServices(b) ? `*Venue:* Other venues (packages & services)` : `*Hall:* ${b.venue_name}`,
+      !isServices(b) && hallAddress(b) ? `*Hall address:* ${hallAddress(b)}` : null,
       isServices(b) ? `*Event location:* ${b.event_location || "To be confirmed"}` : null,
       `*Date:* ${fmtDate(b.event_date)}`,
       `*Session:* ${b.session}${sess ? ` (${sess.time})` : ""}`,
@@ -567,7 +569,7 @@
         </div>
         <dl class="kv">
           <dt>Booking</dt><dd>${isServices(b) ? "Other venues · packages / services" : "Hall · " + esc(b.venue_name)}</dd>
-          ${isServices(b) ? `<dt>Location</dt><dd>${esc(b.event_location || "Not given yet")}</dd>` : ""}
+          ${isServices(b) ? `<dt>Location</dt><dd>${esc(b.event_location || "Not given yet")}</dd>` : hallAddress(b) ? `<dt>Hall address</dt><dd style="white-space:pre-wrap">${esc(hallAddress(b))}</dd>` : ""}
           <dt>Event date</dt><dd>${esc(fmtDate(b.event_date))}</dd>
           <dt>Session</dt><dd>${esc(b.session)} <small style="color:var(--muted)">${esc(C.sessions.find((s) => s.id === b.session)?.time || "")}</small></dd>
           <dt>Occasion</dt><dd>${esc(b.event_type)}</dd>
@@ -860,7 +862,7 @@
         </div>
         <div class="vb">
           <h3>${esc(v.name)}</h3>
-          <p>Up to ${v.capacity} guests${v.branch ? " · " + esc(v.branch) : ""}${v.price_from ? " · from AED " + Number(v.price_from).toLocaleString() : ""}</p>
+          ${v.venue_address ? `<p style="white-space:pre-wrap">📍 ${esc(v.venue_address)}</p>` : ""}<p>Up to ${v.capacity} guests${v.branch ? " · " + esc(v.branch) : ""}${v.price_from ? " · from AED " + Number(v.price_from).toLocaleString() : ""}</p>
           ${v.tagline ? `<p><i>${esc(v.tagline)}</i></p>` : ""}
           ${v.image_url ? "" : `<p style="color:var(--gold)">Using a sample photo — upload the real one.</p>`}
         </div>
