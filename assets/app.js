@@ -175,7 +175,7 @@
       <div class="svc" data-cat="${esc(sv.category || "Event Services")}" data-i="${i}">
         <input type="checkbox" name="add_ons" value="${esc(sv.name)}" ${picked.has(sv.name) ? "checked" : ""} tabindex="-1" aria-hidden="true">
         <button type="button" class="svc-card" aria-expanded="false" aria-controls="svcDetail">
-          <span class="svc-img">${sv.image_url ? `<img src="${esc(sv.image_url)}"${posStyle(sv)} alt="" loading="lazy" onerror="this.remove()">` : ""}<span class="svc-ph" aria-hidden="true">${esc(sv.name.trim()[0] || "")}</span>
+          <span class="svc-img">${sv.image_url ? `<img src="${esc(sv.image_url)}"${posStyle(sv)} alt="${esc(sv.name)}" loading="lazy" onerror="this.remove()">` : ""}<span class="svc-ph" aria-hidden="true">${esc(sv.name.trim()[0] || "")}</span>
             ${sv.kind === "Package" ? `<span class="svc-tag">Package</span>` : ""}</span>
           <span class="svc-body"><b>${esc(sv.name)}</b><small>${sv.kind === "Package" ? "See what's included" : "Details"}</small></span>
         </button>
@@ -284,7 +284,7 @@
     $("#venueGrid").innerHTML = allVenues().map((v, i) => `
       <article class="venue" style="--d:${i % 4}">
         <div class="venue-img">
-          <img src="${esc(imgFor(v, i))}"${posStyle(v)} alt="${esc(v.name)}" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'ph'}))">
+          <img src="${esc(imgFor(v, i))}"${posStyle(v)} alt="${esc(v.other ? `${v.name}: Polybelle events at your venue in Abu Dhabi` : `${v.name}, event hall at Polybelle, Abu Dhabi`)}" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'ph'}))">
           <span class="cap">${v.other ? "At your location" : `Up to ${v.capacity} guests`}</span>
         </div>
         <div class="venue-body">
@@ -506,7 +506,7 @@
     const list = G.view.slice(0, G.shown);
     $("#gGrid").innerHTML = list.length ? list.map((g, i) => `
       <button class="g-item" type="button" data-i="${i}" style="--d:${i % 9}" aria-label="View ${esc(g.caption || g.category)}">
-        <img src="${esc(g.image_url)}" alt="${esc(g.caption || g.category)}" loading="lazy" onerror="this.style.visibility='hidden'">
+        <img src="${esc(g.image_url)}" alt="${esc([g.caption, g.category && g.category !== g.caption ? g.category : "", "Polybelle, Abu Dhabi"].filter(Boolean).join(" · "))}" loading="lazy" onerror="this.style.visibility='hidden'">
         <span><small>${esc(g.category)}</small>${esc(g.caption || "")}</span>
       </button>`).join("") : `<p class="g-empty">New event photos coming soon.</p>`;
     $$("#gGrid .g-item").forEach((b) => b.addEventListener("click", () => openLb(+b.dataset.i)));
