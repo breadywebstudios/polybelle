@@ -303,3 +303,7 @@ i.c-Cancelled, .ac-chip.c-Cancelled { background: #F1E4E1; color: #9A4436; text-
 .preview-img.frame.has-img.dragging { cursor: grabbing; box-shadow: 0 0 0 2px var(--gold); }
 .preview-img.frame.has-img:focus-visible { box-shadow: 0 0 0 2px var(--gold); }
 .frame-hint { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; font-size: .78rem; color: var(--muted); }
+
+/* Other venues: event location under the booking in the calendar */
+.ac-chip .ac-loc { display: block; overflow: hidden; text-overflow: ellipsis; opacity: .85; }
+.acd-list .ac-loc { display: block; color: var(--muted); font-size: .8rem; }

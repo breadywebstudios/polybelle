@@ -24,6 +24,18 @@ window.PB_CONFIG = {
     { name: "TikTok", url: "" }
   ],
 
+  // "Other venues": a card in the Halls section and a choice in the booking form for events at the
+  // customer's own venue (home, villa, another hall). It books packages/services, the customer types the location,
+  // and its calendar shows sessions our team already has confirmed at other venues. show: false hides it.
+  otherVenue: {
+    show: true,
+    name: "Other venues",
+    tagline: "Your home, villa or any venue",
+    description: "We bring our packages, styling and team to your chosen venue in Abu Dhabi. Tell us where, then pick your packages and services.",
+    image: "assets/parade-images/pic3.webp",
+    imagePos: ""                     // framing, e.g. "50% 30%" (leave empty for centered)
+  },
+
   branches: [
     { name: "Electra", address: "1802, C88, Tower A", landmark: "Back side of City Seasons Hotel" },
     { name: "Al Falah", address: "703, Bldg No. 1", landmark: "Aster Pharmacy Bldg, near Al Falah Plaza" },

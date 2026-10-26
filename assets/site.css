@@ -256,6 +256,7 @@ label.field { display: grid; gap: 7px; font-size: .74rem; font-weight: 500; lett
 .chip-radio:hover span { border-color: var(--muted); }
 .chip-radio input:checked + span { border-color: var(--ink); background: var(--ink); color: #fff; }
 .chip-radio input:checked + span small { color: #CFC2B8; }
+.hall-pick .chip-radio.other input:not(:checked) + span { border-style: dashed; background: transparent; }
 .chip-radio input:focus-visible + span { outline: 2px solid var(--gold); outline-offset: 2px; }
 .chip-radio input:disabled + span { opacity: .45; cursor: not-allowed; text-decoration: line-through; }
 .addons { display: flex; flex-wrap: wrap; gap: 8px; }

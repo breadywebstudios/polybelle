@@ -38,3 +38,8 @@ Edit `assets/config.js` and set `underConstruction: true` to show visitors a "co
 ## Deploy
 Static site with no build step. Import the repo on Vercel (framework: Other) and deploy.
 Powered by Bready Web Studios.
+
+## Other venues (customer's own location)
+- **Website:** "Other venues" appears as the last card in the Halls section and as a choice in the booking form's hall picker (edit its name, text and photo in `assets/config.js` → `otherVenue`; `show: false` hides it). Choosing it makes a package / services booking: the customer types the **Event location (optional)** and must pick at least one package or service. The request is saved with no hall (`booking_type = Services`, `event_location` = what they typed).
+- **Its calendar** (Check availability) shows sessions our team already has **confirmed** at other venues (bookings with no hall), and those sessions can't be picked in the form, the same way a hall's booked sessions work. This is checked in the browser only; the team can still add a booking for that session in the admin.
+- **Admin:** the hall filters call these "Other venues". In the calendar, each Other venues booking shows its event location (📍) and the day panel shows which sessions are free or booked. On the invoice, Other venues bookings start with a priced **Event location** line, hall bookings with the priced **hall rental** line; if it was removed, **+ Event location price** / **+ Hall price** adds it back.

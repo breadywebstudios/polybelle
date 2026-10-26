@@ -210,7 +210,7 @@
   }
   function renderAdminCal() {
     const sel = $("#acHall");
-    sel.innerHTML = `<option value="">All halls</option>` + S.venues.map((v) => `<option value="${v.id}">${esc(v.name)}</option>`).join("") + `<option value="__services">Services only (no hall)</option>`;
+    sel.innerHTML = `<option value="">All halls</option>` + S.venues.map((v) => `<option value="${v.id}">${esc(v.name)}</option>`).join("") + `<option value="__services">Other venues (customer's location)</option>`;
     sel.value = AC.hall;
     $("#acTitle").textContent = new Date(Date.UTC(AC.y, AC.m, 1)).toLocaleDateString("en-GB", { month: "long", year: "numeric", timeZone: "UTC" });
     const lead = (new Date(Date.UTC(AC.y, AC.m, 1)).getUTCDay() + 6) % 7, days = new Date(Date.UTC(AC.y, AC.m + 1, 0)).getUTCDate(), t = today();
@@ -219,7 +219,7 @@
       const iso = acIso(AC.y, AC.m, d), list = acBookings(iso);
       html += `<div class="ac-d ${iso === t ? "today" : ""} ${iso < t ? "past" : ""} ${iso === AC.sel ? "sel" : ""}" data-d="${iso}" role="button" tabindex="0" aria-label="${esc(fmtDate(iso))}: ${list.length} booking${list.length === 1 ? "" : "s"}">
         <span class="ac-top"><span class="ac-n">${d}</span>${iso >= t ? `<button type="button" class="ac-add" data-add="${iso}" aria-label="Add booking on ${esc(fmtDate(iso))}" title="Add booking">+</button>` : ""}</span>
-        <div class="ac-chips">${list.map((b) => `<button type="button" class="ac-chip c-${b.status} ${overlapsFor(b).clash.length ? "clash" : ""}" data-id="${b.id}" title="${esc(`${b.session} · ${b.name} · ${isServices(b) ? "Services only" : b.venue_name} · ${b.status}`)}"><b>${SESS_SHORT[b.session] || esc(b.session)}</b> ${esc(b.name)}${AC.hall ? "" : ` <small>${esc(isServices(b) ? "Services" : b.venue_name)}</small>`}</button>`).join("")}</div>
+        <div class="ac-chips">${list.map((b) => `<button type="button" class="ac-chip c-${b.status} ${overlapsFor(b).clash.length ? "clash" : ""}" data-id="${b.id}" title="${esc(`${b.session} · ${b.name} · ${whereText(b)} · ${b.status}`)}"><b>${SESS_SHORT[b.session] || esc(b.session)}</b> ${esc(b.name)}${isServices(b) ? ` <small class="ac-loc">📍 ${esc(b.event_location || "Location TBC")}</small>` : AC.hall ? "" : ` <small>${esc(b.venue_name)}</small>`}</button>`).join("")}</div>
         ${list.length ? `<span class="ac-dots">${list.map((b) => `<i class="c-${b.status} ${overlapsFor(b).clash.length ? "clash" : ""}"></i>`).join("")}</span>` : ""}
       </div>`;
     }
@@ -242,16 +242,17 @@
     const box = $("#acDay");
     if (!AC.sel) { box.innerHTML = `<p class="hint" style="margin:0">Tap a day to see its bookings or add one.</p>`; return; }
     const list = acBookings(AC.sel), hall = S.venues.find((v) => v.id === AC.hall);
-    const live = list.filter((b) => b.status !== "Cancelled" && !isServices(b));
+    const other = AC.hall === "__services";
+    const live = list.filter((b) => b.status !== "Cancelled" && (other ? isServices(b) : !isServices(b)));
     const hits = (sess, pool) => pool.some((b) => b.session === sess || b.session === "Whole day" || sess === "Whole day");
     const confirmed = live.filter((b) => b.status === "Confirmed" || b.status === "Completed");
     box.innerHTML = `
-      <div class="acd-head"><div><span class="eyebrow">${esc(AC.hall === "__services" ? "Services only" : hall ? hall.name : "All halls")}</span><h3>${esc(fmtDate(AC.sel))}</h3></div>
+      <div class="acd-head"><div><span class="eyebrow">${esc(other ? "Other venues" : hall ? hall.name : "All halls")}</span><h3>${esc(fmtDate(AC.sel))}</h3></div>
         <button type="button" class="btn btn-primary sm" id="acAdd">+ Add booking</button></div>
-      ${hall ? `<div class="acd-sess">${C.sessions.map((x) => { const st = hits(x.id, confirmed) ? "bk" : hits(x.id, live) ? "rq" : "";
+      ${hall || other ? `<div class="acd-sess">${C.sessions.map((x) => { const st = hits(x.id, confirmed) ? "bk" : hits(x.id, live) ? "rq" : "";
           return `<span class="${st}">${esc(x.id)} · ${st === "bk" ? "Booked" : st === "rq" ? "Requested" : "Free"}</span>`; }).join("")}</div>` : ""}
       ${list.length ? `<ul class="acd-list">${list.map((b) => `<li><button type="button" class="linkbtn" data-id="${b.id}">${esc(b.ref)}</button>
-          <span>${esc(b.session)}</span><span>${esc(b.name)}</span><span>${esc(isServices(b) ? "Services only" : b.venue_name)}</span><span>${esc(b.event_type)}</span>
+          <span>${esc(b.session)}</span><span>${esc(b.name)}</span><span>${isServices(b) ? `Other venues<small class="ac-loc">📍 ${esc(b.event_location || "Location not given yet")}</small>` : esc(b.venue_name)}</span><span>${esc(b.event_type)}</span>
           <span class="badge b-${b.status}">${b.status}</span>${overlapBadges(b)}</li>`).join("")}</ul>` : `<p class="hint" style="margin:0">No bookings on this day.</p>`}`;
     $$("#acDay [data-id]").forEach((x) => x.addEventListener("click", () => openBooking(fresh(x.dataset.id))));
     $("#acAdd").addEventListener("click", () => addBookingOn(AC.sel));
@@ -283,7 +284,7 @@
     $("#rows").innerHTML = list.length ? list.map((b) => { const ov = overlapsFor(b); return `
       <tr class="row ${ov.clash.length ? "row-clash" : ov.hallDay.length || ov.occasion.length ? "row-warn" : ""}" data-id="${b.id}">
         <td><b>${esc(fmtDate(b.event_date))}</b><small>${esc(b.session)}</small></td>
-        <td>${isServices(b) ? `Services only<small>${esc(b.event_location || "Customer's venue")}</small>` : esc(b.venue_name)}</td>
+        <td>${isServices(b) ? `Other venues<small>${esc(b.event_location || "Location not given yet")}</small>` : esc(b.venue_name)}</td>
         <td>${esc(b.name)}<small>${esc(b.phone)}</small></td>
         <td class="hide-sm">${esc(b.event_type)}</td>
         <td class="hide-sm">${b.guests ?? "—"}</td>
@@ -317,7 +318,7 @@
     const hasInvoice = !!b.invoice_no || t.total > 0;
     const details = [
       `*Booking Ref:* ${b.ref}`,
-      isServices(b) ? `*Booking:* Package / services only` : `*Hall:* ${b.venue_name}`,
+      isServices(b) ? `*Venue:* Other venues (packages & services)` : `*Hall:* ${b.venue_name}`,
       isServices(b) ? `*Event location:* ${b.event_location || "To be confirmed"}` : null,
       `*Date:* ${fmtDate(b.event_date)}`,
       `*Session:* ${b.session}${sess ? ` (${sess.time})` : ""}`,
@@ -365,7 +366,7 @@
   const ciText = (c) => ((Number(c.qty) || 1) > 1 ? `${Number(c.qty)} × ` : "") + c.description;
   const customLines = (b) => (b.custom_items || []).map((c) => ({ kind: "custom", cid: c.id, description: ciText(c), amount: ciTotal(c) }));
   const isServices = (b) => b.booking_type === "Services" || !b.venue_id;
-  const whereText = (b) => (isServices(b) ? "Package / services" + (b.event_location ? " · " + b.event_location : "") : b.venue_name || "");
+  const whereText = (b) => (isServices(b) ? "Other venues" + (b.event_location ? " · " + b.event_location : "") : b.venue_name || "");
   const nextInvoiceNo = () => today().slice(2, 4) + "-" + ((S.settings?.invoice_counter ?? 0) + 1);
 
   // add-on checkboxes grouped like the website's tabs; selected items no longer in the catalog go under "Other"
@@ -420,13 +421,13 @@
     const isNew = !b;
     b = b || { venue_id: S.venues.find((v) => v.active)?.id, event_date: "", session: "Evening", event_type: C.eventTypes[0], guests: "", name: "", phone: "", email: "", customer_address: "", notes: "", add_ons: [], status: "Confirmed", ...(prefill || {}) };
     const d = $("#drawer");
-    const venueOpts = `<option value="" ${b.venue_id ? "" : "selected"}>No hall – package / services only</option>` + S.venues.map((v) => `<option value="${v.id}" ${v.id === b.venue_id ? "selected" : ""}>${esc(v.name)} (up to ${v.capacity})${v.active ? "" : " – hidden"}</option>`).join("");
+    const venueOpts = `<option value="" ${b.venue_id ? "" : "selected"}>Other venues – customer's location (packages / services)</option>` + S.venues.map((v) => `<option value="${v.id}" ${v.id === b.venue_id ? "selected" : ""}>${esc(v.name)} (up to ${v.capacity})${v.active ? "" : " – hidden"}</option>`).join("");
     const typeOpts = [...new Set([...C.eventTypes, b.event_type].filter(Boolean))].map((t) => `<option ${t === b.event_type ? "selected" : ""}>${esc(t)}</option>`).join("");
     d.innerHTML = `
       <div class="drawer-head"><div><span class="eyebrow">${isNew ? "New booking" : "Edit · " + esc(b.ref)}</span><h3>${isNew ? "Add a booking" : esc(b.name)}</h3></div><button class="xbtn" data-close aria-label="Close">×</button></div>
       <form class="drawer-body" id="bkForm">
         <label class="field">Hall<select name="venue_id" id="bkVenue">${venueOpts}</select></label>
-        <label class="field" id="bkLocWrap">Event location (for bookings without a hall)<input name="event_location" maxlength="200" value="${esc(b.event_location || "")}" placeholder="e.g. customer's villa, Khalifa City"></label>
+        <label class="field" id="bkLocWrap">Event location (Other venues)<input name="event_location" maxlength="200" value="${esc(b.event_location || "")}" placeholder="e.g. customer's villa, Khalifa City"></label>
         <div class="grid-2">
           <label class="field">Event date<input type="date" name="event_date" required value="${esc(b.event_date)}"></label>
           <label class="field">Session<select name="session">${C.sessions.map((s) => `<option value="${s.id}" ${s.id === b.session ? "selected" : ""}>${s.id} · ${s.time}</option>`).join("")}</select></label>
@@ -526,7 +527,7 @@
       </div>
       <div class="drawer-body">
         ${notice && NOTICE[notice] ? `<div class="notify"><p>${NOTICE[notice]}</p><a class="btn btn-wa sm" target="_blank" rel="noopener" href="${waLink(b.phone, customerMsg(b, notice))}">Send on WhatsApp</a></div>` : ""}
-        ${(() => { const o = overlapsFor(b); const item = (x) => `<li><button type="button" class="linkbtn" data-goto="${x.id}">${esc(x.ref)}</button> · ${esc(x.name)} · ${esc(isServices(x) ? "Services only" : x.venue_name)} · ${esc(x.session)} · ${esc(x.event_type)} · ${esc(x.status)}</li>`;
+        ${(() => { const o = overlapsFor(b); const item = (x) => `<li><button type="button" class="linkbtn" data-goto="${x.id}">${esc(x.ref)}</button> · ${esc(x.name)} · ${esc(whereText(x))} · ${esc(x.session)} · ${esc(x.event_type)} · ${esc(x.status)}</li>`;
           return [o.clash.length ? `<div class="ovbox ov-clash-box"><b>Hall clash</b> — same hall with an overlapping session:<ul>${o.clash.map(item).join("")}</ul></div>` : "",
                   o.hallDay.length ? `<div class="ovbox ov-hall-box"><b>Same hall, same day</b> — plan setup and turnover:<ul>${o.hallDay.map(item).join("")}</ul></div>` : "",
                   o.occasion.length ? `<div class="ovbox ov-occ-box"><b>Same occasion, same day</b> — check staff, mascots and supplies:<ul>${o.occasion.map(item).join("")}</ul></div>` : ""].join(""); })()}
@@ -535,7 +536,7 @@
           <button class="btn btn-outline sm" id="invBtn" type="button">🧾 Invoice${b.invoice_no ? " " + esc(b.invoice_no) : ""}</button>
         </div>
         <dl class="kv">
-          <dt>Booking</dt><dd>${isServices(b) ? "Package / services only" : "Hall · " + esc(b.venue_name)}</dd>
+          <dt>Booking</dt><dd>${isServices(b) ? "Other venues · packages / services" : "Hall · " + esc(b.venue_name)}</dd>
           ${isServices(b) ? `<dt>Location</dt><dd>${esc(b.event_location || "Not given yet")}</dd>` : ""}
           <dt>Event date</dt><dd>${esc(fmtDate(b.event_date))}</dd>
           <dt>Session</dt><dd>${esc(b.session)} <small style="color:var(--muted)">${esc(C.sessions.find((s) => s.id === b.session)?.time || "")}</small></dd>
@@ -592,9 +593,14 @@
 
   // ---------- invoice editor
   const hallLine = (b) => `${b.venue_name} rental · ${b.event_type} · ${fmtDate(b.event_date)} (${b.session})`;
-  function defaultItems(b) {
+  const venueLine = (b) => `Event location: ${b.event_location || "customer's venue"} · ${b.event_type} · ${fmtDate(b.event_date)} (${b.session})`;
+  // the priced "where" line: hall rental for hall bookings, event location for Other venues
+  const placeLine = (b) => {
     const v = S.venues.find((x) => x.id === b.venue_id);
-    const items = isServices(b) ? [] : [{ kind: "hall", description: hallLine(b), amount: v?.price_from ? Number(v.price_from) : 0 }];
+    return isServices(b) ? { kind: "venue", description: venueLine(b), amount: 0 } : { kind: "hall", description: hallLine(b), amount: v?.price_from ? Number(v.price_from) : 0 };
+  };
+  function defaultItems(b) {
+    const items = [placeLine(b)];
     (b.add_ons || []).forEach((a) => items.push({ description: a, amount: 0 }));
     return [...items, ...customLines(b)];
   }
@@ -604,8 +610,8 @@
     // hall line and custom items always mirror the booking; other lines keep what was saved on the invoice
     const cur = new Map(customLines(b).map((l) => [l.cid, l]));
     const items = (b.invoice_items?.length ? b.invoice_items : defaultItems(b))
-      .filter((x) => !(x.kind === "hall" && isServices(b)) && !(x.kind === "custom" && !cur.has(x.cid)))
-      .map((x) => (x.kind === "hall" ? { ...x, description: hallLine(b) } : x.kind === "custom" ? { ...cur.get(x.cid) } : { ...x }));
+      .filter((x) => !(x.kind === "hall" && isServices(b)) && !(x.kind === "venue" && !isServices(b)) && !(x.kind === "custom" && !cur.has(x.cid)))
+      .map((x) => (x.kind === "hall" ? { ...x, description: hallLine(b) } : x.kind === "venue" ? { ...x, description: venueLine(b) } : x.kind === "custom" ? { ...cur.get(x.cid) } : { ...x }));
     cur.forEach((l, id) => { if (!items.some((x) => x.cid === id)) items.push(l); });
     const d = $("#drawer");
     const itemRow = (it, i) => `
@@ -619,10 +625,11 @@
       <form class="drawer-body" id="invForm">
         <p class="hint" style="margin:0">Customer and event details are taken from the booking each time you open the invoice, so edits to the booking show up automatically.</p>
         <div>
-          <div style="font-size:.86rem;color:var(--muted);margin-bottom:8px">Line items (AED) <span class="hint" style="display:block;margin-top:2px">To add an extra item, use <b>Custom items</b> in Edit booking.</span></div>
+          <div style="font-size:.86rem;color:var(--muted);margin-bottom:8px">Line items (AED) <span class="hint" style="display:block;margin-top:2px">Put the ${isServices(b) ? "event location" : "hall"} price on its line. To add an extra item, use <b>Custom items</b> in Edit booking.</span></div>
           <div id="invItems" style="display:grid;gap:8px">${items.map(itemRow).join("")}</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
             <button type="button" class="btn btn-outline sm" id="resetLines" title="Rebuild lines from the booking's hall, date and add-ons">↻ Refresh from booking</button>
+            <button type="button" class="btn btn-outline sm" id="addPlace">+ ${isServices(b) ? "Event location" : "Hall"} price</button>
           </div>
         </div>
         <div class="grid-2">
@@ -657,8 +664,15 @@
       const t = invTotals({ invoice_items: read(), discount: f.discount.value, amount_paid: f.amount_paid.value });
       $("#invSum").innerHTML = `<div><span>Subtotal</span><b>AED ${money(t.subtotal)}</b></div>${+f.discount.value ? `<div><span>Discount</span><b>− AED ${money(f.discount.value)}</b></div>` : ""}<div><span>Total</span><b>AED ${money(t.total)}</b></div><div><span>Paid</span><b>AED ${money(t.paid)}</b></div><div class="due"><span>Balance due</span><b>AED ${money(t.balance)}</b></div>`;
     };
+    const kindOf = isServices(b) ? "venue" : "hall";
+    const syncPlace = () => ($("#addPlace").hidden = !!$(`.inv-row[data-kind="${kindOf}"]`, d));
+    $("#addPlace").onclick = () => {
+      $("#invItems").insertAdjacentHTML("afterbegin", itemRow(placeLine(b), 0));
+      wire(); sum(); $(`.inv-row[data-kind="${kindOf}"] .inv-amt`, d).focus();
+    };
     const wire = () => {
-      $$(".inv-del", d).forEach((x) => (x.onclick = () => { x.closest(".inv-row").remove(); sum(); }));
+      syncPlace();
+      $$(".inv-del", d).forEach((x) => (x.onclick = () => { x.closest(".inv-row").remove(); syncPlace(); sum(); }));
       $$(".inv-desc", d).forEach((ta) => { const fit = () => { ta.style.height = "auto"; ta.style.height = ta.scrollHeight + "px"; }; ta.oninput = fit; fit(); });
     };
     f.addEventListener("input", (e) => {
@@ -791,7 +805,7 @@
     if (error) return toast(error.message);
     S.venues = data;
     renderAdminCal();
-    $("#fVenue").innerHTML = `<option value="">All bookings</option>` + data.map((v) => `<option value="${v.id}">${esc(v.name)}</option>`).join("") + `<option value="__services">Services only (no hall)</option>`;
+    $("#fVenue").innerHTML = `<option value="">All bookings</option>` + data.map((v) => `<option value="${v.id}">${esc(v.name)}</option>`).join("") + `<option value="__services">Other venues (customer's location)</option>`;
     renderVenues();
   }
   function renderVenues() {
