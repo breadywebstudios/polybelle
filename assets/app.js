@@ -234,7 +234,7 @@
     const keep = document.querySelector('#hallPick input:checked')?.value;
     $("#hallPick").innerHTML = allVenues().map((v) => `
       <label class="chip-radio ${v.other ? "other" : ""}"><input type="radio" name="venue" value="${esc(v.id || v.name)}" ${keep === (v.id || v.name) ? "checked" : ""} required>
-        <span><b>${esc(v.name)}</b><small>${v.other ? esc(v.tagline || "Your home, villa or any venue") : `Up to ${v.capacity} guests${v.branch ? " · " + esc(v.branch) : ""}`}</small></span></label>`).join("");
+        <span><b>${esc(v.name)}</b><small>${v.other ? esc(v.tagline || "Hotel, villa, park, home or any venue") : `Up to ${v.capacity} guests${v.branch ? " · " + esc(v.branch) : ""}`}</small></span></label>`).join("");
     $$("[data-avail]").forEach((b) => b.addEventListener("click", () => {
       if (CAL.open && CAL.hall === b.dataset.avail) return closeAvail();
       openAvail(b.dataset.avail);

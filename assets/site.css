@@ -248,7 +248,9 @@ label.field { display: grid; gap: 7px; font-size: .74rem; font-weight: 500; lett
 .type-pick .chip-radio span { padding: 18px 18px; }
 .type-pick .chip-radio b { font: 400 1.25rem/1.2 var(--serif); }
 @media (max-width: 560px) { .type-pick { grid-template-columns: 1fr; } }
-.hall-pick, .sessions { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.hall-pick { display: flex; flex-wrap: nowrap; gap: 10px; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; touch-action: pan-x pan-y; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+.hall-pick .chip-radio { flex: 0 0 150px; }
+.sessions { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
 .chip-radio { position: relative; }
 .chip-radio input { position: absolute; opacity: 0; inset: 0; }
 .chip-radio span { display: grid; gap: 3px; padding: 14px 16px; border: 1px solid var(--line); cursor: pointer; background: var(--ivory); font-size: .95rem; height: 100%; transition: border-color .3s, background .3s, color .3s; }
