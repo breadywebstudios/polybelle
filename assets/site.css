@@ -138,7 +138,7 @@ b, strong { font-weight: 500; }
 
 /* ---------- Halls ---------- */
 
-.venue-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 28px 24px; }
+.venue-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 28px 24px; }
 .venue { display: grid; grid-template-rows: auto 1fr; gap: 18px; }
 .venue-img { position: relative; aspect-ratio: 3 / 4; overflow: hidden; background: var(--sand); }
 .venue-img img, .venue-img .ph { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scale(1.12); transition: transform 1.4s var(--ease); }
@@ -154,14 +154,6 @@ b, strong { font-weight: 500; }
 .venue-body p { margin: 0; color: var(--muted); font-size: .94rem; }
 .venue-body .meta { color: var(--muted); font-size: .85rem; }
 .venue-body .link-line { margin-top: auto; padding-top: 14px; }
-@media (max-width: 700px) {
-  .venue-grid { grid-auto-flow: column; grid-auto-columns: 76%; grid-template-columns: none; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; touch-action: pan-x pan-y; -webkit-overflow-scrolling: touch; scroll-snap-type: x mandatory; gap: 16px; margin-right: -20px; padding-right: 20px; padding-bottom: 8px; scrollbar-width: none; }
-  /* sideways row: fade only, no vertical drop (the drop made the row scroll up/down and catch page swipes) */
-  .venue-grid .venue, .venue-grid .venue.in { transform: none; }
-  .venue-grid::-webkit-scrollbar { display: none; }
-  .venue { scroll-snap-align: start; }
-}
-
 /* ---------- Packages ---------- */
 .packages { background: var(--cream); }
 .pk-grid { display: grid; grid-template-columns: .9fr 1.1fr; gap: clamp(40px, 7vw, 110px); align-items: start; }
@@ -248,8 +240,11 @@ label.field { display: grid; gap: 7px; font-size: .74rem; font-weight: 500; lett
 .type-pick .chip-radio span { padding: 18px 18px; }
 .type-pick .chip-radio b { font: 400 1.25rem/1.2 var(--serif); }
 @media (max-width: 560px) { .type-pick { grid-template-columns: 1fr; } }
-.hall-pick { display: flex; flex-wrap: nowrap; gap: 10px; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; touch-action: pan-x pan-y; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
-.hall-pick .chip-radio { flex: 0 0 150px; }
+.hall-pick { display: flex; flex-wrap: nowrap; gap: 8px; }
+.hall-pick .chip-radio { flex: 1 1 0; min-width: 0; }
+.hall-pick .chip-radio span { padding: 10px 8px; overflow-wrap: anywhere; }
+.hall-pick .chip-radio span b { font-size: .88rem; }
+.hall-pick .chip-radio span small { font-size: .68rem; line-height: 1.3; }
 .sessions { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
 .chip-radio { position: relative; }
 .chip-radio input { position: absolute; opacity: 0; inset: 0; }
@@ -515,6 +510,17 @@ label.field { display: grid; gap: 7px; font-size: .74rem; font-weight: 500; lett
 @media (max-width: 860px) { .cal { grid-template-columns: 1fr; } .cal-box { padding: 16px 12px 14px; } .cal-week, .cal-grid { gap: 4px; } .cal-d { font-size: .95rem; } }
 .venue-links { display: flex; gap: 20px; flex-wrap: wrap; margin-top: auto; padding-top: 14px; }
 .venue-links .link-line { margin-top: 0; padding-top: 8px; }
+@media (max-width: 700px) {
+  .venue-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px 8px; }
+  .venue { gap: 6px; }
+  .venue-img { aspect-ratio: 1; }
+  .venue-img .cap, .venue-body .tag, .venue-body p, .venue-body .meta { display: none; }
+  .venue-body { gap: 2px; }
+  .venue-body h3 { font-size: .72rem; line-height: 1.15; overflow-wrap: anywhere; }
+  .venue-links { gap: 0; padding-top: 2px; }
+  .venue-links .link-line { gap: 0; padding: 4px 0; font-size: 0; letter-spacing: 0; }
+  .venue-links .link-line svg { width: 14px; height: 14px; margin: 0; }
+}
 .avail-panel { padding-top: 48px; }
 .avail-panel .sd-x { top: 8px; right: 10px; }
 .avail-panel::after { content: "Tap a date to see its sessions"; position: absolute; top: 18px; left: 26px; font: 400 .66rem/1 var(--sans); letter-spacing: .2em; text-transform: uppercase; color: var(--muted); }

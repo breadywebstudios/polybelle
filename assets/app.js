@@ -228,7 +228,7 @@
           <h3>${esc(v.name)}</h3>
           ${v.description ? `<p>${esc(v.description)}</p>` : ""}
           ${v.branch || v.price_from ? `<span class="meta">${[v.branch, v.price_from ? "From " + money(v.price_from) : ""].filter(Boolean).map(esc).join(" · ")}</span>` : ""}
-          <span class="venue-links"><button class="link-line avail-link" type="button" data-avail="${esc(v.id || v.name)}" aria-expanded="false" aria-controls="availPanel"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="1.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/><circle cx="8.5" cy="14.5" r=".9"/><circle cx="12" cy="14.5" r=".9"/><circle cx="15.5" cy="14.5" r=".9"/></svg>Check availability</button></span>
+          <span class="venue-links"><button class="link-line avail-link" type="button" data-avail="${esc(v.id || v.name)}" aria-label="Check availability for ${esc(v.name)}" aria-expanded="false" aria-controls="availPanel"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="1.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/><circle cx="8.5" cy="14.5" r=".9"/><circle cx="12" cy="14.5" r=".9"/><circle cx="15.5" cy="14.5" r=".9"/></svg>Check availability</button></span>
         </div>
       </article>`).join("");
     const keep = document.querySelector('#hallPick input:checked')?.value;
