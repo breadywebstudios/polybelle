@@ -39,6 +39,7 @@
     <nav class="tabs">
       <div class="wrap">
         <button class="active" data-tab="bookings">Bookings</button>
+        <button data-tab="calendar">Calendar</button>
         <button data-tab="venues">Halls &amp; Services</button>
         <button data-tab="gallery">Gallery</button>
         <button data-tab="reviews">Reviews <span class="tab-count" id="rPendingCount" hidden></span></button>
@@ -75,6 +76,23 @@
       </section>
 
       <!-- Venues -->
+      <section class="panel" id="tab-calendar">
+        <div class="toolbar acal-bar">
+          <select id="acHall" aria-label="Hall"></select>
+          <div class="acal-nav">
+            <button type="button" class="btn btn-outline sm" id="acPrev" aria-label="Previous month">‹</button>
+            <b id="acTitle" aria-live="polite"></b>
+            <button type="button" class="btn btn-outline sm" id="acNext" aria-label="Next month">›</button>
+            <button type="button" class="btn btn-outline sm" id="acToday">Today</button>
+          </div>
+          <label class="switch"><input type="checkbox" id="acCancelled"> Show cancelled</label>
+        </div>
+        <div class="acal-legend"><span><i class="c-Pending"></i>Pending</span><span><i class="c-Confirmed"></i>Confirmed</span><span><i class="c-Completed"></i>Completed</span><span><i class="c-clash"></i>Hall clash</span></div>
+        <div class="acal-week" aria-hidden="true"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div>
+        <div class="acal" id="acGrid"></div>
+        <div class="acal-day" id="acDay" aria-live="polite"></div>
+      </section>
+
       <section class="panel" id="tab-venues">
         <p class="lead" style="margin:0 0 20px">Add a new hall anytime — it appears on the website and in the booking form straight away. Hide a hall to stop new bookings without losing its history.</p>
         <div class="vgrid" id="vgrid"></div>

@@ -21,6 +21,10 @@ Only emails in `pb_admins` can use the admin page. Add a new admin in Admin → 
 
 Passwords (Admin → Settings): **Change my password** updates the signed-in admin's own password after re-checking the current one. **Set password** next to another admin sets a new password through the same `admin-create-user` function (`action: "set_password"`); it only works for emails on the Polybelle admin list (checked by the server-only `pb_admin_auth_user_id` SQL function), because the login system is shared with other sites in this Supabase project.
 
+## Calendars
+- **Website → Availability:** a monthly calendar per hall built from `pb_booked_slots` (confirmed bookings only, no customer details). Days show available / some sessions booked / fully booked; tapping a day lists its sessions, and **Book this date** fills the booking form.
+- **Admin → Calendar:** a monthly calendar of all bookings, filterable by hall (or services only), colour-coded by status with hall clashes outlined. Tap a booking to open it, or tap a day to see its sessions and **+ Add booking** for that hall and date.
+
 ## Promo codes
 Apply `supabase/migrations/20261025200000_promo_codes.sql` in the Supabase SQL Editor before deploying the promo-code UI. It creates the promo tables and booking RPCs and seeds `MASCOT15` for 15% off Mascot Surprise, limited to 10 successfully submitted bookings.
 

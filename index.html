@@ -62,6 +62,32 @@
       </div>
     </section>
 
+    <!-- Availability -->
+    <section class="section availability" id="availability">
+      <div class="wrap">
+        <header class="section-head reveal">
+          <span class="eyebrow">Availability</span>
+          <h2>Check a date</h2>
+          <span class="rule"></span>
+          <p class="lead">Choose a hall to see which days are open, then tap a date to see its sessions.</p>
+        </header>
+        <div class="cal reveal">
+          <div class="cal-halls" id="calHalls" role="tablist" aria-label="Hall"></div>
+          <div class="cal-box">
+            <div class="cal-head">
+              <button type="button" class="cal-nav" id="calPrev" aria-label="Previous month">‹</button>
+              <h3 id="calTitle" aria-live="polite"></h3>
+              <button type="button" class="cal-nav" id="calNext" aria-label="Next month">›</button>
+            </div>
+            <div class="cal-week" aria-hidden="true"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div>
+            <div class="cal-grid" id="calGrid"></div>
+            <div class="cal-legend"><span><i class="lg-free"></i>Available</span><span><i class="lg-part"></i>Some sessions booked</span><span><i class="lg-full"></i>Fully booked</span></div>
+          </div>
+          <div class="cal-day" id="calDay" aria-live="polite"></div>
+        </div>
+      </div>
+    </section>
+
     <!-- Booking -->
     <section class="section booking" id="book">
       <div class="wrap">

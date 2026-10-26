@@ -116,7 +116,68 @@
     return list;
   }
 
+  // ---------- calendar (per hall, all statuses)
+  const today0 = today();
+  const AC = { hall: "", y: +today0.slice(0, 4), m: +today0.slice(5, 7) - 1, sel: null };
+  const acIso = (y, m, d) => new Date(Date.UTC(y, m, d)).toISOString().slice(0, 10);
+  const SESS_SHORT = { Morning: "AM", Afternoon: "PM", Evening: "Eve", "Whole day": "All day" };
+  const SESS_RANK = { Morning: 1, Afternoon: 2, Evening: 3, "Whole day": 0 };
+  function acBookings(date) {
+    const showCx = $("#acCancelled").checked;
+    return S.bookings.filter((b) => b.event_date === date && (showCx || b.status !== "Cancelled") &&
+      (!AC.hall || (AC.hall === "__services" ? isServices(b) : b.venue_id === AC.hall)))
+      .sort((a, b) => (SESS_RANK[a.session] ?? 9) - (SESS_RANK[b.session] ?? 9));
+  }
+  function renderAdminCal() {
+    const sel = $("#acHall");
+    sel.innerHTML = `<option value="">All halls</option>` + S.venues.map((v) => `<option value="${v.id}">${esc(v.name)}</option>`).join("") + `<option value="__services">Services only (no hall)</option>`;
+    sel.value = AC.hall;
+    $("#acTitle").textContent = new Date(Date.UTC(AC.y, AC.m, 1)).toLocaleDateString("en-GB", { month: "long", year: "numeric", timeZone: "UTC" });
+    const lead = (new Date(Date.UTC(AC.y, AC.m, 1)).getUTCDay() + 6) % 7, days = new Date(Date.UTC(AC.y, AC.m + 1, 0)).getUTCDate(), t = today();
+    let html = '<div class="ac-blank"></div>'.repeat(lead);
+    for (let d = 1; d <= days; d++) {
+      const iso = acIso(AC.y, AC.m, d), list = acBookings(iso);
+      html += `<div class="ac-d ${iso === t ? "today" : ""} ${iso < t ? "past" : ""} ${iso === AC.sel ? "sel" : ""}" data-d="${iso}" role="button" tabindex="0" aria-label="${esc(fmtDate(iso))}: ${list.length} booking${list.length === 1 ? "" : "s"}">
+        <span class="ac-n">${d}</span>
+        <div class="ac-chips">${list.map((b) => `<button type="button" class="ac-chip c-${b.status} ${overlapsFor(b).clash.length ? "clash" : ""}" data-id="${b.id}" title="${esc(`${b.session} · ${b.name} · ${isServices(b) ? "Services only" : b.venue_name} · ${b.status}`)}"><b>${SESS_SHORT[b.session] || esc(b.session)}</b> ${esc(b.name)}${AC.hall ? "" : ` <small>${esc(isServices(b) ? "Services" : b.venue_name)}</small>`}</button>`).join("")}</div>
+        ${list.length ? `<span class="ac-dots">${list.map((b) => `<i class="c-${b.status} ${overlapsFor(b).clash.length ? "clash" : ""}"></i>`).join("")}</span>` : ""}
+      </div>`;
+    }
+    $("#acGrid").innerHTML = html;
+    $$("#acGrid .ac-chip").forEach((c) => c.addEventListener("click", (e) => { e.stopPropagation(); openBooking(fresh(c.dataset.id)); }));
+    $$("#acGrid .ac-d").forEach((c) => {
+      const pick = () => { AC.sel = c.dataset.d; renderAdminCal(); };
+      c.addEventListener("click", pick);
+      c.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } });
+    });
+    renderAdminCalDay();
+  }
+  function renderAdminCalDay() {
+    const box = $("#acDay");
+    if (!AC.sel) { box.innerHTML = `<p class="hint" style="margin:0">Tap a day to see its bookings or add one.</p>`; return; }
+    const list = acBookings(AC.sel), hall = S.venues.find((v) => v.id === AC.hall);
+    const live = list.filter((b) => b.status !== "Cancelled" && !isServices(b));
+    const hits = (sess, pool) => pool.some((b) => b.session === sess || b.session === "Whole day" || sess === "Whole day");
+    const confirmed = live.filter((b) => b.status === "Confirmed" || b.status === "Completed");
+    box.innerHTML = `
+      <div class="acd-head"><div><span class="eyebrow">${esc(AC.hall === "__services" ? "Services only" : hall ? hall.name : "All halls")}</span><h3>${esc(fmtDate(AC.sel))}</h3></div>
+        <button type="button" class="btn btn-primary sm" id="acAdd">+ Add booking</button></div>
+      ${hall ? `<div class="acd-sess">${C.sessions.map((x) => { const st = hits(x.id, confirmed) ? "bk" : hits(x.id, live) ? "rq" : "";
+          return `<span class="${st}">${esc(x.id)} · ${st === "bk" ? "Booked" : st === "rq" ? "Requested" : "Free"}</span>`; }).join("")}</div>` : ""}
+      ${list.length ? `<ul class="acd-list">${list.map((b) => `<li><button type="button" class="linkbtn" data-id="${b.id}">${esc(b.ref)}</button>
+          <span>${esc(b.session)}</span><span>${esc(b.name)}</span><span>${esc(isServices(b) ? "Services only" : b.venue_name)}</span><span>${esc(b.event_type)}</span>
+          <span class="badge b-${b.status}">${b.status}</span>${overlapBadges(b)}</li>`).join("")}</ul>` : `<p class="hint" style="margin:0">No bookings on this day.</p>`}`;
+    $$("#acDay [data-id]").forEach((x) => x.addEventListener("click", () => openBooking(fresh(x.dataset.id))));
+    $("#acAdd").addEventListener("click", () => openBookingForm(null, { event_date: AC.sel, ...(hall ? { venue_id: hall.id } : AC.hall === "__services" ? { venue_id: null } : {}) }));
+  }
+  $("#acHall").addEventListener("change", (e) => { AC.hall = e.target.value; renderAdminCal(); });
+  $("#acCancelled").addEventListener("change", renderAdminCal);
+  $("#acPrev").addEventListener("click", () => { AC.m--; if (AC.m < 0) { AC.m = 11; AC.y--; } renderAdminCal(); });
+  $("#acNext").addEventListener("click", () => { AC.m++; if (AC.m > 11) { AC.m = 0; AC.y++; } renderAdminCal(); });
+  $("#acToday").addEventListener("click", () => { const t = today(); AC.y = +t.slice(0, 4); AC.m = +t.slice(5, 7) - 1; AC.sel = t; renderAdminCal(); });
+
   function renderBookings() {
+    renderAdminCal();
     const t = today();
     const up = S.bookings.filter((b) => b.event_date >= t);
     const count = (s) => up.filter((b) => b.status === s).length;
@@ -238,9 +299,9 @@
   }
 
   // ---------- booking add / edit form
-  function openBookingForm(b) {
+  function openBookingForm(b, prefill) {
     const isNew = !b;
-    b = b || { venue_id: S.venues.find((v) => v.active)?.id, event_date: "", session: "Evening", event_type: C.eventTypes[0], guests: "", name: "", phone: "", email: "", customer_address: "", notes: "", add_ons: [], status: "Confirmed" };
+    b = b || { venue_id: S.venues.find((v) => v.active)?.id, event_date: "", session: "Evening", event_type: C.eventTypes[0], guests: "", name: "", phone: "", email: "", customer_address: "", notes: "", add_ons: [], status: "Confirmed", ...(prefill || {}) };
     const d = $("#drawer");
     const venueOpts = `<option value="" ${b.venue_id ? "" : "selected"}>No hall – package / services only</option>` + S.venues.map((v) => `<option value="${v.id}" ${v.id === b.venue_id ? "selected" : ""}>${esc(v.name)} (up to ${v.capacity})${v.active ? "" : " – hidden"}</option>`).join("");
     const typeOpts = [...new Set([...C.eventTypes, b.event_type].filter(Boolean))].map((t) => `<option ${t === b.event_type ? "selected" : ""}>${esc(t)}</option>`).join("");
@@ -611,6 +672,7 @@
     const { data, error } = await sb.from("pb_venues").select("*").order("sort_order").order("name");
     if (error) return toast(error.message);
     S.venues = data;
+    renderAdminCal();
     $("#fVenue").innerHTML = `<option value="">All bookings</option>` + data.map((v) => `<option value="${v.id}">${esc(v.name)}</option>`).join("") + `<option value="__services">Services only (no hall)</option>`;
     renderVenues();
   }

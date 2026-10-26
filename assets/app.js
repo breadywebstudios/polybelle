@@ -214,12 +214,17 @@
           <h3>${esc(v.name)}</h3>
           ${v.description ? `<p>${esc(v.description)}</p>` : ""}
           ${v.branch || v.price_from ? `<span class="meta">${[v.branch, v.price_from ? "From " + money(v.price_from) : ""].filter(Boolean).map(esc).join(" · ")}</span>` : ""}
-          <button class="link-line" type="button" data-book="${esc(v.id || v.name)}">Reserve this hall</button>
+          <span class="venue-links"><button class="link-line" type="button" data-book="${esc(v.id || v.name)}">Reserve this hall</button><button class="link-line" type="button" data-avail="${esc(v.id || v.name)}">Availability</button></span>
         </div>
       </article>`).join("");
     $("#hallPick").innerHTML = state.venues.map((v) => `
       <label class="chip-radio"><input type="radio" name="venue" value="${esc(v.id || v.name)}" required>
         <span><b>${esc(v.name)}</b><small>Up to ${v.capacity} guests${v.branch ? " · " + esc(v.branch) : ""}</small></span></label>`).join("");
+    $$("[data-avail]").forEach((b) => b.addEventListener("click", () => {
+      CAL.hall = b.dataset.avail; CAL.sel = null; renderCal();
+      $("#availability").scrollIntoView({ behavior: "smooth" });
+    }));
+    renderCal();
     document.querySelectorAll("[data-book]").forEach((b) => b.addEventListener("click", () => {
       setType("Hall");
       const r = document.querySelector(`#hallPick input[value="${CSS.escape(b.dataset.book)}"]`);
@@ -484,11 +489,76 @@
     f.innerHTML = `<span class="tick" aria-hidden="true"></span><h3 style="text-align:center">Thank you</h3><p style="text-align:center">Your review has been sent to our team and will appear on the website once approved.</p><button class="btn btn-dark" type="button" onclick="this.closest('.modal').classList.remove('open')">Close</button>`;
   });
 
+  // ---------- availability calendar (confirmed bookings only; no customer details)
+  const isoDay = (y, m, d) => new Date(Date.UTC(y, m, d)).toISOString().slice(0, 10);
+  const CAL = { hall: null, y: +todayDubai().slice(0, 4), m: +todayDubai().slice(5, 7) - 1, sel: null };
+  const SESS_ORDER = ["Morning", "Afternoon", "Evening", "Whole day"];
+  function takenFor(venueId, date) { return state.booked.filter((b) => venueId && b.venue_id === venueId && b.event_date === date).map((b) => b.session); }
+  function dayState(taken) {
+    if (taken.includes("Whole day") || ["Morning", "Afternoon", "Evening"].every((x) => taken.includes(x))) return "full";
+    return taken.length ? "part" : "free";
+  }
+  function renderCal() {
+    if (!$("#calGrid")) return;
+    const halls = state.venues;
+    if (!halls.some((v) => (v.id || v.name) === CAL.hall)) CAL.hall = halls[0] ? (halls[0].id || halls[0].name) : null;
+    const hall = halls.find((v) => (v.id || v.name) === CAL.hall);
+    $("#calHalls").innerHTML = halls.map((v) => `<button type="button" role="tab" aria-selected="${(v.id || v.name) === CAL.hall}" class="${(v.id || v.name) === CAL.hall ? "on" : ""}" data-h="${esc(v.id || v.name)}">${esc(v.name)}</button>`).join("");
+    $$("#calHalls button").forEach((b) => b.addEventListener("click", () => { CAL.hall = b.dataset.h; renderCal(); }));
+    const today = todayDubai(), t = new Date(today + "T00:00:00Z");
+    const max = new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth(), t.getUTCDate() + 730)).toISOString().slice(0, 10);
+    $("#calTitle").textContent = new Date(Date.UTC(CAL.y, CAL.m, 1)).toLocaleDateString("en-GB", { month: "long", year: "numeric", timeZone: "UTC" });
+    $("#calPrev").disabled = CAL.y * 12 + CAL.m <= t.getUTCFullYear() * 12 + t.getUTCMonth();
+    $("#calNext").disabled = isoDay(CAL.y, CAL.m + 1, 1) > max;
+    const lead = (new Date(Date.UTC(CAL.y, CAL.m, 1)).getUTCDay() + 6) % 7;     // Monday first
+    const days = new Date(Date.UTC(CAL.y, CAL.m + 1, 0)).getUTCDate();
+    let html = '<span class="cal-blank"></span>'.repeat(lead);
+    for (let d = 1; d <= days; d++) {
+      const iso = isoDay(CAL.y, CAL.m, d), past = iso < today || iso > max;
+      const st = past ? "" : dayState(takenFor(hall?.id, iso));
+      const label = new Date(iso + "T00:00:00Z").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
+      html += `<button type="button" class="cal-d ${st} ${iso === today ? "today" : ""} ${iso === CAL.sel ? "sel" : ""}" data-d="${iso}" ${past ? "disabled" : ""}
+        aria-label="${label}: ${past ? "not available" : { free: "available", part: "some sessions booked", full: "fully booked" }[st]}" aria-pressed="${iso === CAL.sel}">${d}</button>`;
+    }
+    const grid = $("#calGrid"); grid.innerHTML = html;
+    grid.style.animation = "none"; void grid.offsetWidth; grid.style.animation = "";
+    $$("#calGrid .cal-d:not(:disabled)").forEach((b) => b.addEventListener("click", () => { CAL.sel = b.dataset.d; renderCal(); }));
+    renderCalDay(hall);
+  }
+  function renderCalDay(hall) {
+    const box = $("#calDay");
+    if (!CAL.sel || !hall) {
+      box.innerHTML = `<span class="sd-kind">${esc(hall?.name || "Choose a hall")}</span><p class="cal-day-empty">Tap a date to see which sessions are free.</p>
+        <p class="hint">Dates show confirmed bookings. Pending requests are confirmed by our team on WhatsApp.</p>`;
+      return;
+    }
+    const taken = takenFor(hall.id, CAL.sel), st = dayState(taken);
+    const nice = new Date(CAL.sel + "T00:00:00Z").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+    const booked = (s) => taken.includes(s) || taken.includes("Whole day") || (s === "Whole day" && taken.length > 0);
+    box.innerHTML = `
+      <span class="sd-kind">${esc(hall.name)} · up to ${hall.capacity} guests</span>
+      <h4>${esc(nice)}</h4>
+      <ul class="cal-sess">${C.sessions.slice().sort((a, b) => SESS_ORDER.indexOf(a.id) - SESS_ORDER.indexOf(b.id)).map((x) => `
+        <li class="${booked(x.id) ? "booked" : ""}"><span>${esc(x.id)}<small>${esc(x.time)}</small></span><span class="st ${booked(x.id) ? "st-booked" : "st-free"}">${booked(x.id) ? "Booked" : "Free"}</span></li>`).join("")}</ul>
+      ${st === "full" ? `<p class="hint warn">${esc(hall.name)} is fully booked on this date. Please try another date or hall.</p>`
+        : `<button type="button" class="btn btn-dark" id="calBook">Book this date</button>`}`;
+    $("#calBook")?.addEventListener("click", () => {
+      setType("Hall");
+      const r = document.querySelector(`#hallPick input[value="${CSS.escape(hall.id || hall.name)}"]`);
+      if (r) r.checked = true;
+      $("#dateInput").value = CAL.sel;
+      update();
+      $("#book").scrollIntoView({ behavior: "smooth" });
+    });
+  }
+  $("#calPrev").addEventListener("click", () => { CAL.m--; if (CAL.m < 0) { CAL.m = 11; CAL.y--; } renderCal(); });
+  $("#calNext").addEventListener("click", () => { CAL.m++; if (CAL.m > 11) { CAL.m = 0; CAL.y++; } renderCal(); });
+
   // ---------- data
   async function loadBooked() {
     if (!sb) return;
     const { data } = await sb.rpc("pb_booked_slots");
-    if (data) state.booked = data;
+    if (data) { state.booked = data; renderCal(); }
   }
 
   async function loadPublicPromos() {

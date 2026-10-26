@@ -204,3 +204,58 @@ tr.row-warn td:first-child { box-shadow: inset 3px 0 0 #D2A54C; }
 .adm-acts { display: flex; gap: 14px; }
 .adm-pw { flex: 1 1 100%; display: flex; gap: 8px; flex-wrap: wrap; padding-top: 10px; margin-top: 4px; border-top: 1px solid var(--line); }
 .adm-pw input { flex: 1 1 180px; font: inherit; font-size: .9rem; padding: 9px 11px; border: 1px solid var(--line); background: #fff; color: var(--ink); min-width: 0; }
+
+/* ---------- admin calendar ---------- */
+.acal-bar { justify-content: space-between; }
+.acal-nav { display: flex; align-items: center; gap: 8px; }
+.acal-nav b { font: 400 1.4rem/1 var(--serif); min-width: 170px; text-align: center; }
+.acal-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: .78rem; color: var(--muted); margin: -4px 0 12px; }
+.acal-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.acal-legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+i.c-Pending, .ac-chip.c-Pending { background: #FBF0DD; color: #7E5A16; }
+i.c-Confirmed, .ac-chip.c-Confirmed { background: #E2EFE4; color: #2F5D3B; }
+i.c-Completed, .ac-chip.c-Completed { background: #E4EAF3; color: #3A5378; }
+i.c-Cancelled, .ac-chip.c-Cancelled { background: #F1E4E1; color: #9A4436; text-decoration: line-through; }
+.acal-legend i.c-clash { background: #fff; box-shadow: inset 0 0 0 2px #C0543F; }
+.acal-week, .acal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.acal-week span { font-size: .68rem; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); padding: 0 4px 6px; }
+.ac-d { min-height: 112px; background: var(--white); border: 1px solid var(--line); padding: 6px; display: flex; flex-direction: column; gap: 4px; cursor: pointer; transition: border-color .2s, box-shadow .2s; min-width: 0; }
+.ac-d:hover { border-color: var(--muted); }
+.ac-d.past { background: #FAF7F3; }
+.ac-d.past .ac-n { color: #B5A79D; }
+.ac-d.today .ac-n { background: var(--gold); color: #fff; }
+.ac-d.sel { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.ac-n { align-self: flex-start; font: 400 .95rem/1 var(--serif); padding: 4px 6px; border-radius: 999px; }
+.ac-chips { display: grid; gap: 3px; overflow: hidden; }
+.ac-chip { border: 0; text-align: left; font: inherit; font-size: .72rem; line-height: 1.25; padding: 4px 6px; border-radius: 4px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ac-chip b { font-weight: 500; }
+.ac-chip small { opacity: .75; }
+.ac-chip.clash { box-shadow: inset 0 0 0 2px #C0543F; }
+.ac-chip:hover { filter: brightness(.96); }
+.ac-dots { display: none; gap: 3px; flex-wrap: wrap; }
+.ac-dots i { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+.ac-dots i.clash { box-shadow: 0 0 0 1.5px #C0543F; }
+.ac-blank { min-height: 1px; }
+.acal-day { margin-top: 16px; background: var(--white); border: 1px solid var(--line); padding: 18px 20px; display: grid; gap: 14px; }
+.acd-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+.acd-head h3 { font-size: 1.5rem; margin-top: 6px; }
+.acd-sess { display: flex; flex-wrap: wrap; gap: 6px; }
+.acd-sess span { font-size: .78rem; padding: 5px 10px; border-radius: 999px; background: #E2EFE4; color: #2F5D3B; }
+.acd-sess span.bk { background: #F1E4E1; color: #9A4436; }
+.acd-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.acd-list li { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; padding: 10px 12px; background: var(--ivory); border-radius: 8px; font-size: .88rem; }
+@media (max-width: 760px) {
+  .acal-week, .acal { gap: 3px; }
+  .ac-d { min-height: 58px; padding: 4px; align-items: center; }
+  .ac-n { align-self: center; font-size: .9rem; padding: 3px 5px; }
+  .ac-chips { display: none; }
+  .ac-dots { display: flex; justify-content: center; }
+  .acal-nav b { min-width: 120px; font-size: 1.15rem; }
+}
+.acd-sess span.rq { background: #FBF0DD; color: #7E5A16; }
+/* stronger swatches for small dots and the legend */
+.acal-legend i.c-Pending, .ac-dots i.c-Pending { background: #D9A441; }
+.acal-legend i.c-Confirmed, .ac-dots i.c-Confirmed { background: #5E9A6A; }
+.acal-legend i.c-Completed, .ac-dots i.c-Completed { background: #6F86AD; }
+.ac-dots i.c-Cancelled { background: #C47C6E; }
+.ac-dots i.clash { box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px #C0543F; }
