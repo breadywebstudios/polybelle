@@ -135,6 +135,10 @@ b, strong { font-weight: 500; }
 .occasions { margin: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 0; color: var(--muted); font-size: .72rem; letter-spacing: .24em; text-transform: uppercase; }
 .occasions span { white-space: nowrap; display: inline-flex; align-items: center; }
 .occasions span + span::before { content: ""; width: 4px; height: 4px; border-radius: 50%; background: var(--gold); margin: 0 16px; }
+.about-social-label { margin: 28px 0 12px; color: var(--muted); font-size: .72rem; letter-spacing: .18em; text-transform: uppercase; }
+.about-facebook-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.about-facebook-links a { padding: 9px 14px; border: 1px solid var(--line); border-radius: 999px; color: var(--ink); font-size: .82rem; text-decoration: none; transition: background .25s, color .25s, border-color .25s; }
+.about-facebook-links a:hover { border-color: var(--ink); background: var(--ink); color: #fff; }
 
 /* ---------- Halls ---------- */
 
