@@ -510,6 +510,8 @@ label.field { display: grid; gap: 7px; font-size: .74rem; font-weight: 500; lett
 @media (max-width: 860px) { .cal { grid-template-columns: 1fr; } .cal-box { padding: 16px 12px 14px; } .cal-week, .cal-grid { gap: 4px; } .cal-d { font-size: .95rem; } }
 .venue-links { display: flex; gap: 20px; flex-wrap: wrap; margin-top: auto; padding-top: 14px; }
 .venue-links .link-line { margin-top: 0; padding-top: 8px; }
+.venue-links .link-line svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.5; flex: 0 0 auto; }
+.venue-map { color: var(--gold-soft); }
 @media (max-width: 700px) {
   .venue-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px 8px; }
   .venue { gap: 6px; }

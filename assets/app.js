@@ -16,6 +16,21 @@
 
   // ---------- helpers
   const imgFor = (v, i) => v.image_url || C.fallbackImages[i % C.fallbackImages.length];
+  const googleMapsUrl = (value) => {
+    if (!value) return "";
+    try {
+      const url = new URL(value);
+      const host = url.hostname.toLowerCase();
+      return url.protocol === "https:" && (
+        /^maps\.google\.[a-z.]+$/.test(host) ||
+        /^www\.google\.[a-z.]+$/.test(host) && /^\/maps(?:\/|$)/.test(url.pathname) ||
+        host === "maps.app.goo.gl" ||
+        host === "goo.gl" && url.pathname.startsWith("/maps")
+      ) ? url.href : "";
+    } catch {
+      return "";
+    }
+  };
   // "Other venues" (customer's own location): a pseudo-hall that books packages/services with a typed location
   const OTHER = "__other";
   let OV = C.otherVenue || {};
@@ -229,7 +244,10 @@
           <h3>${esc(v.name)}</h3>
           ${v.description ? `<p>${esc(v.description)}</p>` : ""}
           ${v.branch || v.price_from ? `<span class="meta">${[v.branch, v.price_from ? "From " + money(v.price_from) : ""].filter(Boolean).map(esc).join(" · ")}</span>` : ""}
-          <span class="venue-links"><button class="link-line avail-link" type="button" data-avail="${esc(v.id || v.name)}" aria-label="Check availability for ${esc(v.name)}" aria-expanded="false" aria-controls="availPanel"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="1.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/><circle cx="8.5" cy="14.5" r=".9"/><circle cx="12" cy="14.5" r=".9"/><circle cx="15.5" cy="14.5" r=".9"/></svg>Check availability</button></span>
+          <span class="venue-links">
+            ${googleMapsUrl(v.google_maps_url) ? `<a class="link-line venue-map" href="${esc(googleMapsUrl(v.google_maps_url))}" target="_blank" rel="noopener noreferrer" aria-label="View ${esc(v.name)} on Google Maps"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>Google Maps</a>` : ""}
+            <button class="link-line avail-link" type="button" data-avail="${esc(v.id || v.name)}" aria-label="Check availability for ${esc(v.name)}" aria-expanded="false" aria-controls="availPanel"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="1.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/><circle cx="8.5" cy="14.5" r=".9"/><circle cx="12" cy="14.5" r=".9"/><circle cx="15.5" cy="14.5" r=".9"/></svg>Check availability</button>
+          </span>
         </div>
       </article>`).join("");
     const keep = document.querySelector('#hallPick input:checked')?.value;
@@ -667,7 +685,7 @@
     sb.from("pb_services").select("name,kind,category,description,image_url,image_pos,inclusions").eq("active", true).order("sort_order").order("name")
       .then(({ data }) => { if (data?.length) { services = data; renderServices(); update(); } });
     const [venues, settings, otherVenueSettings] = await Promise.all([
-      sb.from("pb_venues").select("id,name,tagline,description,capacity,branch,image_url,image_pos,price_from,sort_order").eq("active", true).order("sort_order").order("name"),
+      sb.from("pb_venues").select("id,name,tagline,description,capacity,branch,google_maps_url,image_url,image_pos,price_from,sort_order").eq("active", true).order("sort_order").order("name"),
       sb.rpc("pb_public_settings"),
       sb.rpc("pb_public_other_venue"),
       loadBooked()

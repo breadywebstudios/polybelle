@@ -46,6 +46,21 @@
   }
   // Photo framing: which part of a photo shows in its website card (CSS position "x% y%")
   const posOk = (p) => (/^(100|\d{1,2})% (100|\d{1,2})%$/.test(p || "") ? p : "");
+  const isGoogleMapsUrl = (value) => {
+    if (!value) return true;
+    try {
+      const url = new URL(value);
+      const host = url.hostname.toLowerCase();
+      return url.protocol === "https:" && (
+        /^maps\.google\.[a-z.]+$/.test(host) ||
+        /^www\.google\.[a-z.]+$/.test(host) && /^\/maps(?:\/|$)/.test(url.pathname) ||
+        host === "maps.app.goo.gl" ||
+        host === "goo.gl" && url.pathname.startsWith("/maps")
+      );
+    } catch {
+      return false;
+    }
+  };
   const frameBlock = (id, url, pos, shape) => `
         <div class="frame-wrap">
           <div class="preview-img frame ${shape}" id="${id}" tabindex="0" role="img" aria-label="Photo framing. Drag, or use the arrow keys, to choose what shows."
@@ -845,7 +860,7 @@
 
   function openVenue(v) {
     const isNew = !v;
-    v = v || { name: "", tagline: "", description: "", capacity: 50, branch: "", image_url: "", price_from: null, sort_order: (S.venues.at(-1)?.sort_order || 0) + 1, active: true };
+    v = v || { name: "", tagline: "", description: "", capacity: 50, branch: "", google_maps_url: "", image_url: "", price_from: null, sort_order: (S.venues.at(-1)?.sort_order || 0) + 1, active: true };
     const d = $("#vdrawer");
     d.innerHTML = `
       <div class="drawer-head"><div><span class="eyebrow">${isNew ? "New hall" : "Edit hall"}</span><h3>${esc(v.name || "Add a hall")}</h3></div><button class="xbtn" data-close aria-label="Close">×</button></div>
@@ -862,6 +877,7 @@
           <label class="field">Starting price (AED, optional)<input type="number" name="price_from" min="0" step="1" value="${v.price_from ?? ""}"></label>
           <label class="field">Display order<input type="number" name="sort_order" value="${v.sort_order}"></label>
         </div>
+        <label class="field">Google Maps location URL (optional)<input type="url" name="google_maps_url" maxlength="500" value="${esc(v.google_maps_url || "")}" placeholder="https://maps.app.goo.gl/…"></label>
         <label class="switch"><input type="checkbox" name="active" ${v.active ? "checked" : ""}> Show on website &amp; accept bookings</label>
         <div class="venue-form-actions">
           <button class="btn btn-primary" type="submit">${isNew ? "Add hall" : "Save changes"}</button>
@@ -901,9 +917,11 @@
       const row = {
         name: f.name.value.trim(), tagline: f.tagline.value.trim() || null, description: f.description.value.trim() || null,
         capacity: +f.capacity.value, branch: f.branch.value || null, price_from: f.price_from.value === "" ? null : +f.price_from.value,
+        google_maps_url: f.google_maps_url.value.trim() || null,
         sort_order: +f.sort_order.value || 0, active: f.active.checked, image_url: f.image_url.value || null,
         image_pos: f.image_url.value ? posOk(f.image_pos.value) || null : null
       };
+      if (!isGoogleMapsUrl(row.google_maps_url)) return toast("Enter a valid Google Maps link using an https:// URL.");
       const q = isNew ? sb.from("pb_venues").insert(row) : sb.from("pb_venues").update(row).eq("id", v.id);
       const { error } = await q;
       if (error) return toast(error.message);
