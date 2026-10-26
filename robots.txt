@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 Disallow: /admin.html
 
-Sitemap: https://polybelle.me/sitemap.xml
+Sitemap: https://www.polybelle.me/sitemap.xml

@@ -1,6 +1,0 @@
-{
-  "redirects": [
-    { "source": "/:path*", "has": [{ "type": "host", "value": "polybelle.vercel.app" }], "destination": "https://polybelle.me/:path*", "permanent": true },
-    { "source": "/:path*", "has": [{ "type": "host", "value": "www.polybelle.me" }], "destination": "https://polybelle.me/:path*", "permanent": true }
-  ]
-}

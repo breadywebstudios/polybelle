@@ -53,8 +53,8 @@ Powered by Bready Web Studios.
 Some halls use the same room (e.g. **Hall A&B** includes **Hall B**). In Admin → Halls & Services → Edit hall, tick them under **Shares space with** (the link is saved on both halls). A confirmed booking in one then blocks that session in the other: on the website calendar and booking form, in the booking check on the server (`pb_request_booking` via `pb_linked_venues`), and in the admin's Hall clash warnings and calendar day panel. Hall A&B and Hall B are already linked.
 
 ## SEO
-- Live address: **https://polybelle.me** (canonical). `vercel.json` permanently redirects `polybelle.vercel.app` and `www.polybelle.me` there.
+- Live address: **https://www.polybelle.me** (canonical; it's the primary domain in Vercel, and polybelle.me forwards to it). Don't add redirect rules between polybelle.me and www in code: Vercel's domain settings already handle that, and an opposite rule breaks the site.
 - `index.html` head: description, canonical, Open Graph / WhatsApp preview (`assets/og-image.jpg`, 1200×630), icons in `assets/icons/`, `site.webmanifest`, and structured data (`LocalBusiness` + `EventVenue` with the three branches, phones, socials and services). Update the structured data if addresses, phones or opening hours change.
-- `robots.txt` (blocks `admin.html`) and `sitemap.xml`. Submit `https://polybelle.me/sitemap.xml` in Google Search Console.
+- `robots.txt` (blocks `admin.html`) and `sitemap.xml`. Submit `https://www.polybelle.me/sitemap.xml` in Google Search Console.
 - The admin page has `noindex`. Photos get descriptive alt text from hall names, service names and gallery captions, so write clear gallery captions.
 
