@@ -77,6 +77,7 @@ dl.kv dd { margin: 0; word-break: break-word; }
 .vcard .vb { padding: 16px; display: grid; gap: 6px; flex: 1; align-content: start; }
 .vcard .vb p { margin: 0; color: var(--muted); font-size: .88rem; }
 .vcard .vf { padding: 0 16px 16px; display: flex; gap: 8px; }
+.venue-form-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 .vcard.add { border: 2px dashed var(--line); background: transparent; display: grid; place-items: center; min-height: 260px; cursor: pointer; color: var(--muted); font: inherit; }
 .vcard.add:hover { border-color: var(--rose); color: var(--rose); }
 .vcard.add b { font-family: var(--serif); font-size: 3rem; font-weight: 400; line-height: 1; display: block; }

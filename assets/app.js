@@ -18,9 +18,10 @@
   const imgFor = (v, i) => v.image_url || C.fallbackImages[i % C.fallbackImages.length];
   // "Other venues" (customer's own location): a pseudo-hall that books packages/services with a typed location
   const OTHER = "__other";
-  const OV = C.otherVenue || {};
-  const otherVenue = { id: OTHER, other: true, name: OV.name || "Other venues", tagline: OV.tagline || "", description: OV.description || "",
-    image_url: OV.image || "", image_pos: OV.imagePos || "", capacity: null };
+  let OV = C.otherVenue || {};
+  const makeOtherVenue = () => ({ id: OTHER, other: true, name: OV.name || "Other venues", tagline: OV.tagline || "", description: OV.description || "",
+    image_url: OV.image || "", image_pos: OV.imagePos || "", capacity: null });
+  let otherVenue = makeOtherVenue();
   const allVenues = () => (OV.show === false ? state.venues : [...state.venues, otherVenue]);
   const vLabel = (v) => (v?.other ? "Our events team" : v?.name || "");
   // photo framing set in the admin ("x% y%"); only used with the real uploaded photo
@@ -665,11 +666,18 @@
       .then(({ data }) => { R.items = data || []; renderReviews(); });
     sb.from("pb_services").select("name,kind,category,description,image_url,image_pos,inclusions").eq("active", true).order("sort_order").order("name")
       .then(({ data }) => { if (data?.length) { services = data; renderServices(); update(); } });
-    const [venues, settings] = await Promise.all([
+    const [venues, settings, otherVenueSettings] = await Promise.all([
       sb.from("pb_venues").select("id,name,tagline,description,capacity,branch,image_url,image_pos,price_from,sort_order").eq("active", true).order("sort_order").order("name"),
       sb.rpc("pb_public_settings"),
+      sb.rpc("pb_public_other_venue"),
       loadBooked()
     ]);
+    if (otherVenueSettings.error) console.error("Couldn't load Other venues settings:", otherVenueSettings.error.message);
+    if (otherVenueSettings.data) {
+      OV = { ...OV, ...otherVenueSettings.data };
+      otherVenue = makeOtherVenue();
+      renderVenues();
+    }
     if (venues.data?.length) { state.venues = venues.data; renderVenues(); }
     const s = settings.data?.[0];
     if (s) { state.whatsapp = s.booking_whatsapp || state.whatsapp; state.phones = s.display_phones || state.phones; renderContact(); }

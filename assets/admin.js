@@ -809,7 +809,21 @@
     renderVenues();
   }
   function renderVenues() {
-    $("#vgrid").innerHTML = S.venues.map((v, i) => `
+    const other = S.otherVenue || C.otherVenue;
+    const showOther = other.show !== false;
+    $("#vgrid").innerHTML = `
+      <div class="vcard">
+        <div class="vimg" style="background-image:url('${esc(other.image || C.fallbackImages[0])}');background-position:${posOk(other.imagePos) || "center"}">
+          <span class="badge ${showOther ? "b-Confirmed" : "b-Cancelled"}">${showOther ? "Shown on website" : "Hidden"}</span>
+        </div>
+        <div class="vb">
+          <h3>${esc(other.name || "Other venues")}</h3>
+          ${other.tagline ? `<p><i>${esc(other.tagline)}</i></p>` : ""}
+          ${other.description ? `<p>${esc(other.description)}</p>` : ""}
+          <p>Packages &amp; services at a customer's location</p>
+        </div>
+        <div class="vf"><button class="btn btn-outline sm" id="editOtherVenue">Edit</button></div>
+      </div>` + S.venues.map((v, i) => `
       <div class="vcard">
         <div class="vimg" style="background-image:url('${esc(v.image_url || C.fallbackImages[i % C.fallbackImages.length])}');background-position:${posOk(v.image_pos) || "center"}">
           <span class="badge ${v.active ? "b-Confirmed" : "b-Cancelled"}">${v.active ? "Shown on website" : "Hidden"}</span>
@@ -823,6 +837,7 @@
         <div class="vf"><button class="btn btn-outline sm" data-edit="${v.id}">Edit</button></div>
       </div>`).join("") + `<button class="vcard add" id="addVenue"><span><b>+</b>Add a new hall</span></button>`;
     $$("[data-edit]").forEach((b) => b.addEventListener("click", () => openVenue(S.venues.find((v) => v.id === b.dataset.edit))));
+    $("#editOtherVenue").addEventListener("click", openOtherVenue);
     $("#addVenue").addEventListener("click", () => openVenue(null));
   }
 
@@ -846,7 +861,10 @@
           <label class="field">Display order<input type="number" name="sort_order" value="${v.sort_order}"></label>
         </div>
         <label class="switch"><input type="checkbox" name="active" ${v.active ? "checked" : ""}> Show on website &amp; accept bookings</label>
-        <button class="btn btn-primary" type="submit">${isNew ? "Add hall" : "Save changes"}</button>
+        <div class="venue-form-actions">
+          <button class="btn btn-primary" type="submit">${isNew ? "Add hall" : "Save changes"}</button>
+          ${isNew ? "" : `<button class="btn btn-outline" type="button" id="vDel">Delete hall</button>`}
+        </div>
       </form>`;
     $("[data-close]", d).addEventListener("click", closeDrawers);
     const vFrame = wireFramer($("#vPrev"), $("#venueForm"));
@@ -863,6 +881,18 @@
       vFrame.newPhoto(url);
       toast("Photo uploaded — drag it to frame, then save");
     });
+    $("#vDel")?.addEventListener("click", async () => {
+      if (!confirm(`Delete “${v.name}”? This can't be undone. If it has booking history, deletion will be blocked; hide it instead to preserve records.`)) return;
+      const { count, error: checkError } = await sb.from("pb_bookings").select("id", { count: "exact", head: true }).eq("venue_id", v.id);
+      if (checkError) return toast("Couldn't check hall booking history: " + checkError.message);
+      if (count) return toast("This hall has booking history and can't be deleted. Hide it instead to preserve its records.");
+      const { error } = await sb.from("pb_venues").delete().eq("id", v.id);
+      if (error) {
+        if (error.code === "23503") return toast("This hall has booking history and can't be deleted. Hide it instead to preserve its records.");
+        return toast("Couldn't delete hall: " + error.message);
+      }
+      toast("Hall deleted"); closeDrawers(); loadVenues();
+    });
     $("#venueForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       const f = e.target;
@@ -877,6 +907,55 @@
       if (error) return toast(error.message);
       toast(isNew ? "Hall added — it's live on the website" : "Hall updated");
       closeDrawers(); loadVenues();
+    });
+    openDrawer("#vdrawer");
+  }
+
+  function openOtherVenue() {
+    const current = S.otherVenue || C.otherVenue;
+    const d = $("#vdrawer");
+    d.innerHTML = `
+      <div class="drawer-head"><div><span class="eyebrow">Edit venue option</span><h3>${esc(current.name || "Other venues")}</h3></div><button class="xbtn" data-close aria-label="Close">×</button></div>
+      <form class="drawer-body" id="otherVenueForm">
+        ${frameBlock("ovPrev", current.image || "", current.imagePos || "", "land")}
+        <label class="field">Photo (JPG/PNG/WebP — resized automatically)<input type="file" id="ovFile" accept="image/jpeg,image/png,image/webp"></label>
+        <input type="hidden" name="image" value="${esc(current.image || "")}">
+        <label class="field">Name<input name="name" required maxlength="60" value="${esc(current.name || "")}"></label>
+        <label class="field">Short tagline<input name="tagline" maxlength="100" value="${esc(current.tagline || "")}"></label>
+        <label class="field">Description<textarea name="description" maxlength="500">${esc(current.description || "")}</textarea></label>
+        <label class="switch"><input type="checkbox" name="show" ${current.show !== false ? "checked" : ""}> Show on website &amp; booking form</label>
+        <button class="btn btn-primary" type="submit">Save changes</button>
+      </form>`;
+    $("[data-close]", d).addEventListener("click", closeDrawers);
+    const ovFrame = wireFramer($("#ovPrev"), $("#otherVenueForm"));
+    $("#ovFile").addEventListener("change", async (e) => {
+      let f = e.target.files[0]; if (!f) return;
+      toast("Optimizing photo…");
+      f = await prepPhoto(f, 1600); if (!f) return;
+      toast("Uploading photo…");
+      const path = `venues/${Date.now()}-${f.name.replace(/[^a-z0-9.]+/gi, "-").toLowerCase()}`;
+      const { error } = await sb.storage.from(C.storageBucket).upload(path, f, { cacheControl: "31536000", upsert: false });
+      if (error) return toast("Upload failed: " + error.message);
+      const url = sb.storage.from(C.storageBucket).getPublicUrl(path).data.publicUrl;
+      $("#otherVenueForm").elements.namedItem("image").value = url;
+      ovFrame.newPhoto(url);
+      toast("Photo uploaded — drag it to frame, then save");
+    });
+    $("#otherVenueForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const f = e.target;
+      const value = (name) => f.elements.namedItem(name).value;
+      const otherVenue = {
+        show: f.elements.namedItem("show").checked, name: value("name").trim(), tagline: value("tagline").trim(),
+        description: value("description").trim(), image: value("image").trim(),
+        imagePos: value("image") ? posOk(value("image_pos")) || "" : ""
+      };
+      if (!otherVenue.name) return toast("Name is required.");
+      const { error } = await sb.from("pb_settings").update({ other_venue: otherVenue }).eq("id", 1);
+      if (error) return toast("Couldn't save Other venues: " + error.message);
+      S.otherVenue = otherVenue;
+      toast("Other venues updated");
+      closeDrawers(); renderVenues();
     });
     openDrawer("#vdrawer");
   }
@@ -1142,7 +1221,8 @@
 
   // ---------------- settings & admins
   async function loadSettings() {
-    const { data } = await sb.from("pb_settings").select("*").eq("id", 1).maybeSingle();
+    const { data, error } = await sb.from("pb_settings").select("*").eq("id", 1).maybeSingle();
+    if (error) return toast("Couldn't load settings: " + error.message);
     if (!data) return;
     const f = $("#settingsForm");
     f.booking_whatsapp.value = data.booking_whatsapp.replace(/^971/, "0");
@@ -1154,6 +1234,8 @@
     g.payment_details.value = data.payment_details;
     g.invoice_footer.value = data.invoice_footer;
     g.next_no.value = data.invoice_counter + 1;
+    S.otherVenue = data.other_venue || C.otherVenue;
+    renderVenues();
   }
   $("#invoiceSettingsForm").addEventListener("submit", async (e) => {
     e.preventDefault();
