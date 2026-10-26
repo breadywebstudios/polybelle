@@ -61,6 +61,12 @@
       return false;
     }
   };
+  const googleMapsInputUrl = (value) => {
+    const input = value.trim();
+    if (!input) return "";
+    const iframeSrc = new DOMParser().parseFromString(input, "text/html").querySelector("iframe")?.getAttribute("src");
+    return iframeSrc || input;
+  };
   const frameBlock = (id, url, pos, shape) => `
         <div class="frame-wrap">
           <div class="preview-img frame ${shape}" id="${id}" tabindex="0" role="img" aria-label="Photo framing. Drag, or use the arrow keys, to choose what shows."
@@ -877,7 +883,7 @@
           <label class="field">Starting price (AED, optional)<input type="number" name="price_from" min="0" step="1" value="${v.price_from ?? ""}"></label>
           <label class="field">Display order<input type="number" name="sort_order" value="${v.sort_order}"></label>
         </div>
-        <label class="field">Google Maps location URL (optional)<input type="url" name="google_maps_url" maxlength="2000" value="${esc(v.google_maps_url || "")}" placeholder="https://www.google.com/maps/embed?pb=…"><small class="hint">For the embedded map, use Google Maps → Share → Embed a map, then copy its link.</small></label>
+        <label class="field">Google Maps link or embed code (optional)<input type="text" name="google_maps_url" maxlength="5000" value="${esc(v.google_maps_url || "")}" placeholder="Paste a Google Maps URL or iframe code"><small class="hint">Copy the link or full iframe code from Google Maps → Share → Embed a map.</small></label>
         <label class="switch"><input type="checkbox" name="active" ${v.active ? "checked" : ""}> Show on website &amp; accept bookings</label>
         <div class="venue-form-actions">
           <button class="btn btn-primary" type="submit">${isNew ? "Add hall" : "Save changes"}</button>
@@ -917,11 +923,11 @@
       const row = {
         name: f.name.value.trim(), tagline: f.tagline.value.trim() || null, description: f.description.value.trim() || null,
         capacity: +f.capacity.value, branch: f.branch.value || null, price_from: f.price_from.value === "" ? null : +f.price_from.value,
-        google_maps_url: f.google_maps_url.value.trim() || null,
+        google_maps_url: googleMapsInputUrl(f.google_maps_url.value) || null,
         sort_order: +f.sort_order.value || 0, active: f.active.checked, image_url: f.image_url.value || null,
         image_pos: f.image_url.value ? posOk(f.image_pos.value) || null : null
       };
-      if (!isGoogleMapsUrl(row.google_maps_url)) return toast("Enter a valid Google Maps link using an https:// URL.");
+      if (!isGoogleMapsUrl(row.google_maps_url)) return toast("Paste a valid Google Maps URL or iframe embed code.");
       const q = isNew ? sb.from("pb_venues").insert(row) : sb.from("pb_venues").update(row).eq("id", v.id);
       const { error } = await q;
       if (error) return toast(error.message);
