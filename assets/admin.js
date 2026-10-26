@@ -52,8 +52,8 @@
       const url = new URL(value);
       const host = url.hostname.toLowerCase();
       return url.protocol === "https:" && (
-        /^maps\.google\.[a-z.]+$/.test(host) ||
-        /^www\.google\.[a-z.]+$/.test(host) && /^\/maps(?:\/|$)/.test(url.pathname) ||
+        /^maps\.google\.(?:[a-z]{2,3}|[a-z]{2,3}\.[a-z]{2})$/.test(host) ||
+        /^www\.google\.(?:[a-z]{2,3}|[a-z]{2,3}\.[a-z]{2})$/.test(host) && /^\/maps(?:\/|$)/.test(url.pathname) ||
         host === "maps.app.goo.gl" ||
         host === "goo.gl" && url.pathname.startsWith("/maps")
       );

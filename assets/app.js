@@ -22,14 +22,33 @@
       const url = new URL(value);
       const host = url.hostname.toLowerCase();
       return url.protocol === "https:" && (
-        /^maps\.google\.[a-z.]+$/.test(host) ||
-        /^www\.google\.[a-z.]+$/.test(host) && /^\/maps(?:\/|$)/.test(url.pathname) ||
+        /^maps\.google\.(?:[a-z]{2,3}|[a-z]{2,3}\.[a-z]{2})$/.test(host) ||
+        /^www\.google\.(?:[a-z]{2,3}|[a-z]{2,3}\.[a-z]{2})$/.test(host) && /^\/maps(?:\/|$)/.test(url.pathname) ||
         host === "maps.app.goo.gl" ||
         host === "goo.gl" && url.pathname.startsWith("/maps")
       ) ? url.href : "";
     } catch {
       return "";
     }
+  };
+  const googleMapsEmbedUrl = (value) => {
+    const validUrl = googleMapsUrl(value);
+    if (!validUrl) return "";
+    const url = new URL(validUrl);
+    const coords = url.pathname.match(/@(-?\d+(?:\.\d+)?,-?\d+(?:\.\d+)?)/);
+    const placePath = url.pathname.match(/\/maps\/place\/([^/]+)/);
+    let query = url.searchParams.get("query") || url.searchParams.get("q") ||
+      url.searchParams.get("destination") || url.searchParams.get("ll") ||
+      url.searchParams.get("center") || coords?.[1];
+    if (!query && placePath) {
+      try {
+        query = decodeURIComponent(placePath[1].replace(/\+/g, " "));
+      } catch {
+        query = placePath[1];
+      }
+    }
+    if (!query) query = url.href;
+    return `https://www.google.com/maps?output=embed&q=${encodeURIComponent(query)}`;
   };
   // "Other venues" (customer's own location): a pseudo-hall that books packages/services with a typed location
   const OTHER = "__other";
@@ -245,10 +264,10 @@
           ${v.description ? `<p>${esc(v.description)}</p>` : ""}
           ${v.branch || v.price_from ? `<span class="meta">${[v.branch, v.price_from ? "From " + money(v.price_from) : ""].filter(Boolean).map(esc).join(" · ")}</span>` : ""}
           <span class="venue-links">
-            ${googleMapsUrl(v.google_maps_url) ? `<a class="link-line venue-map" href="${esc(googleMapsUrl(v.google_maps_url))}" target="_blank" rel="noopener noreferrer" aria-label="View ${esc(v.name)} on Google Maps"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>Google Maps</a>` : ""}
             <button class="link-line avail-link" type="button" data-avail="${esc(v.id || v.name)}" aria-label="Check availability for ${esc(v.name)}" aria-expanded="false" aria-controls="availPanel"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="1.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/><circle cx="8.5" cy="14.5" r=".9"/><circle cx="12" cy="14.5" r=".9"/><circle cx="15.5" cy="14.5" r=".9"/></svg>Check availability</button>
           </span>
         </div>
+        ${googleMapsUrl(v.google_maps_url) ? `<div class="venue-map-embed"><iframe src="${esc(googleMapsEmbedUrl(v.google_maps_url))}" title="Map showing ${esc(v.name)} location" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe><a class="venue-map-link" href="${esc(googleMapsUrl(v.google_maps_url))}" target="_blank" rel="noopener noreferrer" aria-label="Open ${esc(v.name)} location in Google Maps"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>Open in Google Maps</a></div>` : ""}
       </article>`).join("");
     const keep = document.querySelector('#hallPick input:checked')?.value;
     $("#hallPick").innerHTML = allVenues().map((v) => `
