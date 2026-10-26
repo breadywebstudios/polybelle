@@ -30,6 +30,9 @@ Apply `supabase/migrations/20261025200000_promo_codes.sql` in the Supabase SQL E
 
 Admins can create, edit, pause, and cap promo codes in Admin → Promo codes. Discounts can be a percentage or a fixed AED amount, applied only to the matching required package or service. A use is counted atomically when a booking is submitted, including Pending requests. The selected required package or service and code are recorded with the booking. On its invoice, the discount is calculated against the matching item only; fixed discounts cannot exceed that item's price, and staff can adjust the invoice discount if needed.
 
+## Under construction mode
+Edit `assets/config.js` and set `underConstruction: true` to show visitors a "coming soon" page (with WhatsApp, phone and social links) instead of the website; set it back to `false` to go live. The text comes from `underConstructionMessage`. Only the public website is affected; the admin site keeps working. While it's on, open the site with `?preview` (e.g. `/?preview`) to see the real site on your device (a gold bar reminds you), and `?preview=off` to see the coming-soon page again.
+
 ## Deploy
 Static site with no build step. Import the repo on Vercel (framework: Other) and deploy.
 Powered by Bready Web Studios.

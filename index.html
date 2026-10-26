@@ -13,8 +13,36 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/site.css">
+  <script src="assets/config.js"></script>
+  <script>
+    // Under construction switch lives in assets/config.js (underConstruction: true/false)
+    (function () {
+      var on = window.PB_CONFIG && window.PB_CONFIG.underConstruction === true, prev = false;
+      try {
+        var q = new URLSearchParams(location.search).get("preview");
+        if (q === "off") localStorage.removeItem("pb_preview");
+        else if (q !== null) localStorage.setItem("pb_preview", "1");
+        prev = localStorage.getItem("pb_preview") === "1";
+      } catch (e) {}
+      if (on) document.documentElement.classList.add(prev ? "uc-preview" : "uc");
+    })();
+  </script>
 </head>
 <body>
+  <!-- Coming-soon page (shown only when underConstruction is true in assets/config.js) -->
+  <div class="uc-screen" id="ucScreen" aria-live="polite">
+    <div class="uc-bg" aria-hidden="true"></div>
+    <div class="uc-inner">
+      <div class="wordmark uc-mark"><b>POLYBELLE</b><small>Event Halls &amp; Studio</small></div>
+      <span class="rule"></span>
+      <h1>Something beautiful<br><em>is coming soon</em></h1>
+      <p id="ucMsg"></p>
+      <a class="btn btn-light" id="ucWa" href="#" target="_blank" rel="noopener">Chat with us on WhatsApp</a>
+      <p class="uc-phones" id="ucPhones"></p>
+      <div class="socials" data-socials aria-label="Follow Polybelle"></div>
+    </div>
+  </div>
+  <div class="uc-bar" role="status">Preview: the website is in <b>under construction</b> mode, so visitors see the coming-soon page. <a href="?preview=off">See what visitors see</a></div>
   <header class="nav" id="nav">
     <div class="wrap">
       <a href="#top" class="wordmark" aria-label="Polybelle Event Halls &amp; Studio, home">
@@ -307,7 +335,6 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="assets/config.js"></script>
   <script src="assets/app.js"></script>
 </body>
 </html>

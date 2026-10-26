@@ -181,6 +181,11 @@
     const phones = state.phones.split("|").map((p) => p.trim()).filter(Boolean);
     $("#asidePhones").textContent = phones[0] || "";
     $("#asidePhones").href = phones[0] ? telLink(phones[0]) : "#contact";
+    if ($("#ucScreen")) {
+      $("#ucMsg").textContent = C.underConstructionMessage || "";
+      $("#ucPhones").innerHTML = phones.map((p) => `<a href="${telLink(p)}">${esc(p)}</a>`).join(" &nbsp;·&nbsp; ");
+      $("#ucWa").href = waLink(state.whatsapp, "Hi Polybelle! I'd like to ask about booking an event.");
+    }
     $("#contactPhones").innerHTML = "Call or WhatsApp " + phones.map((p) => `<a href="${telLink(p)}">${esc(p)}</a>`).join(" &nbsp;·&nbsp; ");
     const ICONS = {
       Facebook: '<path d="M14 8h3V4h-3c-2.8 0-4.5 1.8-4.5 4.6V11H7v4h2.5v9h4v-9H17l.5-4h-4V8.9c0-.6.3-.9.9-.9Z"/>',

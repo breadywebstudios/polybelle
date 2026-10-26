@@ -1,5 +1,13 @@
 // Polybelle Event Halls & Studio — site configuration
 window.PB_CONFIG = {
+  // ===== UNDER CONSTRUCTION SWITCH (public website only; the admin site is not affected) =====
+  // true  = visitors see the "coming soon" page instead of the website
+  // false = the website is live
+  // While it's on, you can still view the real site by opening it with ?preview at the end of the address
+  // (e.g. https://polybelle.vercel.app/?preview). Use ?preview=off to see the coming-soon page again.
+  underConstruction: false,
+  underConstructionMessage: "Our new website is almost ready. In the meantime, we'd love to help you plan your celebration on WhatsApp.",
+
   supabaseUrl: "https://ntohdxudxfggsmhxhvho.supabase.co",
   supabaseKey: "sb_publishable_81P5_TSD4SuHALFDM4Ao-w_W7C5UkuI",
   storageBucket: "polybelle",
