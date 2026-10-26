@@ -303,7 +303,7 @@
     const keep = document.querySelector('#hallPick input:checked')?.value;
     $("#hallPick").innerHTML = allVenues().map((v) => `
       <label class="chip-radio ${v.other ? "other" : ""}"><input type="radio" name="venue" value="${esc(v.id || v.name)}" ${keep === (v.id || v.name) ? "checked" : ""} required>
-        <span><b>${esc(v.name)}</b><small>${v.other ? esc(v.tagline || "Hotel, villa, park, home or any venue") : `Up to ${v.capacity} guests${v.branch ? " · " + esc(v.branch) : ""}`}</small>${!v.other && v.venue_address ? `<small class="venue-address">Address: ${esc(v.venue_address)}</small>` : ""}</span></label>`).join("");
+        <span><b>${esc(v.name)}</b></span></label>`).join("");
     $$("[data-avail]").forEach((b) => b.addEventListener("click", () => {
       if (CAL.open && CAL.hall === b.dataset.avail) return closeAvail();
       openAvail(b.dataset.avail);
@@ -363,6 +363,11 @@
   function update() {
     const servicesOnly = bookingType() === "Services";
     $("#locWrap").hidden = !servicesOnly;
+    // address of the chosen hall, shown under the hall buttons
+    const addrV = selectedVenue(), addr = addrV && !addrV.other ? (addrV.venue_address || "").trim() : "";
+    const addrEl = $("#hallAddr");
+    if ($("span", addrEl).textContent !== addr) { $("span", addrEl).textContent = addr; addrEl.classList.remove("in"); void addrEl.offsetWidth; addrEl.classList.add("in"); }
+    addrEl.hidden = !addr;
     $("#addonLabel").textContent = servicesOnly ? "Choose the packages and services you'd like (at least one)" : "Packages and services you're interested in (optional)";
     renderSessions();
     const d = readForm();
