@@ -731,7 +731,7 @@
         </div>
         <label class="field">Short description<input name="description" maxlength="140" value="${esc(sv.description || "")}" placeholder="One or two lines, shown when a customer taps the card"></label>
         <label class="field" id="incWrap">What's included (one item per line)
-          <textarea name="inclusions" rows="8" placeholder="Event hall&#10;Balloon decorations&#10;Tables and chairs&#10;Catering&#10;Photobooth">${esc((sv.inclusions || []).join("\n"))}</textarea>
+          <textarea name="inclusions" rows="8" placeholder="Example (type your own list):&#10;Event hall&#10;Balloon decorations&#10;Tables and chairs&#10;Catering&#10;Photobooth">${esc((sv.inclusions || []).join("\n"))}</textarea>
           <span class="hint" style="text-transform:none;letter-spacing:0">Shown to customers when they tap this package. Leave empty to say the team will share the inclusions.</span>
         </label>
         <label class="switch"><input type="checkbox" name="active" ${sv.active ? "checked" : ""}> Show in the booking form</label>

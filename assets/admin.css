@@ -193,3 +193,8 @@ tr.row-warn td:first-child { box-shadow: inset 3px 0 0 #D2A54C; }
 .ov-hall-box { background: #FBF4E3; border-color: #EAD7A8; color: #6E5016; }
 .ov-occ-box { background: #EEF3FA; border-color: #C9D7EA; color: #34496B; }
 .ovbox .linkbtn { font-size: .86rem; }
+
+/* example text in empty fields: faded and italic so it never looks like a filled-in value */
+.app input::placeholder, .app textarea::placeholder, .drawer input::placeholder, .drawer textarea::placeholder {
+  color: #B9ADA4; font-style: italic; opacity: 1;
+}
