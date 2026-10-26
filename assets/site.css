@@ -246,6 +246,7 @@ label.field { display: grid; gap: 7px; font-size: .74rem; font-weight: 500; lett
 .hall-pick .chip-radio span { padding: 10px 8px; overflow-wrap: anywhere; }
 .hall-pick .chip-radio span b { font-size: .88rem; }
 .hall-pick .chip-radio span small { font-size: .68rem; line-height: 1.3; }
+.hall-pick .chip-radio span .venue-address { margin-top: 3px; }
 .sessions { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
 .chip-radio { position: relative; }
 .chip-radio input { position: absolute; opacity: 0; inset: 0; }

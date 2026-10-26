@@ -877,6 +877,7 @@
         <label class="field">Hall name<input name="name" required maxlength="60" value="${esc(v.name)}" placeholder="e.g. Hall E"></label>
         <label class="field">Short tagline<input name="tagline" maxlength="60" value="${esc(v.tagline || "")}" placeholder="e.g. Garden-themed & bright"></label>
         <label class="field">Description<textarea name="description" maxlength="400">${esc(v.description || "")}</textarea></label>
+        <label class="field">Venue / hall address<textarea name="venue_address" maxlength="300" placeholder="Enter the full address customers should use">${esc(v.venue_address || "")}</textarea></label>
         <div class="grid-2">
           <label class="field">Max guests<input type="number" name="capacity" min="1" required value="${v.capacity}"></label>
           <label class="field">Branch / location<select name="branch"><option value="">—</option>${C.branches.map((b) => `<option ${b.name === v.branch ? "selected" : ""}>${esc(b.name)}</option>`).join("")}</select></label>
@@ -922,6 +923,7 @@
       const f = e.target;
       const row = {
         name: f.name.value.trim(), tagline: f.tagline.value.trim() || null, description: f.description.value.trim() || null,
+        venue_address: f.venue_address.value.trim() || null,
         capacity: +f.capacity.value, branch: f.branch.value || null, price_from: f.price_from.value === "" ? null : +f.price_from.value,
         google_maps_url: googleMapsInputUrl(f.google_maps_url.value) || null,
         sort_order: +f.sort_order.value || 0, active: f.active.checked, image_url: f.image_url.value || null,

@@ -303,7 +303,7 @@
     const keep = document.querySelector('#hallPick input:checked')?.value;
     $("#hallPick").innerHTML = allVenues().map((v) => `
       <label class="chip-radio ${v.other ? "other" : ""}"><input type="radio" name="venue" value="${esc(v.id || v.name)}" ${keep === (v.id || v.name) ? "checked" : ""} required>
-        <span><b>${esc(v.name)}</b><small>${v.other ? esc(v.tagline || "Hotel, villa, park, home or any venue") : `Up to ${v.capacity} guests${v.branch ? " · " + esc(v.branch) : ""}`}</small></span></label>`).join("");
+        <span><b>${esc(v.name)}</b><small>${v.other ? esc(v.tagline || "Hotel, villa, park, home or any venue") : `Up to ${v.capacity} guests${v.branch ? " · " + esc(v.branch) : ""}`}</small>${!v.other && v.venue_address ? `<small class="venue-address">Address: ${esc(v.venue_address)}</small>` : ""}</span></label>`).join("");
     $$("[data-avail]").forEach((b) => b.addEventListener("click", () => {
       if (CAL.open && CAL.hall === b.dataset.avail) return closeAvail();
       openAvail(b.dataset.avail);
@@ -374,7 +374,7 @@
     $$('#submitBtn, button[type="submit"][form="bookForm"]').forEach((b) => (b.disabled = !!full));
     const set = (k, v) => ($(`[data-s="${k}"]`).textContent = v || "—");
     set("kind", servicesOnly ? "Packages at your venue" : d.venue ? "Hall" : "");
-    set("hall", servicesOnly ? `${otherVenue.name}${d.event_location ? " · " + d.event_location : ""}` : d.venue?.name);
+    set("hall", servicesOnly ? `${otherVenue.name}${d.event_location ? " · " + d.event_location : ""}` : d.venue ? `${d.venue.name}${d.venue.venue_address ? " · " + d.venue.venue_address : ""}` : "");
     set("date", d.date ? fmtDate(d.date) : "");
     set("session", d.session);
     set("type", d.event_type);
@@ -396,6 +396,7 @@
       ``,
       `*Booking Ref:* ${ref}`,
       d.booking_type === "Services" ? `*Venue:* ${otherVenue.name} (packages & services)` : `*Hall:* ${d.venue.name}`,
+      d.booking_type === "Hall" && d.venue.venue_address ? `*Hall address:* ${d.venue.venue_address}` : null,
       d.booking_type === "Services" ? `*Event location:* ${d.event_location || "To be confirmed"}` : null,
       `*Date:* ${fmtDate(d.date)}`,
       `*Session:* ${d.session}${sess ? ` (${sess.time})` : ""}`,
@@ -735,7 +736,7 @@
     sb.from("pb_services").select("name,kind,category,description,image_url,image_pos,inclusions").eq("active", true).order("sort_order").order("name")
       .then(({ data }) => { if (data?.length) { services = data; renderServices(); update(); } });
     const [venues, settings, otherVenueSettings] = await Promise.all([
-      sb.from("pb_venues").select("id,name,tagline,description,capacity,branch,google_maps_url,image_url,image_pos,price_from,sort_order").eq("active", true).order("sort_order").order("name"),
+      sb.from("pb_venues").select("id,name,tagline,description,venue_address,capacity,branch,google_maps_url,image_url,image_pos,price_from,sort_order").eq("active", true).order("sort_order").order("name"),
       sb.rpc("pb_public_settings"),
       sb.rpc("pb_public_other_venue"),
       loadBooked()
