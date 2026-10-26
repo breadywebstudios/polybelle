@@ -605,8 +605,8 @@
       <h4>${esc(nice)}</h4>
       ${st === "full" ? "" : `<p class="hint">Tap a free session to choose it.</p>`}
       <div class="cal-sess" role="radiogroup" aria-label="Session">${C.sessions.slice().sort((a, b) => SESS_ORDER.indexOf(a.id) - SESS_ORDER.indexOf(b.id)).map((x) => booked(x.id)
-        ? `<div class="cal-s booked"><span>${esc(x.id)}<small>${esc(x.time)}</small></span><span class="st st-booked">Booked</span></div>`
-        : `<button type="button" class="cal-s ${CAL.sess === x.id ? "on" : ""}" role="radio" aria-checked="${CAL.sess === x.id}" data-sess="${esc(x.id)}"><span>${esc(x.id)}<small>${esc(x.time)}</small></span><span class="st st-free">${CAL.sess === x.id ? "Selected" : "Free"}</span></button>`).join("")}</div>
+        ? `<div class="cal-s booked"><span>${esc(x.id)}<small>${esc(x.time)}</small></span><span class="st st-booked">Booked 🔒</span></div>`
+        : `<button type="button" class="cal-s ${CAL.sess === x.id ? "on" : ""}" role="radio" aria-checked="${CAL.sess === x.id}" data-sess="${esc(x.id)}"><span>${esc(x.id)}<small>${esc(x.time)}</small></span><span class="st st-free">${CAL.sess === x.id ? "Selected" : "Available ✅"}</span></button>`).join("")}</div>
       ${st === "full" ? `<p class="hint warn">${esc(hall.name)} is fully booked on this date. Please try another date or hall.</p>`
         : `<button type="button" class="btn btn-dark" data-cal="book">${CAL.sess ? `Book ${esc(CAL.sess.toLowerCase())}` : "Book this date"}</button>`}`;
     box.querySelectorAll("[data-sess]").forEach((b) => b.addEventListener("click", () => { CAL.sess = CAL.sess === b.dataset.sess ? null : b.dataset.sess; renderCalDay(hall); }));
