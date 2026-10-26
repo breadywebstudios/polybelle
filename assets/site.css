@@ -244,7 +244,7 @@ label.field { display: grid; gap: 7px; font-size: .74rem; font-weight: 500; lett
 /* hall choices: simple name buttons in a row (they wrap on phones); the chosen hall's address shows underneath */
 .hall-pick { display: flex; flex-wrap: wrap; gap: 8px; }
 .hall-pick .chip-radio { flex: 1 1 0; min-width: max-content; }
-.hall-pick .chip-radio span { place-items: center; padding: 13px 16px; text-align: center; white-space: nowrap; }
+.hall-pick .chip-radio span { place-items: center; padding: 13px 16px; border-radius: 12px; text-align: center; }
 .hall-pick .chip-radio span b { font-weight: 500; font-size: .92rem; letter-spacing: .02em; }
 .hall-addr { display: flex; align-items: flex-start; gap: 8px; margin: 12px 0 0; padding: 12px 14px; border-left: 2px solid var(--gold); background: var(--ivory); color: var(--ink); font-size: .9rem; line-height: 1.45; white-space: pre-line; }
 .hall-addr.in { animation: addrIn .45s var(--ease); }
