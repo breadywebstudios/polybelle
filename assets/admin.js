@@ -975,7 +975,40 @@
   async function loadAdmins() {
     const { data } = await sb.from("pb_admins").select("email").order("email");
     S.admins = data || [];
-    $("#adminsList").innerHTML = S.admins.map((a) => `<li>${esc(a.email)} ${a.email === S.user.email ? "<small style='color:var(--muted)'>you</small>" : `<button class="linkbtn" data-rm="${esc(a.email)}">Remove</button>`}</li>`).join("");
+    const me = (S.user.email || "").toLowerCase();
+    $("#adminsList").innerHTML = S.admins.map((a) => a.email.toLowerCase() === me
+      ? `<li><span>${esc(a.email)}</span><small style="color:var(--muted)">you</small></li>`
+      : `<li class="adm-row"><span>${esc(a.email)}</span><span class="adm-acts"><button class="linkbtn" data-pw="${esc(a.email)}">Set password</button><button class="linkbtn" data-rm="${esc(a.email)}">Remove</button></span>
+          <form class="adm-pw" hidden>
+            <input type="password" name="password" minlength="8" autocomplete="new-password" placeholder="New password" required>
+            <input type="password" name="confirm" minlength="8" autocomplete="new-password" placeholder="Repeat password" required>
+            <button class="btn btn-primary sm" type="submit">Save</button><button class="btn btn-outline sm" type="button" data-cancel>Cancel</button>
+          </form></li>`).join("");
+    $$("[data-pw]").forEach((b) => b.addEventListener("click", () => {
+      const f = $(".adm-pw", b.closest("li"));
+      $$(".adm-pw").forEach((o) => { if (o !== f) o.hidden = true; });
+      f.hidden = !f.hidden; if (!f.hidden) f.password.focus();
+    }));
+    $$(".adm-pw").forEach((f) => {
+      $("[data-cancel]", f).addEventListener("click", () => { f.reset(); f.hidden = true; });
+      f.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const email = $("[data-pw]", f.closest("li")).dataset.pw;
+        if (f.password.value.length < 8) return toast("Use a password with at least 8 characters.");
+        if (f.password.value !== f.confirm.value) return toast("The two passwords don't match.");
+        const btn = $("button[type=submit]", f); btn.disabled = true;
+        const { data, error } = await sb.functions.invoke("admin-create-user", { body: { action: "set_password", email, password: f.password.value } });
+        btn.disabled = false;
+        if (error) {
+          let message = error.message;
+          try { const d = await error.context?.json?.(); if (d?.error) message = d.error; } catch (_) {}
+          return toast("Couldn't set password: " + message);
+        }
+        if (data?.success !== true) return toast("The admin service returned an unexpected response. Please try again.");
+        f.reset(); f.hidden = true;
+        toast(`Password updated for ${email}. Share it with them securely.`);
+      });
+    });
     $$("[data-rm]").forEach((b) => b.addEventListener("click", async () => {
       if (!confirm(`Remove admin access for ${b.dataset.rm}?`)) return;
       const { error } = await sb.from("pb_admins").delete().eq("email", b.dataset.rm);
@@ -983,6 +1016,23 @@
       loadAdmins();
     }));
   }
+  // change the signed-in admin's own password (current password checked first)
+  $("#myPwForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const f = e.target;
+    if (f.password.value.length < 8) return toast("Use a password with at least 8 characters.");
+    if (f.password.value !== f.confirm.value) return toast("The two new passwords don't match.");
+    if (f.password.value === f.current.value) return toast("Choose a new password that's different from the current one.");
+    const btn = $("button[type=submit]", f); btn.disabled = true;
+    const { error: checkError } = await sb.auth.signInWithPassword({ email: S.user.email, password: f.current.value });
+    if (checkError) { btn.disabled = false; return toast(checkError.message === "Invalid login credentials" ? "Your current password is incorrect." : checkError.message); }
+    const { error } = await sb.auth.updateUser({ password: f.password.value });
+    btn.disabled = false;
+    if (error) return toast("Couldn't update your password: " + error.message);
+    f.reset();
+    toast("Your password has been updated.");
+  });
+
   $("#addAdminForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     const form = e.target;

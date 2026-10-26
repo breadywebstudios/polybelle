@@ -19,7 +19,7 @@ Deno.serve(async (request: Request) => {
   const token = authorization.match(/^Bearer\s+(.+)$/i)?.[1];
   if (!token) return reply(401, { error: "Sign in as an admin before adding another admin." });
 
-  let input: { email?: unknown; password?: unknown };
+  let input: { email?: unknown; password?: unknown; action?: unknown };
   try {
     input = await request.json();
   } catch (error) {
@@ -28,6 +28,8 @@ Deno.serve(async (request: Request) => {
   }
   if (!input || typeof input !== "object") return reply(400, { error: "A valid JSON request is required." });
 
+  // "create" (default): new admin login + allowlist. "set_password": new password for an existing Polybelle admin.
+  const action = input.action === "set_password" ? "set_password" : "create";
   const email = typeof input.email === "string" ? input.email.trim().toLowerCase() : "";
   const password = typeof input.password === "string" ? input.password : "";
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) {
@@ -55,7 +57,30 @@ Deno.serve(async (request: Request) => {
     console.error("Could not verify admin permissions:", adminCheckError.message);
     return reply(500, { error: "Could not verify admin permissions." });
   }
-  if (!isAdmin) return reply(403, { error: "Admin access is required to add an admin." });
+  if (!isAdmin) return reply(403, { error: "Admin access is required to manage admins." });
+
+  const serviceClient = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { autoRefreshToken: false, persistSession: false }
+  });
+
+  if (action === "set_password") {
+    if (email === (authData.user.email || "").toLowerCase()) {
+      return reply(400, { error: "To change your own password, use “Change my password”." });
+    }
+    // Only logins on the Polybelle admin list can be changed here (the login system is shared with other sites).
+    const { data: userId, error: lookupUserError } = await serviceClient.rpc("pb_admin_auth_user_id", { p_email: email });
+    if (lookupUserError) {
+      console.error("Could not look up admin login:", lookupUserError.message);
+      return reply(500, { error: "Could not look up this admin's login." });
+    }
+    if (!userId) return reply(404, { error: "That email is not a Polybelle admin with a login." });
+    const { error: updateError } = await serviceClient.auth.admin.updateUserById(userId, { password });
+    if (updateError) {
+      console.error("Could not set admin password:", updateError.message);
+      return reply(400, { error: updateError.message });
+    }
+    return reply(200, { success: true, email, action });
+  }
 
   const { data: existingAdmin, error: lookupError } = await callerClient
     .from("pb_admins")
@@ -67,9 +92,6 @@ Deno.serve(async (request: Request) => {
     return reply(500, { error: "Could not check whether this email is already an admin." });
   }
 
-  const serviceClient = createClient(supabaseUrl, serviceRoleKey, {
-    auth: { autoRefreshToken: false, persistSession: false }
-  });
   const { data: created, error: createError } = await serviceClient.auth.admin.createUser({
     email,
     password,

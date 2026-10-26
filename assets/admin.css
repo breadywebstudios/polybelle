@@ -198,3 +198,9 @@ tr.row-warn td:first-child { box-shadow: inset 3px 0 0 #D2A54C; }
 .app input::placeholder, .app textarea::placeholder, .drawer input::placeholder, .drawer textarea::placeholder {
   color: #B9ADA4; font-style: italic; opacity: 1;
 }
+
+/* admin list: per-admin password reset */
+.admins-list li.adm-row { flex-wrap: wrap; }
+.adm-acts { display: flex; gap: 14px; }
+.adm-pw { flex: 1 1 100%; display: flex; gap: 8px; flex-wrap: wrap; padding-top: 10px; margin-top: 4px; border-top: 1px solid var(--line); }
+.adm-pw input { flex: 1 1 180px; font: inherit; font-size: .9rem; padding: 9px 11px; border: 1px solid var(--line); background: #fff; color: var(--ink); min-width: 0; }
