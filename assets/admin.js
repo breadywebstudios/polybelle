@@ -56,21 +56,23 @@
   function wireFramer(el, form) {
     let nat = null, drag = null;
     const hint = el.parentElement.querySelector(".frame-hint");
-    const cur = () => (posOk(form.image_pos.value) || "50% 50%").split(" ").map(parseFloat);
+    const imageField = form.elements.namedItem("image_url") || form.elements.namedItem("image");
+    const positionField = form.elements.namedItem("image_pos");
+    const cur = () => (posOk(positionField.value) || "50% 50%").split(" ").map(parseFloat);
     const clamp = (n) => Math.min(100, Math.max(0, n));
     const apply = (x, y) => {
       const v = `${Math.round(clamp(x))}% ${Math.round(clamp(y))}%`;
-      form.image_pos.value = v === "50% 50%" ? "" : v; el.style.backgroundPosition = v;
+      positionField.value = v === "50% 50%" ? "" : v; el.style.backgroundPosition = v;
     };
     const span = () => {
       const W = el.clientWidth, H = el.clientHeight, s = Math.max(W / nat[0], H / nat[1]);
       return [nat[0] * s - W, nat[1] * s - H];
     };
     const load = () => {
-      nat = null; const u = form.image_url.value;
+      nat = null; const u = imageField.value;
       el.classList.toggle("has-img", !!u); hint.hidden = !u;
       if (!u) return;
-      const im = new Image(); im.onload = () => { if (form.image_url.value === u) nat = [im.naturalWidth, im.naturalHeight]; }; im.src = u;
+      const im = new Image(); im.onload = () => { if (imageField.value === u) nat = [im.naturalWidth, im.naturalHeight]; }; im.src = u;
     };
     el.addEventListener("pointerdown", (e) => {
       if (!nat) return; e.preventDefault(); el.setPointerCapture(e.pointerId); el.focus({ preventScroll: true });
