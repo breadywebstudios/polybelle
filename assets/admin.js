@@ -184,12 +184,17 @@
 
   // ---------- overlaps (ignores cancelled bookings)
   const sessOverlap = (a, b) => a === b || a === "Whole day" || b === "Whole day";
+  // a hall plus the halls it shares space with (either direction), e.g. "Hall A&B" ↔ "Hall B"
+  function linkedHalls(id) {
+    const v = S.venues.find((x) => x.id === id);
+    return new Set([id, ...(v?.shares_with || []), ...S.venues.filter((x) => (x.shares_with || []).includes(id)).map((x) => x.id)]);
+  }
   function overlapsFor(b) {
     const res = { clash: [], hallDay: [], occasion: [] };
     if (b.status === "Cancelled") return res;
     S.bookings.forEach((o) => {
       if (o.id === b.id || o.status === "Cancelled" || o.event_date !== b.event_date) return;
-      const sameHall = !isServices(b) && !isServices(o) && o.venue_id && o.venue_id === b.venue_id;
+      const sameHall = !isServices(b) && !isServices(o) && o.venue_id && b.venue_id && linkedHalls(b.venue_id).has(o.venue_id);
       if (sameHall && sessOverlap(o.session, b.session)) res.clash.push(o);
       else if (sameHall) res.hallDay.push(o);
       if ((o.event_type || "").toLowerCase() === (b.event_type || "").toLowerCase()) res.occasion.push(o);
@@ -200,8 +205,8 @@
   function overlapBadges(b) {
     const o = overlapsFor(b), refs = (l) => l.map((x) => `${x.ref} (${x.name}, ${x.session})`).join(", ");
     return [
-      o.clash.length ? `<span class="ov ov-clash" title="Same hall, overlapping session: ${esc(refs(o.clash))}">Hall clash</span>` : "",
-      o.hallDay.length ? `<span class="ov ov-hall" title="Same hall, same day: ${esc(refs(o.hallDay))}">Same hall</span>` : "",
+      o.clash.length ? `<span class="ov ov-clash" title="Same or shared hall, overlapping session: ${esc(refs(o.clash))}">Hall clash</span>` : "",
+      o.hallDay.length ? `<span class="ov ov-hall" title="Same or shared hall, same day: ${esc(refs(o.hallDay))}">Same hall</span>` : "",
       o.occasion.length ? `<span class="ov ov-occ" title="Same occasion, same day: ${esc(refs(o.occasion))}">Same occasion</span>` : ""
     ].join("");
   }
@@ -266,7 +271,9 @@
     if (!AC.sel) { box.innerHTML = `<p class="hint" style="margin:0">Tap a day to see its bookings or add one.</p>`; return; }
     const list = acBookings(AC.sel), hall = S.venues.find((v) => v.id === AC.hall);
     const other = AC.hall === "__services";
-    const live = list.filter((b) => b.status !== "Cancelled" && (other ? isServices(b) : !isServices(b)));
+    const shared = hall ? linkedHalls(hall.id) : null;
+    const live = (hall ? S.bookings.filter((b) => b.event_date === AC.sel && shared.has(b.venue_id)) : list)
+      .filter((b) => b.status !== "Cancelled" && (other ? isServices(b) : !isServices(b)));
     const hits = (sess, pool) => pool.some((b) => b.session === sess || b.session === "Whole day" || sess === "Whole day");
     const confirmed = live.filter((b) => b.status === "Confirmed" || b.status === "Completed");
     box.innerHTML = `
@@ -551,7 +558,7 @@
       <div class="drawer-body">
         ${notice && NOTICE[notice] ? `<div class="notify"><p>${NOTICE[notice]}</p><a class="btn btn-wa sm" target="_blank" rel="noopener" href="${waLink(b.phone, customerMsg(b, notice))}">Send on WhatsApp</a></div>` : ""}
         ${(() => { const o = overlapsFor(b); const item = (x) => `<li><button type="button" class="linkbtn" data-goto="${x.id}">${esc(x.ref)}</button> · ${esc(x.name)} · ${esc(whereText(x))} · ${esc(x.session)} · ${esc(x.event_type)} · ${esc(x.status)}</li>`;
-          return [o.clash.length ? `<div class="ovbox ov-clash-box"><b>Hall clash</b> — same hall with an overlapping session:<ul>${o.clash.map(item).join("")}</ul></div>` : "",
+          return [o.clash.length ? `<div class="ovbox ov-clash-box"><b>Hall clash</b> — same hall (or a hall sharing its space) with an overlapping session:<ul>${o.clash.map(item).join("")}</ul></div>` : "",
                   o.hallDay.length ? `<div class="ovbox ov-hall-box"><b>Same hall, same day</b> — plan setup and turnover:<ul>${o.hallDay.map(item).join("")}</ul></div>` : "",
                   o.occasion.length ? `<div class="ovbox ov-occ-box"><b>Same occasion, same day</b> — check staff, mascots and supplies:<ul>${o.occasion.map(item).join("")}</ul></div>` : ""].join(""); })()}
         <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -883,6 +890,11 @@
           <label class="field">Starting price (AED, optional)<input type="number" name="price_from" min="0" step="1" value="${v.price_from ?? ""}"></label>
           <label class="field">Display order<input type="number" name="sort_order" value="${v.sort_order}"></label>
         </div>
+        ${(() => { const others = S.venues.filter((x) => x.id !== v.id); if (!others.length) return "";
+          const on = v.id ? linkedHalls(v.id) : new Set();
+          return `<fieldset class="field share-set"><legend>Shares space with</legend>
+            <div class="share-opts">${others.map((x) => `<label class="switch"><input type="checkbox" name="shares" value="${x.id}" ${on.has(x.id) ? "checked" : ""}> ${esc(x.name)}</label>`).join("")}</div>
+            <small class="hint">Tick halls that use the same room (e.g. Hall A&amp;B and Hall B). A booking in one blocks that session in the other.</small></fieldset>`; })()}
         <label class="field">Google Maps link or embed code (optional)<input type="text" name="google_maps_url" maxlength="5000" value="${esc(v.google_maps_url || "")}" placeholder="Paste a Google Maps URL or iframe code"><small class="hint">Copy the link or full iframe code from Google Maps → Share → Embed a map.</small></label>
         <label class="switch"><input type="checkbox" name="active" ${v.active ? "checked" : ""}> Show on website &amp; accept bookings</label>
         <div class="venue-form-actions">
@@ -928,8 +940,21 @@
         image_pos: f.image_url.value ? posOk(f.image_pos.value) || null : null
       };
       if (!isGoogleMapsUrl(row.google_maps_url)) return toast("Paste a valid Google Maps URL or iframe embed code.");
-      const q = isNew ? sb.from("pb_venues").insert(row) : sb.from("pb_venues").update(row).eq("id", v.id);
-      const { error } = await q;
+      const shares = $$('input[name="shares"]:checked', f).map((x) => x.value);
+      row.shares_with = shares;
+      const q = isNew ? sb.from("pb_venues").insert(row).select("id").single() : sb.from("pb_venues").update(row).eq("id", v.id);
+      const { data: saved, error } = await q;
+      // keep the link two-way: add/remove this hall on the other halls too
+      const myId = isNew ? saved?.id : v.id;
+      if (!error && myId) {
+        for (const o of S.venues.filter((x) => x.id !== myId)) {
+          const has = (o.shares_with || []).includes(myId), want = shares.includes(o.id);
+          if (has === want) continue;
+          const next = want ? [...(o.shares_with || []), myId] : (o.shares_with || []).filter((x) => x !== myId);
+          const r = await sb.from("pb_venues").update({ shares_with: next }).eq("id", o.id);
+          if (r.error) toast(r.error.message);
+        }
+      }
       if (error) return toast(error.message);
       toast(isNew ? "Hall added — it's live on the website" : "Hall updated");
       closeDrawers(); loadVenues();
