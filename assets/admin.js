@@ -1014,10 +1014,13 @@
   }
 
   // ---------------- packages & services
+  // promo codes only work when the required item matches an active package / service name exactly
+  const activeServiceName = (name) => (S.services || []).find((x) => x.active && x.name.toLowerCase() === (name || "").trim().toLowerCase())?.name;
+  const fillServiceNames = () => { const dl = $("#svcNames"); if (dl) dl.innerHTML = (S.services || []).filter((x) => x.active).map((x) => `<option value="${esc(x.name)}">`).join(""); };
   async function loadServices() {
     const { data, error } = await sb.from("pb_services").select("*").order("sort_order").order("name");
     if (error) return toast(error.message);
-    S.services = data; renderServicesAdmin();
+    S.services = data; renderServicesAdmin(); fillServiceNames();
   }
   function renderServicesAdmin() {
     const order = C.serviceCategories || [];
@@ -1437,7 +1440,7 @@
         <td class="promo-code">${esc(promo.code)}</td>
         <td><select data-promo-field="discount_type" aria-label="Discount type for ${esc(promo.code)}"><option value="percentage" ${promo.discount_type === "percentage" ? "selected" : ""}>%</option><option value="fixed" ${promo.discount_type === "fixed" ? "selected" : ""}>AED</option></select>
           <input type="number" min="0.01" ${promo.discount_type === "percentage" ? 'max="100"' : ""} step="0.01" data-promo-field="discount_value" value="${esc(promo.discount_value)}" aria-label="Discount value for ${esc(promo.code)}"></td>
-        <td><input type="text" maxlength="120" data-promo-field="required_item" value="${esc(promo.required_item)}" aria-label="Required selection for ${esc(promo.code)}"></td>
+        <td><input type="text" maxlength="120" list="svcNames" data-promo-field="required_item" value="${esc(promo.required_item)}" aria-label="Required selection for ${esc(promo.code)}"></td>
         <td><input type="number" min="1" step="1" data-promo-field="max_uses" value="${esc(promo.max_uses)}" aria-label="Maximum bookings for ${esc(promo.code)}"><small>${promo.used_count} used</small></td>
         <td><label class="switch"><input type="checkbox" data-promo-field="is_active" ${promo.is_active ? "checked" : ""}> ${promo.is_active ? "Active" : "Paused"}</label></td>
         <td><div class="promo-actions">
@@ -1467,7 +1470,9 @@
     const discountType = $('[data-promo-field="discount_type"]', row).value;
     const discountValue = Number($('[data-promo-field="discount_value"]', row).value);
     const maxUses = Number($('[data-promo-field="max_uses"]', row).value);
-    const requiredItem = $('[data-promo-field="required_item"]', row).value.trim();
+    let requiredItem = $('[data-promo-field="required_item"]', row).value.trim();
+    if (S.services?.length && !activeServiceName(requiredItem)) return toast(`“${requiredItem}” isn't an active package or service, so the code could never apply. Pick a name from the list.`);
+    requiredItem = activeServiceName(requiredItem) || requiredItem;
     if (!(discountValue > 0) || (discountType === "percentage" && discountValue > 100) || !Number.isInteger(maxUses) || maxUses < 1 || !requiredItem) {
       return toast("Enter a positive discount value (up to 100% for percentage discounts), a required selection, and a positive whole-number limit.");
     }
@@ -1502,7 +1507,9 @@
     const discountType = form.discount_type.value;
     const discountValue = Number(form.discount_value.value);
     const maxUses = Number(form.max_uses.value);
-    const requiredItem = form.required_item.value.trim();
+    let requiredItem = form.required_item.value.trim();
+    if (S.services?.length && !activeServiceName(requiredItem)) return toast(`“${requiredItem}” isn't an active package or service, so the code could never apply. Pick a name from the list.`);
+    requiredItem = activeServiceName(requiredItem) || requiredItem;
     if (!/^[A-Z0-9_-]{2,40}$/.test(code)) return toast("Use 2–40 letters, numbers, hyphens, or underscores for the code.");
     if (!(discountValue > 0) || (discountType === "percentage" && discountValue > 100) || !Number.isInteger(maxUses) || maxUses < 1 || !requiredItem) {
       return toast("Enter a positive discount value (up to 100% for percentage discounts), a required selection, and a positive whole-number limit.");
@@ -1516,7 +1523,7 @@
     form.discount_type.value = "percentage";
     form.discount_value.value = "15";
     form.discount_value.max = "100";
-    form.required_item.value = "Mascot Surprise";
+    form.required_item.value = "";
     form.max_uses.value = "10";
     form.is_active.checked = true;
     toast(`Promo code ${code} created`);
