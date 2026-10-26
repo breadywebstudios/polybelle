@@ -44,6 +44,56 @@
       return new File([blob], file.name.replace(/\.[^.]+$/, "") + "." + ext, { type: blob.type });
     } catch { return file; }
   }
+  // Photo framing: which part of a photo shows in its website card (CSS position "x% y%")
+  const posOk = (p) => (/^(100|\d{1,2})% (100|\d{1,2})%$/.test(p || "") ? p : "");
+  const frameBlock = (id, url, pos, shape) => `
+        <div class="frame-wrap">
+          <div class="preview-img frame ${shape}" id="${id}" tabindex="0" role="img" aria-label="Photo framing. Drag, or use the arrow keys, to choose what shows."
+            style="${url ? `background-image:url('${esc(url)}');` : ""}background-position:${posOk(pos) || "50% 50%"}"></div>
+          <p class="frame-hint" ${url ? "" : "hidden"}><span>Drag the photo to choose what shows on the website card.</span><button type="button" class="linkbtn" data-frame-reset>Center</button></p>
+        </div>
+        <input type="hidden" name="image_pos" value="${esc(posOk(pos))}">`;
+  function wireFramer(el, form) {
+    let nat = null, drag = null;
+    const hint = el.parentElement.querySelector(".frame-hint");
+    const cur = () => (posOk(form.image_pos.value) || "50% 50%").split(" ").map(parseFloat);
+    const clamp = (n) => Math.min(100, Math.max(0, n));
+    const apply = (x, y) => {
+      const v = `${Math.round(clamp(x))}% ${Math.round(clamp(y))}%`;
+      form.image_pos.value = v === "50% 50%" ? "" : v; el.style.backgroundPosition = v;
+    };
+    const span = () => {
+      const W = el.clientWidth, H = el.clientHeight, s = Math.max(W / nat[0], H / nat[1]);
+      return [nat[0] * s - W, nat[1] * s - H];
+    };
+    const load = () => {
+      nat = null; const u = form.image_url.value;
+      el.classList.toggle("has-img", !!u); hint.hidden = !u;
+      if (!u) return;
+      const im = new Image(); im.onload = () => { if (form.image_url.value === u) nat = [im.naturalWidth, im.naturalHeight]; }; im.src = u;
+    };
+    el.addEventListener("pointerdown", (e) => {
+      if (!nat) return; e.preventDefault(); el.setPointerCapture(e.pointerId); el.focus({ preventScroll: true });
+      const [px, py] = cur(); drag = { x: e.clientX, y: e.clientY, px, py }; el.classList.add("dragging");
+    });
+    el.addEventListener("pointermove", (e) => {
+      if (!drag) return;
+      const [ox, oy] = span();
+      apply(ox > 1 ? drag.px - ((e.clientX - drag.x) / ox) * 100 : 50, oy > 1 ? drag.py - ((e.clientY - drag.y) / oy) * 100 : 50);
+    });
+    const end = () => { drag = null; el.classList.remove("dragging"); };
+    el.addEventListener("pointerup", end); el.addEventListener("pointercancel", end);
+    el.addEventListener("keydown", (e) => {
+      const k = { ArrowLeft: [4, 0], ArrowRight: [-4, 0], ArrowUp: [0, 4], ArrowDown: [0, -4] }[e.key];
+      if (!k || !nat) return; e.preventDefault();
+      const [ox, oy] = span(), [x, y] = cur();
+      apply(ox > 1 ? x + k[0] : 50, oy > 1 ? y + k[1] : 50);
+    });
+    hint.querySelector("[data-frame-reset]").addEventListener("click", () => apply(50, 50));
+    load();
+    return { newPhoto(url) { el.style.backgroundImage = `url('${url}')`; apply(50, 50); load(); } };
+  }
+
   async function prepPhoto(f, maxSide) {
     if (f.size > MAX_ORIGINAL) { toast("Photo is over 25 MB — please use a smaller one."); return null; }
     const out = await shrinkImage(f, maxSide);
@@ -747,7 +797,7 @@
   function renderVenues() {
     $("#vgrid").innerHTML = S.venues.map((v, i) => `
       <div class="vcard">
-        <div class="vimg" style="background-image:url('${esc(v.image_url || C.fallbackImages[i % C.fallbackImages.length])}')">
+        <div class="vimg" style="background-image:url('${esc(v.image_url || C.fallbackImages[i % C.fallbackImages.length])}');background-position:${posOk(v.image_pos) || "center"}">
           <span class="badge ${v.active ? "b-Confirmed" : "b-Cancelled"}">${v.active ? "Shown on website" : "Hidden"}</span>
         </div>
         <div class="vb">
@@ -769,7 +819,7 @@
     d.innerHTML = `
       <div class="drawer-head"><div><span class="eyebrow">${isNew ? "New hall" : "Edit hall"}</span><h3>${esc(v.name || "Add a hall")}</h3></div><button class="xbtn" data-close aria-label="Close">×</button></div>
       <form class="drawer-body" id="venueForm">
-        <div class="preview-img" id="vPrev" style="background-image:url('${esc(v.image_url || "")}')"></div>
+        ${frameBlock("vPrev", v.image_url, v.image_pos, "portrait")}
         <label class="field">Photo (JPG/PNG/WebP — resized automatically)<input type="file" id="vFile" accept="image/jpeg,image/png,image/webp"></label>
         <input type="hidden" name="image_url" value="${esc(v.image_url || "")}">
         <label class="field">Hall name<input name="name" required maxlength="60" value="${esc(v.name)}" placeholder="e.g. Hall E"></label>
@@ -785,6 +835,7 @@
         <button class="btn btn-primary" type="submit">${isNew ? "Add hall" : "Save changes"}</button>
       </form>`;
     $("[data-close]", d).addEventListener("click", closeDrawers);
+    const vFrame = wireFramer($("#vPrev"), $("#venueForm"));
     $("#vFile").addEventListener("change", async (e) => {
       let f = e.target.files[0]; if (!f) return;
       toast("Optimizing photo…");
@@ -795,8 +846,8 @@
       if (error) return toast("Upload failed: " + error.message);
       const url = sb.storage.from(C.storageBucket).getPublicUrl(path).data.publicUrl;
       $("#venueForm").image_url.value = url;
-      $("#vPrev").style.backgroundImage = `url('${url}')`;
-      toast("Photo uploaded — remember to save");
+      vFrame.newPhoto(url);
+      toast("Photo uploaded — drag it to frame, then save");
     });
     $("#venueForm").addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -804,7 +855,8 @@
       const row = {
         name: f.name.value.trim(), tagline: f.tagline.value.trim() || null, description: f.description.value.trim() || null,
         capacity: +f.capacity.value, branch: f.branch.value || null, price_from: f.price_from.value === "" ? null : +f.price_from.value,
-        sort_order: +f.sort_order.value || 0, active: f.active.checked, image_url: f.image_url.value || null
+        sort_order: +f.sort_order.value || 0, active: f.active.checked, image_url: f.image_url.value || null,
+        image_pos: f.image_url.value ? posOk(f.image_pos.value) || null : null
       };
       const q = isNew ? sb.from("pb_venues").insert(row) : sb.from("pb_venues").update(row).eq("id", v.id);
       const { error } = await q;
@@ -828,7 +880,7 @@
     let lastCat = null;
     $("#sgrid").innerHTML = list.map((sv) => (sv.category !== lastCat ? `<h4 class="sg-head">${esc((lastCat = sv.category) || "Other")}</h4>` : "") + `
       <div class="vcard">
-        <div class="vimg" style="${sv.image_url ? `background-image:url('${esc(sv.image_url)}')` : ""}">
+        <div class="vimg" style="${sv.image_url ? `background-image:url('${esc(sv.image_url)}');background-position:${posOk(sv.image_pos) || "center"}` : ""}">
           <span class="badge ${sv.active ? "b-Confirmed" : "b-Cancelled"}">${sv.active ? "Shown" : "Hidden"}</span>
           ${sv.kind === "Package" ? `<span class="badge" style="left:auto;right:10px;background:var(--ink);color:#fff">Package</span>` : ""}
         </div>
@@ -851,7 +903,7 @@
     d.innerHTML = `
       <div class="drawer-head"><div><span class="eyebrow">${isNew ? "New" : "Edit"} package / service</span><h3>${esc(sv.name || "Add an item")}</h3></div><button class="xbtn" data-close aria-label="Close">×</button></div>
       <form class="drawer-body" id="svcForm">
-        <div class="preview-img" id="sPrev" style="${sv.image_url ? `background-image:url('${esc(sv.image_url)}')` : ""}"></div>
+        ${frameBlock("sPrev", sv.image_url, sv.image_pos, "land")}
         <label class="field">Photo (JPG/PNG/WebP — resized automatically)<input type="file" id="sFile" accept="image/jpeg,image/png,image/webp"></label>
         <input type="hidden" name="image_url" value="${esc(sv.image_url || "")}">
         <label class="field">Name<input name="name" required maxlength="60" value="${esc(sv.name)}" placeholder="e.g. Balloon Arch"></label>
@@ -875,6 +927,7 @@
     $("[data-close]", d).addEventListener("click", closeDrawers);
     const syncInc = () => ($("#incWrap").hidden = $("#svcForm").kind.value !== "Package");
     $("#svcForm").kind.addEventListener("change", syncInc); syncInc();
+    const sFrame = wireFramer($("#sPrev"), $("#svcForm"));
     $("#sFile").addEventListener("change", async (e) => {
       let f = e.target.files[0]; if (!f) return;
       toast("Optimizing photo…");
@@ -884,8 +937,8 @@
       const { error } = await sb.storage.from(C.storageBucket).upload(path, f, { cacheControl: "31536000" });
       if (error) return toast("Upload failed: " + error.message);
       const url = sb.storage.from(C.storageBucket).getPublicUrl(path).data.publicUrl;
-      $("#svcForm").image_url.value = url; $("#sPrev").style.backgroundImage = `url('${url}')`;
-      toast("Photo uploaded — remember to save");
+      $("#svcForm").image_url.value = url; sFrame.newPhoto(url);
+      toast("Photo uploaded — drag it to frame, then save");
     });
     $("#sDel")?.addEventListener("click", async () => {
       if (!confirm(`Delete “${sv.name}”? Tip: untick “Show in the booking form” to hide it instead.`)) return;
@@ -897,7 +950,8 @@
       e.preventDefault();
       const f = e.target;
       const row = { name: f.name.value.trim(), kind: f.kind.value, category: f.category.value, description: f.description.value.trim() || null,
-        image_url: f.image_url.value || null, sort_order: +f.sort_order.value || 0, active: f.active.checked,
+        image_url: f.image_url.value || null, image_pos: f.image_url.value ? posOk(f.image_pos.value) || null : null,
+        sort_order: +f.sort_order.value || 0, active: f.active.checked,
         inclusions: f.kind.value === "Package" ? f.inclusions.value.split("\n").map((x) => x.trim()).filter(Boolean).slice(0, 40) : [] };
       if (!row.name) return toast("Name is required.");
       const { error } = isNew ? await sb.from("pb_services").insert(row) : await sb.from("pb_services").update(row).eq("id", sv.id);

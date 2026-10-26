@@ -16,6 +16,8 @@
 
   // ---------- helpers
   const imgFor = (v, i) => v.image_url || C.fallbackImages[i % C.fallbackImages.length];
+  // photo framing set in the admin ("x% y%"); only used with the real uploaded photo
+  const posStyle = (o) => (o.image_url && /^(100|\d{1,2})% (100|\d{1,2})%$/.test(o.image_pos || "") ? ` style="object-position:${o.image_pos}"` : "");
   const telLink = (n) => "tel:+971" + n.replace(/\D/g, "").replace(/^0/, "");
   // tidy WhatsApp text: swap typographic dashes/quotes for plain ones (emojis are kept)
   const waClean = (t) => String(t)
@@ -102,7 +104,7 @@
       <div class="svc" data-cat="${esc(sv.category || "Event Services")}" data-i="${i}">
         <input type="checkbox" name="add_ons" value="${esc(sv.name)}" ${picked.has(sv.name) ? "checked" : ""} tabindex="-1" aria-hidden="true">
         <button type="button" class="svc-card" aria-expanded="false" aria-controls="svcDetail">
-          <span class="svc-img">${sv.image_url ? `<img src="${esc(sv.image_url)}" alt="" loading="lazy" onerror="this.remove()">` : ""}<span class="svc-ph" aria-hidden="true">${esc(sv.name.trim()[0] || "")}</span>
+          <span class="svc-img">${sv.image_url ? `<img src="${esc(sv.image_url)}"${posStyle(sv)} alt="" loading="lazy" onerror="this.remove()">` : ""}<span class="svc-ph" aria-hidden="true">${esc(sv.name.trim()[0] || "")}</span>
             ${sv.kind === "Package" ? `<span class="svc-tag">Package</span>` : ""}</span>
           <span class="svc-body"><b>${esc(sv.name)}</b><small>${sv.kind === "Package" ? "See what's included" : "Details"}</small></span>
         </button>
@@ -211,7 +213,7 @@
     $("#venueGrid").innerHTML = state.venues.map((v, i) => `
       <article class="venue" style="--d:${i % 4}">
         <div class="venue-img">
-          <img src="${esc(imgFor(v, i))}" alt="${esc(v.name)}" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'ph'}))">
+          <img src="${esc(imgFor(v, i))}"${posStyle(v)} alt="${esc(v.name)}" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'ph'}))">
           <span class="cap">Up to ${v.capacity} guests</span>
         </div>
         <div class="venue-body">
@@ -656,10 +658,10 @@
     sb.from("pb_reviews").select("name,event_type,rating,comment,source,featured,created_at").eq("status", "Approved")
       .order("featured", { ascending: false }).order("created_at", { ascending: false }).limit(60)
       .then(({ data }) => { R.items = data || []; renderReviews(); });
-    sb.from("pb_services").select("name,kind,category,description,image_url,inclusions").eq("active", true).order("sort_order").order("name")
+    sb.from("pb_services").select("name,kind,category,description,image_url,image_pos,inclusions").eq("active", true).order("sort_order").order("name")
       .then(({ data }) => { if (data?.length) { services = data; renderServices(); update(); } });
     const [venues, settings] = await Promise.all([
-      sb.from("pb_venues").select("id,name,tagline,description,capacity,branch,image_url,price_from,sort_order").eq("active", true).order("sort_order").order("name"),
+      sb.from("pb_venues").select("id,name,tagline,description,capacity,branch,image_url,image_pos,price_from,sort_order").eq("active", true).order("sort_order").order("name"),
       sb.rpc("pb_public_settings"),
       loadBooked()
     ]);
