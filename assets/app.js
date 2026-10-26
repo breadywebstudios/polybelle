@@ -506,9 +506,10 @@
   const isoDay = (y, m, d) => new Date(Date.UTC(y, m, d)).toISOString().slice(0, 10);
   const CAL = { hall: null, open: false, y: +todayDubai().slice(0, 4), m: +todayDubai().slice(5, 7) - 1, sel: null };
   const SESS_ORDER = ["Morning", "Afternoon", "Evening", "Whole day"];
-  // Other venues: sessions our team already has confirmed at customers' own locations (bookings with no hall)
+  // Other venues are never blocked: several events at customers' own locations can share a date and session
   function takenFor(venueId, date) {
-    return state.booked.filter((b) => venueId && (venueId === OTHER ? !b.venue_id : b.venue_id === venueId) && b.event_date === date).map((b) => b.session);
+    if (!venueId || venueId === OTHER) return [];
+    return state.booked.filter((b) => b.venue_id === venueId && b.event_date === date).map((b) => b.session);
   }
   function dayState(taken) {
     if (taken.includes("Whole day") || ["Morning", "Afternoon", "Evening"].every((x) => taken.includes(x))) return "full";
