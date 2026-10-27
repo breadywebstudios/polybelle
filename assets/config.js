@@ -42,7 +42,6 @@ window.PB_CONFIG = {
 
   branches: [
     { name: "Electra", address: "1802, C88, Tower A", landmark: "Back side of City Seasons Hotel" },
-    { name: "Al Falah", address: "703, Bldg No. 1", landmark: "Aster Pharmacy Bldg, near Al Falah Plaza" },
     { name: "Al Wahda", address: "Phil Greenhouse Cosmetics Bldg, Mezzanine 1, Building No. 156", landmark: "Defence Road, beside Best Chicken, Al Danah, Zone 1" }
   ],
 
