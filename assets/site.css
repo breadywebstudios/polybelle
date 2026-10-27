@@ -246,8 +246,12 @@ b, strong { font-weight: 500; }
 .book-card { display: grid; grid-template-columns: 330px 1fr; background: var(--white); box-shadow: var(--shadow); }
 .book-aside { background: var(--ink); color: #E9DED5; padding: 48px 36px; display: grid; gap: 28px; align-content: start; }
 .book-aside h3 { color: #fff; font-size: 1.9rem; }
-.whatsapp-choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-.whatsapp-choices .btn { width: 100%; min-width: 0; padding: 12px 6px; font-size: .62rem; letter-spacing: 0; line-height: 1.25; white-space: normal; overflow-wrap: anywhere; }
+.whatsapp-choices { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+.whatsapp-choice { display: grid; justify-items: center; align-content: start; gap: 5px; min-width: 0; }
+.whatsapp-choice .btn { width: 100%; min-width: 0; padding: 12px 6px; font-size: .62rem; letter-spacing: 0; line-height: 1.25; white-space: normal; overflow-wrap: anywhere; }
+.whatsapp-shortcut { display: grid; place-items: center; width: 22px; height: 22px; color: #25D366; }
+.whatsapp-shortcut svg { width: 17px; height: 17px; fill: currentColor; }
+.whatsapp-shortcut:focus-visible { outline: 2px solid var(--gold-soft); outline-offset: 2px; }
 .summary { margin: 0; display: grid; gap: 14px; font-size: .9rem; }
 .summary div { display: flex; justify-content: space-between; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,.1); }
 .summary dt { color: #A99A90; font-size: .72rem; letter-spacing: .2em; text-transform: uppercase; }
