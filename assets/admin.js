@@ -348,37 +348,38 @@
     const t = invTotals(b);
     const hasInvoice = !!b.invoice_no || t.total > 0;
     const details = [
-      `*Booking Ref:* ${b.ref}`,
-      isServices(b) ? `*Venue:* Other venues (packages & services)` : `*Hall:* ${b.venue_name}`,
-      !isServices(b) && hallAddress(b) ? `*Hall address:* ${hallAddress(b)}` : null,
-      isServices(b) ? `*Event location:* ${b.event_location || "To be confirmed"}` : null,
-      `*Date:* ${fmtDate(b.event_date)}`,
-      `*Session:* ${b.session}${sess ? ` (${sess.time})` : ""}`,
-      `*Occasion:* ${b.event_type}`,
-      b.guests ? `*Guests:* ${b.guests}` : null,
-      b.add_ons?.length ? `\n*Packages & services:*\n${b.add_ons.map((a) => `- ${a}`).join("\n")}` : null,
-      b.custom_items?.length ? `\n*Additional items:*\n${b.custom_items.map((c) => `- ${ciText(c)}${ciTotal(c) ? ` (AED ${money(ciTotal(c))})` : ""}`).join("\n")}` : null,
-      b.notes ? `\n*Your notes:* ${b.notes}` : null,
+      `🔖 *Booking Ref:* ${b.ref}`,
+      ``,
+      isServices(b) ? `🏡 *Venue:* Other venues (packages & services)` : `🏢 *Hall:* ${b.venue_name}`,
+      !isServices(b) && hallAddress(b) ? `📍 *Hall address:* ${hallAddress(b)}` : null,
+      isServices(b) ? `📍 *Event location:* ${b.event_location || "To be confirmed"}` : null,
+      `📅 *Date:* ${fmtDate(b.event_date)}`,
+      `⏰ *Session:* ${b.session}${sess ? ` (${sess.time})` : ""}`,
+      `🎈 *Occasion:* ${b.event_type}`,
+      b.guests ? `👥 *Guests:* ${b.guests}` : null,
+      b.add_ons?.length ? `\n🎁 *Packages & services:*\n${b.add_ons.map((a) => `🔹 ${a}`).join("\n")}` : null,
+      b.custom_items?.length ? `\n➕ *Additional items:*\n${b.custom_items.map((c) => `🔹 ${ciText(c)}${ciTotal(c) ? ` (AED ${money(ciTotal(c))})` : ""}`).join("\n")}` : null,
+      b.notes ? `\n📝 *Your notes:* ${b.notes}` : null,
       hasInvoice ? [
         ``,
-        b.invoice_no ? `*Invoice No:* ${b.invoice_no}` : null,
-        +b.discount ? `*Discount:* AED ${money(b.discount)}` : null,
-        `*Total:* AED ${money(t.total)}`,
-        t.paid ? `*Paid:* AED ${money(t.paid)}` : null,
-        `*Balance due:* AED ${money(t.balance)}`
+        b.invoice_no ? `🧾 *Invoice No:* ${b.invoice_no}` : null,
+        +b.discount ? `💸 *Discount:* AED ${money(b.discount)}` : null,
+        `💰 *Total:* AED ${money(t.total)}`,
+        t.paid ? `✅ *Paid:* AED ${money(t.paid)}` : null,
+        `⏳ *Balance due:* AED ${money(t.balance)}`
       ].filter((l) => l !== null).join("\n") : null
     ].filter((l) => l !== null).join("\n");
-    const pay = hasInvoice && t.balance > 0 && S.settings?.payment_details ? `\n\n*Payment details:*\n${S.settings.payment_details}` : "";
+    const pay = hasInvoice && t.balance > 0 && S.settings?.payment_details ? `\n\n🏦 *Payment details:*\n${S.settings.payment_details}` : "";
     const intro = {
       Confirmed: `Hi ${b.name}! 🎉 Your booking at Polybelle Event Halls & Studio is *CONFIRMED*.`,
       Pending: `Hi ${b.name}! Thank you for your booking request at Polybelle Event Halls & Studio 💛 Here are the details we received:`,
       Completed: `Hi ${b.name}! Thank you for celebrating with Polybelle Event Halls & Studio 💛 Here is a summary of your event:`,
       Updated: `Hi ${b.name}! Your booking at Polybelle Event Halls & Studio has been updated ✨ Here are the latest details:`,
-      Cancelled: `Hi ${b.name}, regarding your booking request at Polybelle Event Halls & Studio: unfortunately we're unable to accommodate it on this date.`
+      Cancelled: `Hi ${b.name}, regarding your booking request at Polybelle Event Halls & Studio: unfortunately we're unable to accommodate it on this date. 😔`
     }[status] || "";
     const outro = {
       Confirmed: `Thank you for choosing Polybelle! 💛 Message us anytime if you have questions.`,
-      Pending: `We're checking availability and will get back to you shortly.`,
+      Pending: `⏳ We're checking availability and will get back to you shortly.`,
       Completed: `We'd love to hear how it went, and hope to celebrate with you again soon!`,
       Updated: `Please let us know if anything needs changing. Thank you for choosing Polybelle! 💛`,
       Cancelled: `Please message us and we'll gladly help you find another date or hall. 💛`
