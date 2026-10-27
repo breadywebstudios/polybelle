@@ -143,7 +143,8 @@ b, strong { font-weight: 500; }
 .about-facebook-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; text-align: left; }
 .about-facebook-card { display: flex; flex: 0 1 calc((100% - 24px) / 3); flex-direction: column; min-width: 0; padding: 12px; border: 1px solid var(--line); border-radius: 8px; transition: background .25s, color .25s, border-color .25s; }
 .about-facebook-card > a { display: grid; align-content: start; gap: 8px; color: var(--ink); text-decoration: none; }
-.about-facebook-preview { display: block; width: 100%; aspect-ratio: 1; height: auto; margin-top: auto; border: 0; border-radius: 4px; background: #fff; }
+.about-facebook-preview { display: block; width: 100%; height: var(--fb-h, 420px); margin-top: auto; border: 0; border-radius: 4px; background: #fff; overflow: hidden; }
+@media (max-width: 700px) { .about-facebook-preview { --fb-h: 380px; } }
 .about-facebook-heading { display: flex; align-items: center; gap: 8px; }
 .about-facebook-heading svg { width: 22px; height: 22px; flex: 0 0 auto; fill: #1877F2; }
 .about-facebook-card a strong { font: 500 1.1rem/1.2 var(--serif); }
