@@ -70,11 +70,11 @@ b, strong { font-weight: 500; }
 /* ---------- Header ---------- */
 .nav { position: fixed; inset: 0 0 auto; z-index: 40; color: #fff; transition: background .5s var(--ease), color .5s var(--ease), box-shadow .5s var(--ease); }
 .nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 92px; transition: height .5s var(--ease); }
-.nav.solid { background: rgba(250, 246, 241, .94); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); color: var(--ink); box-shadow: 0 1px 0 var(--line); }
+.nav.solid { background: var(--ivory); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); color: var(--ink); border-bottom: 1px solid rgba(119, 85, 31, .45); box-shadow: 0 2px 12px rgba(43, 33, 29, .12); }
+.nav.solid .wordmark b { color: #76500F; background-image: linear-gradient(110deg, #68450F 0%, #9A6B18 20%, #D4A83F 38%, #805719 52%, #C4922A 69%, #68450F 84%, #A8781E 100%); font-weight: 600; filter: drop-shadow(0 1px 1px rgba(70, 45, 10, .28)); }
 .nav.solid .wrap { height: 72px; }
 .wordmark { display: grid; justify-items: start; gap: 6px; text-decoration: none; line-height: 1; }
-.wordmark b { font: 500 1.65rem/1 var(--serif); letter-spacing: .3em; margin-right: -.3em; color: inherit; }
-.nav.solid .wordmark b { color: var(--gold); }
+.wordmark b { font: 500 1.65rem/1 var(--serif); letter-spacing: .3em; margin-right: -.3em; color: #E8CA78; background: linear-gradient(110deg, #9A7132 0%, #E8CA78 22%, #FFF4C2 38%, #C49A4A 52%, #FFF1AE 66%, #A77D38 82%, #F7E5A0 100%); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 .wordmark small { font: 400 .55rem/1 var(--sans); letter-spacing: .42em; margin-right: -.42em; text-transform: uppercase; opacity: .85; }
 .wordmark.small b { font-size: 1.35rem; }
 .nav-links { display: flex; gap: 34px; align-items: center; }
@@ -496,7 +496,7 @@ label.field { display: grid; gap: 7px; font-size: .74rem; font-weight: 500; lett
 .reveal { transition-duration: .9s; }
 @media (max-width: 900px) {
   /* blur behind a fixed header is costly on phones; a near-solid header looks the same */
-  .nav.solid { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(250, 246, 241, .98); }
+  .nav.solid { backdrop-filter: none; -webkit-backdrop-filter: none; background: var(--ivory); }
 }
 
 /* ---------- Availability window (expands under a hall card) ---------- */
