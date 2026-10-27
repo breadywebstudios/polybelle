@@ -12,7 +12,7 @@ Website and booking admin for Polybelle Event Halls & Studio (Abu Dhabi).
 3. WhatsApp opens with the full booking message, addressed to the booking number set in Admin → Settings (default 056 485 1757).
 4. Staff confirm or cancel in the admin, then tap **WhatsApp customer** to send a prefilled reply.
    A hall can't have two confirmed bookings for the same date and session.
-5. In Admin → booking → **Invoice**, set the line items and tap **Send invoice to customer**: it saves the invoice (assigning the next number if it's new), then opens WhatsApp to the customer's number with the itemised invoice, totals, balance and payment details.
+5. In Admin → booking → **Invoice**, set the line items and tap **Send invoice to customer**: it saves the invoice (assigning the next number if it's new), builds a branded A4 PDF of the same layout as **Save & open invoice**, and sends it with the itemised message. On phones the PDF is attached through the share sheet (pick WhatsApp, then the customer); on desktop, where WhatsApp links can't carry files, the PDF downloads and the chat opens with the message ready — attach the downloaded PDF before sending.
 
 ## Backend (Supabase, breadywebstudios project)
 Tables in `public`: `pb_venues`, `pb_bookings`, `pb_settings`, `pb_admins`.

@@ -421,6 +421,60 @@
       `Please reply here if you have any questions. Thank you! 💛`
     ].filter((l) => l !== null).join("\n");
   }
+
+  // A4 PDF of the invoice/receipt: the same HTML as the print view, painted to a canvas so every
+  // script and glyph the browser can show (Arabic names, dashes, emoji) comes through intact
+  async function invoicePdf(b, docType) {
+    const jsPDF = window.jspdf?.jsPDF;
+    if (!jsPDF || !window.html2canvas) return null;
+    const frame = document.createElement("iframe");
+    frame.setAttribute("aria-hidden", "true");
+    frame.style.cssText = "position:fixed;left:-10000px;top:0;width:210mm;height:297mm;border:0";
+    document.body.append(frame);
+    try {
+      const fdoc = frame.contentDocument;
+      fdoc.open(); fdoc.write(invoiceHtml(b, docType, true)); fdoc.close();
+      const link = fdoc.querySelector('link[rel="stylesheet"]');
+      if (link && !link.sheet) await new Promise((r) => { link.onload = r; link.onerror = r; setTimeout(r, 1500); });
+      if (fdoc.fonts?.ready) await fdoc.fonts.ready;
+      await new Promise((r) => setTimeout(r, 200)); // let the web fonts settle before painting
+      const canvas = await window.html2canvas(fdoc.querySelector(".page"), { scale: 2, backgroundColor: "#ffffff", useCORS: true, logging: false });
+      const pdf = new jsPDF({ unit: "mm", format: "a4" });
+      const pageW = 210, pageH = 297, imgH = canvas.height * pageW / canvas.width;
+      if (imgH <= pageH + 2) {
+        pdf.addImage(canvas.toDataURL("image/jpeg", 0.94), "JPEG", 0, 0, pageW, imgH);
+      } else {
+        const pagePx = Math.floor(canvas.width * pageH / pageW);
+        for (let top = 0; top < canvas.height; top += pagePx) {
+          const slice = document.createElement("canvas");
+          slice.width = canvas.width;
+          slice.height = Math.min(pagePx, canvas.height - top);
+          slice.getContext("2d").drawImage(canvas, 0, top, slice.width, slice.height, 0, 0, slice.width, slice.height);
+          if (top) pdf.addPage();
+          pdf.addImage(slice.toDataURL("image/jpeg", 0.94), "JPEG", 0, 0, pageW, slice.height * pageW / canvas.width);
+        }
+      }
+      return pdf;
+    } catch (err) {
+      console.error("Couldn't build the invoice PDF:", err);
+      return null;
+    } finally {
+      frame.remove();
+    }
+  }
+  async function invoiceFile(b, docType) {
+    const doc = await invoicePdf(b, docType);
+    if (!doc || typeof File !== "function") return null;
+    const blob = doc.output("blob");
+    const name = `${docType}-${b.invoice_no || b.ref}-${b.name || ""}`.replace(/[^A-Za-z0-9 ._-]+/g, "-").replace(/\s+/g, "-").replace(/-+/g, "-") + ".pdf";
+    return { blob, name, file: new File([blob], name, { type: "application/pdf" }) };
+  }
+  function downloadPdf(pdf) {
+    const url = URL.createObjectURL(pdf.blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = pdf.name; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  }
   const invTotals = (b) => {
     const subtotal = (b.invoice_items || []).reduce((s, it) => s + (Number(it.amount) || 0), 0);
     const total = Math.max(0, subtotal - (Number(b.discount) || 0));
@@ -768,15 +822,37 @@
       const nb = fresh(b.id);
       const docTitle = f.doc_type.value;
       if (act === "send") {
-        const url = nb.phone ? waLink(nb.phone, invoiceMsg(nb, docTitle)) : "";
-        let opened = !!url;
-        if (url) {
-          if (win) win.location.href = url;
-          else opened = !!window.open(url, "_blank", "noopener");
-        } else if (win) win.close();
-        toast(url
-          ? (opened ? `Invoice ${nb.invoice_no} sent to ${nb.name} on WhatsApp` : `Invoice ${nb.invoice_no} saved. Allow pop-ups to open WhatsApp.`)
-          : `Invoice ${nb.invoice_no} saved, but this booking has no customer phone number.`);
+        const text = invoiceMsg(nb, docTitle);
+        const url = nb.phone ? waLink(nb.phone, text) : "";
+        const pdf = await invoiceFile(nb, docTitle);
+        const moveTo = (u) => {
+          if (win) { win.location.href = u; return true; }
+          return !!window.open(u, "_blank", "noopener");
+        };
+        let canShare = false;
+        try { canShare = !!pdf && !!navigator.canShare && navigator.canShare({ files: [pdf.file] }); } catch { canShare = false; }
+        if (!url) {
+          if (win) win.close();
+          toast(`Invoice ${nb.invoice_no} saved, but this booking has no customer phone number.`);
+        } else if (canShare) {
+          // phones: share the PDF with the message so WhatsApp receives it as an attachment
+          try {
+            await navigator.share({ files: [pdf.file], text });
+            if (win) win.close();
+            toast(`Invoice ${nb.invoice_no} PDF shared — pick WhatsApp and ${nb.name}.`);
+          } catch (err) {
+            if (win) win.close();
+            if (err?.name === "AbortError") toast(`Invoice ${nb.invoice_no} saved`);
+            else { downloadPdf(pdf); moveTo(url); toast(`Invoice ${nb.invoice_no} PDF downloaded — attach it in the WhatsApp chat.`); }
+          }
+        } else {
+          // desktop WhatsApp links can't carry files: download the PDF, then open the chat with the message ready
+          if (pdf) downloadPdf(pdf);
+          const opened = moveTo(url);
+          toast(pdf
+            ? `Invoice ${nb.invoice_no} PDF downloaded — attach it in the WhatsApp chat.`
+            : (opened ? `Invoice ${nb.invoice_no} sent to ${nb.name} on WhatsApp` : `Invoice ${nb.invoice_no} saved. Allow pop-ups to open WhatsApp.`));
+        }
       } else {
         toast(`Invoice ${nb.invoice_no} saved`);
       }
@@ -788,7 +864,7 @@
   }
 
   // ---------- printable invoice (matches Polybelle receipt layout)
-  function renderInvoice(win, b, docType) {
+  function invoiceHtml(b, docType, pdf) {
     const s = S.settings || {};
     const t = invTotals(b);
     const nl = (x) => esc(x || "").replace(/\n/g, "<br>");
@@ -797,8 +873,7 @@
     const sess = C.sessions.find((x) => x.id === b.session);
     const lines = (b.invoice_items || []).map((it) => `<tr><td>${nl(it.description)}</td><td class="amt">${it.amount ? money(it.amount) : ""}</td></tr>`).join("");
     const isReceipt = docType === "Receipt";
-    win.document.open();
-    win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${docType} ${esc(b.invoice_no)} – ${esc(b.name)}</title>
+    return `<!doctype html><html><head><meta charset="utf-8"><title>${docType} ${esc(b.invoice_no)} – ${esc(b.name)}</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Lora:wght@500;600&family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -834,6 +909,7 @@
   .stamp { display: inline-block; margin-top: 6px; border: 2px solid #4F7A5A; color: #4F7A5A; font-weight: 600; letter-spacing: .14em; padding: 4px 12px; border-radius: 6px; font-size: 12px; transform: rotate(-4deg); }
   @media print { body { background: #fff; } .bar { display: none; } .page { margin: 0; box-shadow: none; } }
   @media (max-width: 820px) { .page { width: 100%; min-height: auto; padding: 24px 18px; margin: 0; } .top, .grid { flex-direction: column; } .logo b { font-size: 32px; } }
+  ${pdf ? "body { background: #fff; } .bar { display: none; } .page { margin: 0; box-shadow: none; }" : ""}
 </style></head><body>
 <div class="bar"><button onclick="window.print()">Print / Save as PDF</button><button class="alt" onclick="window.close()">Close</button></div>
 <div class="page">
@@ -876,7 +952,11 @@
     <p>${nl(s.payment_details)}</p>
     <p>${nl(s.invoice_footer)}</p>
   </div>
-</div></body></html>`);
+</div></body></html>`;
+  }
+  function renderInvoice(win, b, docType) {
+    win.document.open();
+    win.document.write(invoiceHtml(b, docType));
     win.document.close();
   }
 
