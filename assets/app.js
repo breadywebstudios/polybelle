@@ -569,21 +569,68 @@
       $("#rSummary").innerHTML = `<b>${avg.toFixed(1)}</b><span class="stars">${starStr(Math.round(avg))}</span><span>from ${n} review${n > 1 ? "s" : ""}</span>`;
     }
     // rolling strip: one set of cards (repeated if there are only a few) + an identical copy, scrolled by -50% in a loop
-    const card = (r, copy) => `
-      <article class="r-card ${r.comment ? "" : "r-card-rating"}"${copy ? ' aria-hidden="true"' : ""}>
+    const card = (r, copy, i) => `
+      <article class="r-card ${r.comment ? "" : "r-card-rating"}" data-ri="${i}"${copy ? ' aria-hidden="true"' : ""}>
         <span class="stars" aria-label="${r.rating} out of 5 stars">${starStr(r.rating)}</span>
         ${r.comment ? `<p>${esc(r.comment)}</p>` : `<p class="r-rated">Rated ${r.rating} out of 5</p>`}
+        <button type="button" class="r-read" data-ri="${i}"${copy ? ' tabindex="-1"' : ""}>${r.comment ? "Read full review" : "View review"} ›</button>
         <div class="who">${esc(r.name)}<small>${[r.event_type, r.source !== "Website" ? "via " + r.source : ""].filter(Boolean).map(esc).join(" · ")}</small></div>
       </article>`;
     const reps = n ? Math.max(1, Math.ceil(6 / n)) : 0;
-    const set = Array.from({ length: reps }, (_, k) => R.items.map((r) => card(r, k > 0)).join("")).join("");
+    const set = Array.from({ length: reps }, (_, k) => R.items.map((r, i) => card(r, k > 0, i)).join("")).join("");
     $("#rMarquee").hidden = !n;
     $("#rGrid").innerHTML = set + set.replace(/<article class="r-card([^"]*)"(?! aria-hidden)/g, '<article class="r-card$1" aria-hidden="true"');
     $("#rGrid").style.setProperty("--r-dur", `${Math.max(30, n * reps * 7)}s`);
     $("#rMore").hidden = true;
+    $("#rAll").hidden = !n;
+    if (!$("#rPane").hidden) renderPane();
   }
+
+  // ---------- reviews reading pane
+  const RP = { i: 0, last: null };
+  function renderPane() {
+    const n = R.items.length; if (!n) return closePane();
+    RP.i = (RP.i + n) % n;
+    const r = R.items[RP.i], meta = (x) => [x.event_type, x.source !== "Website" ? "via " + x.source : ""].filter(Boolean).map(esc).join(" · ");
+    $("#rPaneList").innerHTML = R.items.map((x, i) => `
+      <button type="button" class="r-pick ${i === RP.i ? "on" : ""}" data-pick="${i}" aria-current="${i === RP.i}">
+        <b>${esc(x.name)}</b><span class="stars" aria-label="${x.rating} out of 5 stars">${starStr(x.rating)}</span>
+        <small>${x.comment ? esc(x.comment.slice(0, 70)) + (x.comment.length > 70 ? "…" : "") : "Rating only"}</small>
+      </button>`).join("");
+    $("#rPaneRead").innerHTML = `
+      <span class="stars big" aria-label="${r.rating} out of 5 stars">${starStr(r.rating)}</span>
+      ${r.comment ? `<blockquote>${esc(r.comment)}</blockquote>` : `<p class="r-rated">Rated ${r.rating} out of 5 — no written review.</p>`}
+      <div class="who">${esc(r.name)}<small>${meta(r)}</small></div>`;
+    $("#rPos").textContent = `${RP.i + 1} of ${n}`;
+    $("#rPrev").disabled = $("#rNext").disabled = n < 2;
+    $$("#rPaneList [data-pick]").forEach((b) => b.addEventListener("click", () => { RP.i = +b.dataset.pick; renderPane(); $("#rPaneRead").scrollTop = 0; }));
+    $("#rPaneList .on")?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }
+  function openPane(i) {
+    RP.i = +i || 0; RP.last = document.activeElement;
+    const pane = $("#rPane"); pane.hidden = false; renderPane();
+    document.body.style.overflow = "hidden";
+    requestAnimationFrame(() => { pane.classList.add("open"); $(".r-pane-box .sd-x").focus({ preventScroll: true }); });
+  }
+  function closePane() {
+    const pane = $("#rPane"); if (pane.hidden) return;
+    pane.classList.remove("open"); document.body.style.overflow = "";
+    setTimeout(() => (pane.hidden = true), 350);
+    RP.last?.focus?.({ preventScroll: true });
+  }
+  $("#rGrid").addEventListener("click", (e) => { const b = e.target.closest("[data-ri]"); if (b && e.target.closest(".r-read")) { e.stopPropagation(); openPane(b.dataset.ri); } });
+  $("#rAll").addEventListener("click", () => openPane(0));
+  $$("[data-rclose]").forEach((el) => el.addEventListener("click", closePane));
+  $("#rPrev").addEventListener("click", () => { RP.i--; renderPane(); });
+  $("#rNext").addEventListener("click", () => { RP.i++; renderPane(); });
+  document.addEventListener("keydown", (e) => {
+    if ($("#rPane").hidden) return;
+    if (e.key === "Escape") closePane();
+    else if (e.key === "ArrowRight" && !e.target.closest("input,textarea")) { RP.i++; renderPane(); }
+    else if (e.key === "ArrowLeft" && !e.target.closest("input,textarea")) { RP.i--; renderPane(); }
+  });
   // tap the strip to pause / resume it on touch screens
-  $("#rMarquee").addEventListener("click", (e) => { if (!e.target.closest("a")) e.currentTarget.classList.toggle("paused"); });
+  $("#rMarquee").addEventListener("click", (e) => { if (!e.target.closest("a, .r-read")) e.currentTarget.classList.toggle("paused"); });
   $("#rMore").addEventListener("click", () => { R.shown += 6; renderReviews(); });
   const rModal = $("#reviewModal");
   $("#rWrite").addEventListener("click", () => { rModal.classList.add("open"); $("#reviewForm").name.focus(); });

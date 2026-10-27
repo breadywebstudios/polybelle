@@ -499,11 +499,32 @@
         <p class="r-empty reveal" id="rEmpty" hidden>Celebrated with us? We'd love to hear how your day went.</p>
         <div class="center actions">
           <button class="btn btn-outline" id="rMore" type="button" hidden>More reviews</button>
+          <button class="btn btn-outline" id="rAll" type="button" hidden>Read all reviews</button>
           <button class="btn btn-dark" id="rWrite" type="button">Write a review</button>
           <a class="link-line" id="rFb" target="_blank" rel="noopener" href="#">Reviews on Facebook</a>
         </div>
       </div>
     </section>
+
+    <!-- Reviews reading pane: pick a reviewer on the list, read the full review -->
+    <div class="r-pane" id="rPane" hidden>
+      <div class="r-pane-bg" data-rclose></div>
+      <aside class="r-pane-box" role="dialog" aria-modal="true" aria-labelledby="rPaneTitle">
+        <header class="r-pane-head">
+          <div><span class="eyebrow">Kind words</span><h3 id="rPaneTitle">Client reviews</h3></div>
+          <button type="button" class="sd-x" data-rclose aria-label="Close reviews">×</button>
+        </header>
+        <div class="r-pane-body">
+          <nav class="r-pane-list" id="rPaneList" aria-label="Choose a review"></nav>
+          <article class="r-pane-read" id="rPaneRead" aria-live="polite"></article>
+        </div>
+        <footer class="r-pane-foot">
+          <button type="button" class="link-line" id="rPrev">‹ Previous</button>
+          <span id="rPos"></span>
+          <button type="button" class="link-line" id="rNext">Next ›</button>
+        </footer>
+      </aside>
+    </div>
 
     <!-- Contact -->
     <section class="section contact" id="contact">
