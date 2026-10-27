@@ -158,12 +158,20 @@ b, strong { font-weight: 500; }
 
 .venue-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 28px 24px; }
 .venue { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 18px; }
-.venue-img { position: relative; aspect-ratio: 3 / 4; overflow: hidden; background: var(--sand); }
-.venue-img img, .venue-img .ph { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scale(1.12); transition: transform 1.4s var(--ease); }
+.venue-img {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  padding: 5px;
+  border-radius: 4px;
+  background: linear-gradient(135deg, #8A642D 0%, #E8CA78 18%, #FFF4C2 30%, #B88B3E 48%, #F7E5A0 67%, #9A7132 83%, #E8CA78 100%);
+  box-shadow: 0 4px 16px rgba(119, 85, 31, .2), inset 0 0 0 1px rgba(255, 255, 255, .55);
+}
+.venue-img img, .venue-img .ph { position: absolute; inset: 5px; width: calc(100% - 10px); height: calc(100% - 10px); object-fit: cover; transform: scale(1.12); transition: transform 1.4s var(--ease); }
 .venue-img .ph { background: linear-gradient(140deg, var(--blush), var(--sand)); }
 .venue.in .venue-img img, .venue.in .venue-img .ph { transform: scale(1); }
 .venue:hover .venue-img img { transform: scale(1.05); }
-.venue-img::after { content: ""; position: absolute; inset: 0; background: var(--ivory); transform-origin: bottom; transition: transform 1.2s var(--ease); transition-delay: calc(var(--d, 0) * .12s); }
+.venue-img::after { content: ""; position: absolute; inset: 5px; background: var(--ivory); transform-origin: bottom; transition: transform 1.2s var(--ease); transition-delay: calc(var(--d, 0) * .12s); }
 .venue.in .venue-img::after { transform: scaleY(0); }
 .venue-img .cap { position: absolute; z-index: 1; left: 0; bottom: 0; background: var(--ivory); color: var(--ink); padding: 10px 16px 0 0; font: 400 .7rem/1.4 var(--sans); letter-spacing: .2em; text-transform: uppercase; }
 .venue-body { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
@@ -548,7 +556,8 @@ label.field { display: grid; gap: 7px; font-size: .74rem; font-weight: 500; lett
   .venue { flex: 0 1 calc((100% - 24px) / 3); }
   .venue { gap: 8px; }
   .venue-img { aspect-ratio: 4 / 5; }
-  .venue-img .cap, .venue-body .tag, .venue-body p, .venue-body .meta { display: none; }
+  .venue-img .cap { left: 5px; right: 5px; bottom: 5px; padding: 5px 3px; text-align: center; font-size: .55rem; letter-spacing: .04em; white-space: nowrap; }
+  .venue-body .tag, .venue-body p, .venue-body .meta { display: none; }
   .venue-body { gap: 2px; }
   .venue-body h3 { font-size: 1.05rem; line-height: 1.15; }
   /* phones: cards are too narrow for a map, so the map becomes a pin icon beside the calendar icon */
