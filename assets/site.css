@@ -244,7 +244,7 @@ b, strong { font-weight: 500; }
 .r-card p { margin: 0; font: italic 400 1.3rem/1.5 var(--serif); color: var(--ink); white-space: pre-line; }
 .r-card .who { margin-top: auto; font: 400 .7rem/1.6 var(--sans); letter-spacing: .22em; text-transform: uppercase; }
 .r-card .who small { display: block; color: var(--muted); letter-spacing: .14em; }
-@media (max-width: 700px) { .r-card + .r-card { border-left: 0; } .r-card { padding: 32px 4px; } }
+@media (max-width: 700px) { .r-grid { grid-template-columns: minmax(0, 1fr); } .r-card + .r-card { border-left: 0; } .r-card { min-width: 0; padding: 32px 4px; } }
 .r-empty { text-align: center; color: var(--muted); font: italic 400 1.4rem var(--serif); margin: 0; }
 
 /* ---------- Booking ---------- */
@@ -388,6 +388,7 @@ label.field { display: grid; gap: 7px; font-size: .74rem; font-weight: 500; lett
 .no-js .reveal, .no-js .venue { opacity: 1; transform: none; }
 
 @media (max-width: 640px) {
+  .wrap { width: min(1180px, 100% - 32px); }
   .hero-parade { gap: 5px; transform: rotate(-3deg) scale(1.16); }
   .hero-parade-row { animation-duration: 340s; }
   .hero-parade-row:nth-child(2) { animation-duration: 390s; }
@@ -489,10 +490,10 @@ label.field { display: grid; gap: 7px; font-size: .74rem; font-weight: 500; lett
 .promo-offers .hint { margin: 0; }
 .promo-panel .field { max-width: 360px; }
 @media (max-width: 560px) {
-  .svc-tabs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; overflow: visible; border-bottom: 0; }
-  .svc-tabs button { min-width: 0; padding: 6px 1px; white-space: normal; font-size: .42rem; line-height: 1.15; letter-spacing: 0; text-align: center; justify-content: center; flex-wrap: wrap; align-content: center; }
-  .svc-tabs button > span { flex: 1 1 100%; min-width: 0; overflow-wrap: normal; word-break: normal; }
-  .svc-tabs button i { min-width: 14px; height: 14px; margin-left: 2px; padding: 0 3px; font-size: .55rem; }
+  .svc-tabs { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; border-bottom: 0; }
+  .svc-tabs button { flex: 0 1 calc((100% - 8px) / 3); min-width: 0; padding: 8px 4px; white-space: normal; font-size: .65rem; line-height: 1.2; letter-spacing: .03em; text-align: center; justify-content: center; flex-wrap: wrap; align-content: center; }
+  .svc-tabs button > span { min-width: 0; overflow-wrap: normal; word-break: normal; }
+  .svc-tabs button i { min-width: 14px; height: 14px; margin-left: 3px; padding: 0 3px; font-size: .55rem; }
 }
 .svc-tabs button { display: inline-flex; align-items: center; min-height: 42px; }
 .sd-actions .btn { min-width: 132px; }
@@ -564,12 +565,20 @@ label.field { display: grid; gap: 7px; font-size: .74rem; font-weight: 500; lett
 .venue-map-link:hover { color: var(--gold-soft); }
 .venue-map-link svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.5; flex: 0 0 auto; }
 @media (max-width: 700px) {
-  /* phones: 3 cards per row (bigger photos and names) */
+  .hero-inner { width: min(1180px, 100% - 40px); min-width: 0; grid-template-columns: minmax(0, 1fr); padding: 104px 0 84px; }
+  .hero h1 { width: 100%; min-width: 0; font-size: clamp(2rem, 9vw, 3.2rem); }
+  .hero h1 .line { width: 100%; }
+  .hero h1 .line > * { max-width: 100%; }
+  .hero h1 .eyebrow { width: 100%; max-width: 100%; font-size: .68rem; letter-spacing: .18em; overflow-wrap: anywhere; }
+  .hero p { max-width: 34rem; font-size: 1rem; }
+  .hero-cta { gap: 16px; }
+  .hero-cta .btn { padding: 14px 18px; letter-spacing: .12em; }
+  /* phones: two centered cards per row for readable names and capacities */
   .venue-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 22px 12px; }
-  .venue { flex: 0 1 calc((100% - 24px) / 3); }
+  .venue { flex: 0 1 calc((100% - 12px) / 2); }
   .venue { gap: 8px; }
   .venue-img { aspect-ratio: 4 / 5; }
-  .venue-img .cap { left: 5px; right: 5px; bottom: 5px; padding: 5px 3px; text-align: center; font-size: .55rem; letter-spacing: .04em; white-space: nowrap; }
+  .venue-img .cap { left: 5px; right: 5px; bottom: 5px; padding: 5px 3px; text-align: center; font-size: .62rem; letter-spacing: .04em; white-space: nowrap; }
   .venue-body .tag, .venue-body p, .venue-body .meta { display: none; }
   .venue-body { gap: 2px; }
   .venue-body h3 { font-size: 1.05rem; line-height: 1.15; }
