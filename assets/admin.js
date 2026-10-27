@@ -1129,11 +1129,34 @@
   async function loadGallery() {
     const { data, error } = await sb.from("pb_gallery").select("*").order("sort_order").order("created_at", { ascending: false });
     if (error) return toast(error.message);
-    S.gallery = data; renderGalleryAdmin();
+    S.gallery = data;
+    await saveGalleryOrder(galleryOrdered(), true);   // keep the numbers 1, 2, 3… with no gaps or duplicates
+    renderGalleryAdmin();
+  }
+  // Gallery order works like positions in a list: moving a photo to position N shifts the photos in between,
+  // e.g. moving photo 6 to 26 makes photo 7 the new 6 (a number past the end puts it last).
+  const galleryOrdered = () => (S.gallery || []).slice().sort((a, b) => a.sort_order - b.sort_order || new Date(b.created_at) - new Date(a.created_at));
+  async function saveGalleryOrder(list, quiet) {
+    const changes = list.map((g, i) => [g, i + 1]).filter(([g, n]) => g.sort_order !== n);
+    if (!changes.length) return true;
+    const res = await Promise.all(changes.map(([g, n]) => sb.from("pb_gallery").update({ sort_order: n }).eq("id", g.id)));
+    const failed = res.find((r) => r.error);
+    if (failed) { if (!quiet) toast("Couldn't save the new order: " + failed.error.message); return false; }
+    changes.forEach(([g, n]) => (g.sort_order = n));
+    return true;
+  }
+  async function moveGallery(id, pos) {
+    const list = galleryOrdered(), from = list.findIndex((g) => g.id === id);
+    if (from < 0) return;
+    const [g] = list.splice(from, 1);
+    const to = Math.min(Math.max(Math.round(+pos) || 1, 1), list.length + 1);
+    list.splice(to - 1, 0, g);
+    if (await saveGalleryOrder(list)) toast(to === from + 1 ? "Order unchanged" : `Moved to position ${to}${to === list.length ? " (last)" : ""}`);
+    renderGalleryAdmin();
   }
   function renderGalleryAdmin() {
     const f = $("#gFilter").value;
-    const list = (S.gallery || []).filter((g) => !f || g.category === f);
+    const list = galleryOrdered().filter((g) => !f || g.category === f);
     const samples = (S.gallery || []).filter((g) => g.is_sample).length;
     $("#gCount").textContent = `${list.length} photo${list.length === 1 ? "" : "s"}` + (samples ? ` · ${samples} sample photo${samples > 1 ? "s" : ""} to replace with real event photos` : "");
     $("#gAdmin").innerHTML = list.map((g) => `
@@ -1144,7 +1167,7 @@
           <select data-f="category">${catOpts(g.category)}</select>
           <div class="gf">
             <label><input type="checkbox" data-f="active" ${g.active ? "checked" : ""} style="width:auto"> Show</label>
-            <input type="number" data-f="sort_order" value="${g.sort_order}" title="Order (lower shows first)" style="width:64px">
+            <input type="number" data-f="sort_order" min="1" value="${g.sort_order}" title="Position on the website (1 shows first)" style="width:64px">
             <span class="g-acts"><button class="linkbtn" data-gedit type="button">Edit</button><button class="linkbtn" data-del type="button">Delete</button></span>
           </div>
         </div>
@@ -1152,6 +1175,7 @@
     $$("#gAdmin .gcard").forEach((card) => {
       const id = card.dataset.id;
       $$("[data-f]", card).forEach((el) => el.addEventListener("change", async () => {
+        if (el.dataset.f === "sort_order") return moveGallery(id, el.value);
         const v = el.type === "checkbox" ? el.checked : el.type === "number" ? +el.value || 0 : el.value.trim() || null;
         const { error } = await sb.from("pb_gallery").update({ [el.dataset.f]: v }).eq("id", id);
         if (error) return toast(error.message);
@@ -1167,7 +1191,7 @@
         if (error) return toast(error.message);
         const marker = `/object/public/${C.storageBucket}/`;
         if (g.image_url.includes(marker)) sb.storage.from(C.storageBucket).remove([decodeURIComponent(g.image_url.split(marker)[1])]);
-        S.gallery = S.gallery.filter((x) => x.id !== id); renderGalleryAdmin(); toast("Photo deleted");
+        S.gallery = S.gallery.filter((x) => x.id !== id); await saveGalleryOrder(galleryOrdered(), true); renderGalleryAdmin(); toast("Photo deleted");
       });
     });
   }
@@ -1185,7 +1209,7 @@
         <label class="field">Caption<input name="caption" maxlength="80" value="${esc(g.caption || "")}" placeholder="e.g. Princess-themed 7th birthday, Hall A&amp;B"></label>
         <div class="grid-2">
           <label class="field">Occasion<select name="category">${catOpts(g.category)}</select></label>
-          <label class="field">Order (lower shows first)<input type="number" name="sort_order" value="${g.sort_order}"></label>
+          <label class="field">Position (1 shows first)<input type="number" name="sort_order" min="1" value="${g.sort_order}"></label>
         </div>
         <label class="switch"><input type="checkbox" name="active" ${g.active ? "checked" : ""}> Show on website</label>
         <button class="btn btn-primary" type="submit">Save changes</button>
@@ -1207,13 +1231,17 @@
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       const row = { image_url: form.image_url.value, caption: form.caption.value.trim() || null, category: form.category.value,
-        sort_order: +form.sort_order.value || 0, active: form.active.checked };
+        active: form.active.checked };
+      const newPos = +form.sort_order.value || g.sort_order;
       if (row.image_url !== g.image_url) row.is_sample = false;
       const { error } = await sb.from("pb_gallery").update(row).eq("id", g.id);
       if (error) return toast(error.message);
       const oldPath = row.image_url !== g.image_url ? storagePath(g.image_url) : null;
       if (oldPath) sb.storage.from(C.storageBucket).remove([oldPath]);   // tidy up the replaced file
-      Object.assign(g, row); closeDrawers(); renderGalleryAdmin(); toast("Photo updated");
+      Object.assign(g, row); closeDrawers();
+      const moved = newPos !== g.sort_order;
+      if (moved) await moveGallery(g.id, newPos); else renderGalleryAdmin();
+      toast(moved ? `Photo updated and moved to position ${g.sort_order}` : "Photo updated");
     });
     openDrawer("#vdrawer");
   }
