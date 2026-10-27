@@ -72,7 +72,7 @@ b, strong { font-weight: 500; }
 .nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 92px; transition: height .5s var(--ease); }
 .nav.solid { background: rgba(250, 246, 241, .94); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); color: var(--ink); box-shadow: 0 1px 0 var(--line); }
 .nav.solid .wrap { height: 72px; }
-.wordmark { display: grid; justify-items: center; gap: 6px; text-decoration: none; line-height: 1; }
+.wordmark { display: grid; justify-items: start; gap: 6px; text-decoration: none; line-height: 1; }
 .wordmark b { font: 500 1.65rem/1 var(--serif); letter-spacing: .3em; margin-right: -.3em; color: inherit; }
 .nav.solid .wordmark b { color: var(--gold); }
 .wordmark small { font: 400 .55rem/1 var(--sans); letter-spacing: .42em; margin-right: -.42em; text-transform: uppercase; opacity: .85; }
