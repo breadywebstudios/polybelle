@@ -395,7 +395,7 @@
 
   const money = (n) => Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   // customer-facing invoice summary for "Send invoice to customer"
-  function invoiceMsg(b, docType = "Invoice") {
+  function invoiceMsg(b, docType = "Invoice", pdfUrl = "") {
     const t = invTotals(b);
     const sess = C.sessions.find((x) => x.id === b.session);
     const issue = new Date((b.invoice_date || today()) + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
@@ -417,6 +417,7 @@
       `⏳ *Balance due:* AED ${money(t.balance)}`,
       b.invoice_notes ? `\n📝 *Note:* ${b.invoice_notes}` : null,
       t.balance > 0 && S.settings?.payment_details ? `\n🏦 *Payment details:*\n${S.settings.payment_details}` : null,
+      pdfUrl ? `\n📄 *${docType} PDF:* ${pdfUrl}` : null,
       ``,
       `Please reply here if you have any questions. Thank you! 💛`
     ].filter((l) => l !== null).join("\n");
@@ -464,10 +465,28 @@
   }
   async function invoiceFile(b, docType) {
     const doc = await invoicePdf(b, docType);
-    if (!doc || typeof File !== "function") return null;
+    if (!doc) return null;
     const blob = doc.output("blob");
     const name = `${docType}-${b.invoice_no || b.ref}-${b.name || ""}`.replace(/[^A-Za-z0-9 ._-]+/g, "-").replace(/\s+/g, "-").replace(/-+/g, "-") + ".pdf";
-    return { blob, name, file: new File([blob], name, { type: "application/pdf" }) };
+    return { blob, name };
+  }
+  // Upload the PDF and return a link for the WhatsApp message: a 7-day signed link from the private
+  // "invoices" bucket (see supabase/migrations/20261028120000_invoice_pdf_links.sql); if that bucket
+  // isn't set up, the public bucket is used instead, signed when allowed and unguessable otherwise
+  async function invoicePdfLink(b, pdf) {
+    if (!sb || !pdf) return "";
+    const key = `invoices/${b.id}/${String(b.invoice_no || b.ref).replace(/[^\w.-]+/g, "-")}.pdf`;
+    for (const bucket of ["invoices", C.storageBucket]) {
+      const { error } = await sb.storage.from(bucket).upload(key, pdf.blob, { contentType: "application/pdf", cacheControl: "3600", upsert: true });
+      if (error) { console.error(`Couldn't upload the invoice PDF to ${bucket}:`, error.message); continue; }
+      try {
+        const signed = await sb.storage.from(bucket).createSignedUrl(key, 60 * 60 * 24 * 7);
+        if (!signed.error && signed.data?.signedUrl) return signed.data.signedUrl;
+        console.error(`Couldn't create a signed invoice link in ${bucket}:`, signed.error?.message);
+      } catch (err) { console.error(`Couldn't create a signed invoice link in ${bucket}:`, err.message); }
+      if (bucket !== "invoices") return sb.storage.from(bucket).getPublicUrl(key).data.publicUrl || "";
+    }
+    return "";
   }
   function downloadPdf(pdf) {
     const url = URL.createObjectURL(pdf.blob);
@@ -822,36 +841,24 @@
       const nb = fresh(b.id);
       const docTitle = f.doc_type.value;
       if (act === "send") {
-        const text = invoiceMsg(nb, docTitle);
-        const url = nb.phone ? waLink(nb.phone, text) : "";
         const pdf = await invoiceFile(nb, docTitle);
+        const pdfLink = await invoicePdfLink(nb, pdf);
+        const url = nb.phone ? waLink(nb.phone, invoiceMsg(nb, docTitle, pdfLink)) : "";
         const moveTo = (u) => {
           if (win) { win.location.href = u; return true; }
           return !!window.open(u, "_blank", "noopener");
         };
-        let canShare = false;
-        try { canShare = !!pdf && !!navigator.canShare && navigator.canShare({ files: [pdf.file] }); } catch { canShare = false; }
         if (!url) {
           if (win) win.close();
           toast(`Invoice ${nb.invoice_no} saved, but this booking has no customer phone number.`);
-        } else if (canShare) {
-          // phones: share the PDF with the message so WhatsApp receives it as an attachment
-          try {
-            await navigator.share({ files: [pdf.file], text });
-            if (win) win.close();
-            toast(`Invoice ${nb.invoice_no} PDF shared — pick WhatsApp and ${nb.name}.`);
-          } catch (err) {
-            if (win) win.close();
-            if (err?.name === "AbortError") toast(`Invoice ${nb.invoice_no} saved`);
-            else { downloadPdf(pdf); moveTo(url); toast(`Invoice ${nb.invoice_no} PDF downloaded — attach it in the WhatsApp chat.`); }
-          }
         } else {
-          // desktop WhatsApp links can't carry files: download the PDF, then open the chat with the message ready
-          if (pdf) downloadPdf(pdf);
+          // the PDF link works in the chat on any device; if it couldn't be uploaded, download the file to attach by hand
+          if (pdf && !pdfLink) downloadPdf(pdf);
           const opened = moveTo(url);
-          toast(pdf
-            ? `Invoice ${nb.invoice_no} PDF downloaded — attach it in the WhatsApp chat.`
-            : (opened ? `Invoice ${nb.invoice_no} sent to ${nb.name} on WhatsApp` : `Invoice ${nb.invoice_no} saved. Allow pop-ups to open WhatsApp.`));
+          toast(!opened ? `Invoice ${nb.invoice_no} saved. Allow pop-ups to open WhatsApp.`
+            : pdfLink ? `Invoice ${nb.invoice_no} sent to ${nb.name} on WhatsApp with the PDF link.`
+            : pdf ? `Invoice ${nb.invoice_no} PDF downloaded — attach it in the WhatsApp chat.`
+            : `Invoice ${nb.invoice_no} sent to ${nb.name} on WhatsApp.`);
         }
       } else {
         toast(`Invoice ${nb.invoice_no} saved`);
