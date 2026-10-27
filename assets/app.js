@@ -104,35 +104,49 @@
 
   // ---------- static bits
   $("#year").textContent = new Date().getFullYear();
-  const heroImages = Array.from({ length: 16 }, (_, i) => `assets/parade-images/pic${i + 1}.webp`);
+  // The hero marquee shows every photo from the gallery (managed in the admin). The local parade
+  // photos stand in until the gallery loads, and stay if it can't be reached.
+  const paradeFallback = Array.from({ length: 16 }, (_, i) => `assets/parade-images/pic${i + 1}.webp`);
   const heroParade = $("#heroParade");
-  const paradeOrders = [
-    heroImages,
-    [...heroImages.slice(5), ...heroImages.slice(0, 5)].reverse(),
-    [...heroImages.slice(10), ...heroImages.slice(0, 10)]
-  ];
-  paradeOrders.forEach((order, rowIndex) => {
-    const row = document.createElement("div");
-    row.className = "hero-parade-row";
-    const fragment = document.createDocumentFragment();
-    [false, true].forEach((duplicate) => {
-      const group = document.createElement("div");
-      group.className = "hero-parade-group";
-      order.forEach((src, imageIndex) => {
-        const img = document.createElement("img");
-        img.src = src;
-        img.alt = "";
-        img.loading = "eager";
-        img.decoding = "async";
-        img.draggable = false;
-        if (!duplicate && rowIndex === 0 && imageIndex === 0) img.fetchPriority = "high";
-        group.append(img);
+  const rotateList = (list, n) => list.slice(n).concat(list.slice(0, n));
+  // seconds per photo, matching the old 260s / 305s / 350s rows of 16 photos
+  const paradeSeconds = [16.25, 19.06, 21.88];
+  function renderHeroParade(images) {
+    const list = images.filter(Boolean);
+    if (!list.length) return;
+    const shift = Math.floor(list.length / 3);
+    const paradeOrders = [list, rotateList(list, shift).reverse(), rotateList(list, shift * 2)];
+    const rows = document.createDocumentFragment();
+    paradeOrders.forEach((order, rowIndex) => {
+      const row = document.createElement("div");
+      row.className = "hero-parade-row";
+      row.style.animationDuration = `${Math.round(order.length * paradeSeconds[rowIndex])}s`; // keeps the drift speed steady at any gallery size
+      const fragment = document.createDocumentFragment();
+      [false, true].forEach((duplicate) => {
+        const group = document.createElement("div");
+        group.className = "hero-parade-group";
+        order.forEach((src, imageIndex) => {
+          const img = document.createElement("img");
+          img.src = src;
+          img.alt = "";
+          const first = rowIndex === 0 && !duplicate && imageIndex < 3;
+          img.loading = first ? "eager" : "lazy";
+          img.decoding = "async";
+          img.draggable = false;
+          if (first && imageIndex === 0) img.fetchPriority = "high";
+          group.append(img);
+        });
+        fragment.append(group);
       });
-      fragment.append(group);
+      row.append(fragment);
+      rows.append(row);
     });
-    row.append(fragment);
-    heroParade.append(row);
-  });
+    const swapping = heroParade.childElementCount > 0;
+    if (swapping) heroParade.style.opacity = "0";
+    heroParade.replaceChildren(rows);
+    if (swapping) heroParade.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 600, easing: "ease" }).onfinish = () => { heroParade.style.opacity = ""; };
+  }
+  renderHeroParade(paradeFallback);
   const nav = $("#nav"), menuBtn = $("#menuBtn");
   const setMenu = (open) => { $("#navLinks").classList.toggle("open", open); nav.classList.toggle("menu-open", open); menuBtn.setAttribute("aria-expanded", open); };
   menuBtn.addEventListener("click", () => setMenu(!$("#navLinks").classList.contains("open")));
@@ -817,7 +831,7 @@
     if (!sb) return;
     loadPublicPromos();
     sb.from("pb_gallery").select("image_url,caption,category").eq("active", true).order("sort_order").order("created_at", { ascending: false })
-      .then(({ data }) => { if (data) { G.items = data; renderGallery(); } });
+      .then(({ data }) => { if (data) { G.items = data; renderGallery(); renderHeroParade(data.map((g) => g.image_url)); } });
     sb.from("pb_reviews").select("name,event_type,rating,comment,source,featured,created_at").eq("status", "Approved")
       .order("featured", { ascending: false }).order("created_at", { ascending: false }).limit(60)
       .then(({ data }) => { R.items = data || []; renderReviews(); });

@@ -16,7 +16,7 @@ Website and booking admin for Polybelle Event Halls & Studio (Abu Dhabi).
 ## Backend (Supabase, breadywebstudios project)
 Tables in `public`: `pb_venues`, `pb_bookings`, `pb_settings`, `pb_admins`.
 Public RPCs: `pb_request_booking`, `pb_booked_slots`, `pb_public_settings`.
-Venue photos go in the public storage bucket `polybelle`. Photos uploaded in the admin (halls, packages/services, gallery) are resized in the browser before upload (max 1600 px; 1000 px for service photos) and saved as WebP (JPEG on browsers without WebP support), so originals up to 25 MB are fine. The hero slideshow pictures live in `assets/parade-images/pic1.webp` … `pic16.webp` (about 1100 px, WebP); add new ones in the same size and format.
+Venue photos go in the public storage bucket `polybelle`. Photos uploaded in the admin (halls, packages/services, gallery) are resized in the browser before upload (max 1600 px; 1000 px for service photos) and saved as WebP (JPEG on browsers without WebP support), so originals up to 25 MB are fine. The hero marquee shows every active gallery photo (in the order set in Admin → Gallery). `assets/parade-images/pic1.webp` … `pic16.webp` (about 1100 px, WebP) are only the stand-in photos, shown until the gallery loads or if it can't be reached.
 
 Photo framing: in Admin → Halls & Services, open a hall or package/service and drag its photo (or use the arrow keys) to choose which part shows on the website card (halls are portrait 3:4, packages/services 4:3); **Center** resets it. Saved as `image_pos` (e.g. `30% 50%`) on `pb_venues` / `pb_services` (migration `20261026160000_image_position.sql`, already applied). Gallery photos show uncropped on the website, so they don't need framing.
 
