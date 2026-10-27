@@ -502,7 +502,9 @@
     const url = waLink(btn.dataset.waNumber || state.whatsapp, buildMessage(d, ref));
     if (waWin) waWin.location.href = url;
     $("#doneRef").textContent = ref;
-    $("#doneWa").href = url;
+    // the pop-up's "Send on WhatsApp" always goes to the main booking number (052 865 3208), whichever button was used
+    const mainNumber = String((C.bookingWhatsappChoices || [])[0]?.number || state.whatsapp).replace(/\D/g, "");
+    $("#doneWa").href = waLink(mainNumber, buildMessage(d, ref));
     $("#doneModal").classList.add("open");
     restoreBtn();
     $("#bookForm").reset();
