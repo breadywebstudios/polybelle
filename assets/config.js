@@ -14,7 +14,7 @@ window.PB_CONFIG = {
 
   // Fallbacks (live values come from the admin Settings tab)
   bookingWhatsapp: "971564851757",            // where booking requests are sent
-  whatsappIconNumber: "971564851757",
+  whatsappIconNumber: "971564851757",        // TEMPORARY test: the small WhatsApp icon under the booking button sends the booking here
   bookingWhatsappChoices: [
     { number: "971528653208", label: "+971 52 865 3208" }
   ],

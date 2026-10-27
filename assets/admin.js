@@ -343,6 +343,12 @@
 
   // full booking summary for the "WhatsApp customer" button
   const hallAddress = (b) => (S.venues || []).find((v) => v.id === b.venue_id)?.venue_address || "";
+  // TEMPORARY test icon: sends the same customer message to the test number (config.js → whatsappIconNumber)
+  const WA_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm5.3 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .1-3.3-.8-2.8-1.1-4.5-3.9-4.7-4.1-.1-.2-1.1-1.5-1.1-2.9s.7-2 1-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 1.9c.1.1.1.3 0 .5l-.3.5-.4.4c-.1.1-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.4 2.4 1.5.3.1.5.1.6-.1l.9-1c.2-.3.4-.2.6-.1l1.9.9c.3.1.4.2.5.3.1.2.1.7-.1 1.3Z"/></svg>';
+  const waTest = (text) => {
+    const num = String(C.whatsappIconNumber || "").replace(/\D/g, "");
+    return num ? `<a class="wa-test" target="_blank" rel="noopener" href="${waLink(num, text)}" title="Test: send this message to ${esc(num.replace(/^971/, "0"))}" aria-label="Test: send this message to the test number">${WA_ICON}</a>` : "";
+  };
   function customerMsg(b, status) {
     const sess = C.sessions.find((x) => x.id === b.session);
     const t = invTotals(b);
@@ -559,7 +565,7 @@
         <button class="xbtn" data-close aria-label="Close">×</button>
       </div>
       <div class="drawer-body">
-        ${notice && NOTICE[notice] ? `<div class="notify"><p>${NOTICE[notice]}</p><a class="btn btn-wa sm" target="_blank" rel="noopener" href="${waLink(b.phone, customerMsg(b, notice))}">Send on WhatsApp</a></div>` : ""}
+        ${notice && NOTICE[notice] ? `<div class="notify"><p>${NOTICE[notice]}</p><span class="wa-row"><a class="btn btn-wa sm" target="_blank" rel="noopener" href="${waLink(b.phone, customerMsg(b, notice))}">Send on WhatsApp</a>${waTest(customerMsg(b, notice))}</span></div>` : ""}
         ${(() => { const o = overlapsFor(b); const item = (x) => `<li><button type="button" class="linkbtn" data-goto="${x.id}">${esc(x.ref)}</button> · ${esc(x.name)} · ${esc(whereText(x))} · ${esc(x.session)} · ${esc(x.event_type)} · ${esc(x.status)}</li>`;
           return [o.clash.length ? `<div class="ovbox ov-clash-box"><b>Hall clash</b> — same hall (or a hall sharing its space) with an overlapping session:<ul>${o.clash.map(item).join("")}</ul></div>` : "",
                   o.hallDay.length ? `<div class="ovbox ov-hall-box"><b>Same hall, same day</b> — plan setup and turnover:<ul>${o.hallDay.map(item).join("")}</ul></div>` : "",
@@ -594,7 +600,7 @@
         <div><button class="btn btn-outline sm" id="saveNotes" type="button">Save notes</button></div>
       </div>
       <div class="drawer-foot">
-        <a class="btn btn-wa sm" target="_blank" rel="noopener" href="${waLink(b.phone, customerMsg(b, b.status))}">WhatsApp customer</a>
+        <a class="btn btn-wa sm" target="_blank" rel="noopener" href="${waLink(b.phone, customerMsg(b, b.status))}">WhatsApp customer</a>${waTest(customerMsg(b, b.status))}
         <button class="btn btn-outline sm" id="delBtn" type="button" style="margin-left:auto">Delete</button>
       </div>`;
     $("[data-close]", d).addEventListener("click", closeDrawers);
