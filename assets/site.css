@@ -543,21 +543,22 @@ label.field { display: grid; gap: 7px; font-size: .74rem; font-weight: 500; lett
 .venue-map-link:hover { color: var(--gold-soft); }
 .venue-map-link svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.5; flex: 0 0 auto; }
 @media (max-width: 700px) {
-  .venue-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px 8px; }
-  .venue { gap: 6px; }
-  .venue-img { aspect-ratio: 1; }
+  /* phones: 3 cards per row (bigger photos and names) */
+  .venue-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px 12px; }
+  .venue { gap: 8px; }
+  .venue-img { aspect-ratio: 4 / 5; }
   .venue-img .cap, .venue-body .tag, .venue-body p, .venue-body .meta { display: none; }
   .venue-body { gap: 2px; }
-  .venue-body h3 { font-size: .72rem; line-height: 1.15; overflow-wrap: anywhere; }
+  .venue-body h3 { font-size: 1.05rem; line-height: 1.15; }
   /* phones: cards are too narrow for a map, so the map becomes a pin icon beside the calendar icon */
   .venue-footer { display: flex; align-items: center; gap: 12px; }
   .venue-links { gap: 0; order: -1; }
   .venue-links .link-line { gap: 0; padding: 4px 0; font-size: 0; letter-spacing: 0; }
-  .venue-links .link-line svg { width: 14px; height: 14px; margin: 0; }
+  .venue-links .link-line svg { width: 17px; height: 17px; margin: 0; }
   .venue-map-embed { width: auto; overflow: visible; background: none; border-radius: 0; }
   .venue-map-embed iframe, .venue-map-hint { display: none; }
   .venue-map-link { position: static; gap: 0; padding: 4px 0; font-size: 0; letter-spacing: 0; background: none; box-shadow: none; color: var(--ink); }
-  .venue-map-link svg { width: 15px; height: 15px; }
+  .venue-map-link svg { width: 17px; height: 17px; }
 }
 .avail-panel { padding-top: 48px; }
 .avail-panel .sd-x { top: 8px; right: 10px; }
