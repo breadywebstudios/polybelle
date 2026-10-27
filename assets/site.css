@@ -628,3 +628,16 @@ html.uc-preview .wa-float { bottom: 58px; }
 
 /* short plain-text description of halls and services (also read by search engines) */
 .seo-about { max-width: 640px; margin: 22px auto 0; color: var(--muted); font-size: .92rem; line-height: 1.7; }
+
+/* Facebook cards whose page Facebook won't embed (profiles / restricted pages): photo + page name + Visit button */
+.fb-fallback { position: relative; display: block; height: var(--fb-h, 420px); margin-top: auto; overflow: hidden; border-radius: 4px; background: var(--sand); text-decoration: none; }
+@media (max-width: 700px) { .fb-fallback { --fb-h: 380px; } }
+.fb-fallback img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform 1s var(--ease); }
+.fb-fallback:hover img { transform: scale(1.04); }
+.about-facebook-card .fb-fallback .fb-fallback-bar { position: absolute; left: 10px; right: 10px; bottom: 10px; display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; background: #fff; box-shadow: 0 4px 18px rgba(0,0,0,.18); }
+.fb-fallback-logo svg { display: block; width: 30px; height: 30px; fill: #1877F2; }
+.about-facebook-card .fb-fallback .fb-fallback-name { display: grid; min-width: 0; flex: 1; line-height: 1.25; }
+.fb-fallback-name b { overflow: hidden; color: #1c1e21; font: 600 .9rem/1.25 var(--sans); white-space: nowrap; text-overflow: ellipsis; }
+.about-facebook-card .fb-fallback .fb-fallback-name small, .about-facebook-card:hover .fb-fallback .fb-fallback-name small { color: #65676b; font-size: .74rem; }
+.about-facebook-card .fb-fallback .fb-fallback-btn, .about-facebook-card:hover .fb-fallback .fb-fallback-btn { flex: 0 0 auto; padding: 8px 12px; border-radius: 6px; background: #1877F2; color: #fff; font: 600 .78rem/1 var(--sans); }
+.about-facebook-card .fb-fallback:hover .fb-fallback-btn { background: #0B5FD3; }
