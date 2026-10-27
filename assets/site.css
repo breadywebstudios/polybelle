@@ -544,7 +544,8 @@ label.field { display: grid; gap: 7px; font-size: .74rem; font-weight: 500; lett
 .venue-map-link svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.5; flex: 0 0 auto; }
 @media (max-width: 700px) {
   /* phones: 3 cards per row (bigger photos and names) */
-  .venue-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px 12px; }
+  .venue-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 22px 12px; }
+  .venue { flex: 0 1 calc((100% - 24px) / 3); }
   .venue { gap: 8px; }
   .venue-img { aspect-ratio: 4 / 5; }
   .venue-img .cap, .venue-body .tag, .venue-body p, .venue-body .meta { display: none; }
