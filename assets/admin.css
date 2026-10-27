@@ -315,7 +315,8 @@ i.c-Cancelled, .ac-chip.c-Cancelled { background: #F1E4E1; color: #9A4436; text-
 .share-opts { display: flex; flex-wrap: wrap; gap: 6px 18px; }
 
 /* TEMPORARY: small WhatsApp test icon beside the customer WhatsApp buttons */
-.wa-test { display: inline-grid; place-items: center; width: 30px; height: 30px; margin-left: 6px; border-radius: 50%; color: #25D366; vertical-align: middle; }
+.wa-test { display: inline-grid; place-items: center; width: 30px; height: 30px; margin-left: 6px; border-radius: 50%; color: #25D366; vertical-align: middle; opacity: 0; visibility: hidden; transition: opacity .2s ease, visibility .2s ease; }
+.wa-row:hover .wa-test, .wa-row:focus-within .wa-test, .drawer-foot:hover .wa-test, .drawer-foot:focus-within .wa-test { opacity: 1; visibility: visible; }
 .wa-test:hover { background: rgba(37, 211, 102, .12); }
 .wa-test svg { width: 20px; height: 20px; fill: currentColor; }
 .wa-row { display: inline-flex; align-items: center; }
