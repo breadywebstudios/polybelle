@@ -53,8 +53,8 @@ b, strong { font-weight: 500; }
 .btn[disabled] { opacity: .6; cursor: progress; }
 .btn-dark, .btn-primary, .btn-wa { background: var(--ink); color: #fff; border-color: var(--ink); }
 .btn-dark:hover, .btn-primary:hover, .btn-wa:hover { background: var(--gold); border-color: var(--gold); }
-.btn-wa, #submitBtn { background: #25D366; color: #fff; border-color: #25D366; }
-.btn-wa:hover, #submitBtn:hover, #doneWa:hover { background: #1DA851; border-color: #1DA851; }
+.btn-wa { background: #25D366; color: #fff; border-color: #25D366; }
+.btn-wa:hover, #doneWa:hover { background: #1DA851; border-color: #1DA851; }
 #doneWa { background: #25D366; color: #fff; border-color: #25D366; }
 .btn-outline { background: transparent; color: var(--ink); border-color: var(--ink); }
 .btn-outline:hover { background: var(--ink); color: #fff; }
@@ -246,7 +246,8 @@ b, strong { font-weight: 500; }
 .book-card { display: grid; grid-template-columns: 330px 1fr; background: var(--white); box-shadow: var(--shadow); }
 .book-aside { background: var(--ink); color: #E9DED5; padding: 48px 36px; display: grid; gap: 28px; align-content: start; }
 .book-aside h3 { color: #fff; font-size: 1.9rem; }
-.summary-submit { width: 100%; }
+.whatsapp-choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.whatsapp-choices .btn { width: 100%; min-width: 0; padding: 12px 6px; font-size: .62rem; letter-spacing: 0; line-height: 1.25; white-space: normal; overflow-wrap: anywhere; }
 .summary { margin: 0; display: grid; gap: 14px; font-size: .9rem; }
 .summary div { display: flex; justify-content: space-between; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,.1); }
 .summary dt { color: #A99A90; font-size: .72rem; letter-spacing: .2em; text-transform: uppercase; }
@@ -308,7 +309,7 @@ label.field { display: grid; gap: 7px; font-size: .74rem; font-weight: 500; lett
 @media (max-width: 560px) { .grid-2 { grid-template-columns: 1fr; } }
 @media (max-width: 700px) {
   .book-form { order: 1; }
-  .book-form #submitBtn { display: none; }
+  .form-whatsapp-choices { display: none; }
   .book-aside { order: 2; }
 }
 
@@ -591,7 +592,7 @@ button.cal-s:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px
 /* fully booked warning in the booking form */
 .full-warn { margin: 0; padding: 12px 16px; background: #F8EAE6; color: var(--danger); font-size: .9rem; border-left: 2px solid var(--danger); }
 #dateInput[aria-invalid] { border-color: var(--danger); background: #FDF5F3; }
-#submitBtn:disabled, .summary-submit:disabled { opacity: .45; cursor: not-allowed; }
+.whatsapp-choices .btn:disabled { opacity: .45; cursor: not-allowed; }
 
 /* ---------- Under construction (switch: underConstruction in assets/config.js) ---------- */
 .uc-screen, .uc-bar { display: none; }

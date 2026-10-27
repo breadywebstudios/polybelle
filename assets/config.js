@@ -14,6 +14,10 @@ window.PB_CONFIG = {
 
   // Fallbacks (live values come from the admin Settings tab)
   bookingWhatsapp: "971564851757",            // where booking requests are sent
+  bookingWhatsappChoices: [
+    { number: "971564851757", label: "+971 56 485 1757" },
+    { number: "971528653208", label: "+971 52 865 3208" }
+  ],
   displayPhones: "052 865 3208 | 054 557 9880", // shown on the site
   instagram: "polybelleevents",
   facebook: "https://www.facebook.com/profile.php?id=100089250728671",
@@ -49,7 +53,7 @@ window.PB_CONFIG = {
     { id: "Whole day", time: "9:00 AM – 11:00 PM" }
   ],
 
-  eventTypes: ["Birthday", "Wedding", "Baby Shower", "Gender Reveal", "Christening / Dedication",
+  eventTypes: ["Birthday", "Wedding", "Baby Shower", "Gender Reveal",
     "Debut", "Anniversary", "Corporate Event", "Seminar / Meeting", "Other"],
 
   // Packages and services customers can pick (with a hall, or on their own)
@@ -60,7 +64,7 @@ window.PB_CONFIG = {
   // Tabs in the booking form's package & service picker (same groups as the package poster)
   serviceCategories: ["Full Packages", "Wedding Packages", "Mascot Surprise", "Souvenirs & Stations", "Event Services"],
 
-  galleryCategories: ["Birthday", "Wedding", "Baby Shower", "Christening", "Gender Reveal", "Cake Smash", "Photobooth", "Corporate"],
+  galleryCategories: ["Birthday", "Wedding", "Baby Shower", "Gender Reveal", "Cake Smash", "Photobooth", "Corporate"],
 
   // Shown when a venue has no photo yet
   fallbackImages: [

@@ -6,7 +6,7 @@
   const sb = window.supabase ? window.supabase.createClient(C.supabaseUrl, C.supabaseKey) : null;
 
   const DEFAULT_VENUES = [
-    { id: "", name: "Hall A", tagline: "Grand celebrations", description: "Our largest hall, styled for weddings, christenings and milestone birthdays.", capacity: 100 },
+    { id: "", name: "Hall A", tagline: "Grand celebrations", description: "Our largest hall, styled for weddings and milestone birthdays.", capacity: 100 },
     { id: "", name: "Hall B", tagline: "Elegant & spacious", description: "A bright, versatile hall for big family gatherings and corporate get-togethers.", capacity: 100 },
     { id: "", name: "Hall C", tagline: "Cozy & intimate", description: "A warm mid-sized space, perfect for baby showers and kids' parties.", capacity: 60 },
     { id: "", name: "Hall D", tagline: "Small & special", description: "An intimate room for dedications, cake smash shoots and meetings.", capacity: 50 }
@@ -254,6 +254,14 @@
     const phones = state.phones.split("|").map((p) => p.trim()).filter(Boolean);
     $("#asidePhones").textContent = phones[0] || "";
     $("#asidePhones").href = phones[0] ? telLink(phones[0]) : "#contact";
+    const whatsappChoices = (C.bookingWhatsappChoices || [{ number: state.whatsapp, label: "WhatsApp" }])
+      .map((choice) => ({ number: String(choice.number || "").replace(/\D/g, ""), label: choice.label || "WhatsApp" }))
+      .filter((choice) => choice.number);
+    [$("#summaryWhatsappChoices"), $("#formWhatsappChoices")].forEach((el) => {
+      el.innerHTML = whatsappChoices.map((choice) =>
+        `<button type="submit" form="bookForm" class="btn btn-wa" data-wa-number="${esc(choice.number)}" aria-label="Send booking to ${esc(choice.label)} on WhatsApp">WhatsApp ${esc(choice.label)}</button>`
+      ).join("");
+    });
     if ($("#ucScreen")) {
       $("#ucMsg").textContent = C.underConstructionMessage || "";
       $("#ucPhones").innerHTML = phones.map((p) => `<a href="${telLink(p)}">${esc(p)}</a>`).join(" &nbsp;·&nbsp; ");
@@ -376,7 +384,7 @@
     $("#fullWarn").hidden = !full;
     if (full) $("#fullWarn").textContent = `${vLabel(d.venue)} is fully booked on ${fmtDate(d.date)}. Please choose another date${servicesOnly ? "" : " or hall"}.`;
     $("#dateInput").toggleAttribute("aria-invalid", !!full);
-    $$('#submitBtn, button[type="submit"][form="bookForm"]').forEach((b) => (b.disabled = !!full));
+    $$('#bookForm button[type="submit"], button[type="submit"][form="bookForm"]').forEach((b) => (b.disabled = !!full));
     const set = (k, v) => ($(`[data-s="${k}"]`).textContent = v || "—");
     set("kind", servicesOnly ? "Packages at your venue" : d.venue ? "Hall" : "");
     set("hall", servicesOnly ? `${otherVenue.name}${d.event_location ? " · " + d.event_location : ""}` : d.venue ? `${d.venue.name}${d.venue.venue_address ? " · " + d.venue.venue_address : ""}` : "");
@@ -444,9 +452,10 @@
     if (!d.name) return showError("Please enter your name.");
     if (d.phone.replace(/\D/g, "").length < 7) return showError("Please enter a valid mobile number.");
 
-    const btn = e.submitter || $("#submitBtn");
+    const btn = e.submitter || $("#formWhatsappChoices button");
+    const originalLabel = btn.textContent;
     btn.disabled = true;
-    btn.lastChild.textContent = " Saving…";
+    btn.textContent = "Saving…";
     // open the WhatsApp tab now (inside the click) so popup blockers allow it
     const waWin = window.open("", "_blank");
 
@@ -467,24 +476,24 @@
       const msg = err?.message || "";
       if (d.promo_code && (!msg || msg === "offline" || /fetch|network/i.test(msg))) {
         if (waWin) waWin.close();
-        btn.disabled = false; btn.lastChild.textContent = " Send on WhatsApp";
+        btn.disabled = false; btn.textContent = originalLabel;
         return showError("We couldn't verify your promo code. Please try again, or remove the code to submit without a discount.");
       }
       if (msg && msg !== "offline" && !/fetch|network/i.test(msg)) {
         if (waWin) waWin.close();
-        btn.disabled = false; btn.lastChild.textContent = " Send on WhatsApp";
+        btn.disabled = false; btn.textContent = originalLabel;
         await loadBooked(); renderSessions();
         return showError(msg);
       }
       ref = "PB-WEB-" + Date.now().toString(36).toUpperCase().slice(-5); // still let them reach us
     }
 
-    const url = waLink(state.whatsapp, buildMessage(d, ref));
+    const url = waLink(btn.dataset.waNumber || state.whatsapp, buildMessage(d, ref));
     if (waWin) waWin.location.href = url;
     $("#doneRef").textContent = ref;
     $("#doneWa").href = url;
     $("#doneModal").classList.add("open");
-    btn.disabled = false; btn.lastChild.textContent = " Send on WhatsApp";
+    btn.disabled = false; btn.textContent = originalLabel;
     $("#bookForm").reset();
     closeSvcDetail();
     $$("#addonPick .svc-check").forEach((b) => b.setAttribute("aria-pressed", "false"));
