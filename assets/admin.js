@@ -1145,7 +1145,7 @@
           <div class="gf">
             <label><input type="checkbox" data-f="active" ${g.active ? "checked" : ""} style="width:auto"> Show</label>
             <input type="number" data-f="sort_order" value="${g.sort_order}" title="Order (lower shows first)" style="width:64px">
-            <button class="linkbtn" data-del type="button">Delete</button>
+            <span class="g-acts"><button class="linkbtn" data-gedit type="button">Edit</button><button class="linkbtn" data-del type="button">Delete</button></span>
           </div>
         </div>
       </div>`).join("") || `<p class="hint">No photos yet.</p>`;
@@ -1159,6 +1159,7 @@
         if (el.dataset.f === "active") renderGalleryAdmin();
         toast("Saved");
       }));
+      $("[data-gedit]", card).addEventListener("click", () => openGalleryEdit(S.gallery.find((x) => x.id === id)));
       $("[data-del]", card).addEventListener("click", async () => {
         if (!confirm("Delete this photo from the gallery?")) return;
         const g = S.gallery.find((x) => x.id === id);
@@ -1169,6 +1170,52 @@
         S.gallery = S.gallery.filter((x) => x.id !== id); renderGalleryAdmin(); toast("Photo deleted");
       });
     });
+  }
+  // edit one gallery photo: bigger preview, replace the photo, caption, occasion, show and order
+  const storagePath = (url) => { const marker = `/object/public/${C.storageBucket}/`; return url && url.includes(marker) ? decodeURIComponent(url.split(marker)[1]) : null; };
+  function openGalleryEdit(g) {
+    if (!g) return;
+    const d = $("#vdrawer");
+    d.innerHTML = `
+      <div class="drawer-head"><div><span class="eyebrow">Edit gallery photo</span><h3>${esc(g.caption || g.category || "Photo")}</h3></div><button class="xbtn" data-close aria-label="Close">×</button></div>
+      <form class="drawer-body" id="gEditForm">
+        <div class="g-edit-prev"><img id="gEditImg" src="${esc(g.image_url)}" alt=""></div>
+        <label class="field">Replace photo (JPG/PNG/WebP — resized automatically)<input type="file" id="gEditFile" accept="image/jpeg,image/png,image/webp"></label>
+        <input type="hidden" name="image_url" value="${esc(g.image_url)}">
+        <label class="field">Caption<input name="caption" maxlength="80" value="${esc(g.caption || "")}" placeholder="e.g. Princess-themed 7th birthday, Hall A&amp;B"></label>
+        <div class="grid-2">
+          <label class="field">Occasion<select name="category">${catOpts(g.category)}</select></label>
+          <label class="field">Order (lower shows first)<input type="number" name="sort_order" value="${g.sort_order}"></label>
+        </div>
+        <label class="switch"><input type="checkbox" name="active" ${g.active ? "checked" : ""}> Show on website</label>
+        <button class="btn btn-primary" type="submit">Save changes</button>
+      </form>`;
+    $("[data-close]", d).addEventListener("click", closeDrawers);
+    const form = $("#gEditForm");
+    $("#gEditFile").addEventListener("change", async (e) => {
+      let f = e.target.files[0]; if (!f) return;
+      toast("Optimizing photo…");
+      f = await prepPhoto(f, 1600); if (!f) return;
+      toast("Uploading photo…");
+      const path = `gallery/${Date.now()}-${f.name.replace(/[^a-z0-9.]+/gi, "-").toLowerCase()}`;
+      const { error } = await sb.storage.from(C.storageBucket).upload(path, f, { cacheControl: "31536000" });
+      if (error) return toast("Upload failed: " + error.message);
+      const url = sb.storage.from(C.storageBucket).getPublicUrl(path).data.publicUrl;
+      form.image_url.value = url; $("#gEditImg").src = url;
+      toast("New photo ready — press Save changes");
+    });
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const row = { image_url: form.image_url.value, caption: form.caption.value.trim() || null, category: form.category.value,
+        sort_order: +form.sort_order.value || 0, active: form.active.checked };
+      if (row.image_url !== g.image_url) row.is_sample = false;
+      const { error } = await sb.from("pb_gallery").update(row).eq("id", g.id);
+      if (error) return toast(error.message);
+      const oldPath = row.image_url !== g.image_url ? storagePath(g.image_url) : null;
+      if (oldPath) sb.storage.from(C.storageBucket).remove([oldPath]);   // tidy up the replaced file
+      Object.assign(g, row); closeDrawers(); renderGalleryAdmin(); toast("Photo updated");
+    });
+    openDrawer("#vdrawer");
   }
   $("#gUpload").addEventListener("submit", async (e) => {
     e.preventDefault();

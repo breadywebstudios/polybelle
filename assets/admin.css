@@ -320,3 +320,8 @@ i.c-Cancelled, .ac-chip.c-Cancelled { background: #F1E4E1; color: #9A4436; text-
 .wa-test:hover { background: rgba(37, 211, 102, .12); }
 .wa-test svg { width: 20px; height: 20px; fill: currentColor; }
 .wa-row { display: inline-flex; align-items: center; }
+
+/* gallery card: Edit above Delete; edit drawer preview */
+.gcard .g-acts { display: grid; justify-items: end; gap: 4px; }
+.g-edit-prev { display: grid; place-items: center; max-height: 340px; overflow: hidden; border: 1px solid var(--line); border-radius: 12px; background: var(--cream); }
+.g-edit-prev img { display: block; max-width: 100%; max-height: 340px; object-fit: contain; }
