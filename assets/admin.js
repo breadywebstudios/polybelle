@@ -394,6 +394,33 @@
   }
 
   const money = (n) => Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  // customer-facing invoice summary for "Send invoice to customer"
+  function invoiceMsg(b, docType = "Invoice") {
+    const t = invTotals(b);
+    const sess = C.sessions.find((x) => x.id === b.session);
+    const issue = new Date((b.invoice_date || today()) + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+    const items = (b.invoice_items || []).filter((it) => it.description || it.amount);
+    return [
+      `Hi ${b.name}! 🧾 Here is your *${docType}* from Polybelle Event Halls & Studio.`,
+      ``,
+      `🧾 *${docType} No:* ${b.invoice_no}`,
+      `📅 *Issue date:* ${issue}`,
+      `🔖 *Booking Ref:* ${b.ref}`,
+      `🎈 *Event:* ${whereText(b)} · ${b.event_type}`,
+      `📆 *Date:* ${fmtDate(b.event_date)}`,
+      `⏰ *Session:* ${b.session}${sess ? ` (${sess.time})` : ""}`,
+      b.guests ? `👥 *Guests:* ${b.guests}` : null,
+      items.length ? `\n🎁 *Items:*\n${items.map((it) => `🔹 ${it.description}${it.amount ? ` — AED ${money(it.amount)}` : ""}`).join("\n")}` : null,
+      +b.discount ? `\n🧮 *Subtotal:* AED ${money(t.subtotal)}\n💸 *Discount:* − AED ${money(b.discount)}` : null,
+      `\n💰 *Total:* AED ${money(t.total)}`,
+      t.paid ? `✅ *Paid:* AED ${money(t.paid)}` : null,
+      `⏳ *Balance due:* AED ${money(t.balance)}`,
+      b.invoice_notes ? `\n📝 *Note:* ${b.invoice_notes}` : null,
+      t.balance > 0 && S.settings?.payment_details ? `\n🏦 *Payment details:*\n${S.settings.payment_details}` : null,
+      ``,
+      `Please reply here if you have any questions. Thank you! 💛`
+    ].filter((l) => l !== null).join("\n");
+  }
   const invTotals = (b) => {
     const subtotal = (b.invoice_items || []).reduce((s, it) => s + (Number(it.amount) || 0), 0);
     const total = Math.max(0, subtotal - (Number(b.discount) || 0));
@@ -683,6 +710,7 @@
         <div class="inv-sum" id="invSum"></div>
         <div style="display:flex;gap:10px;flex-wrap:wrap">
           <button class="btn btn-outline" type="submit" data-act="save">Save</button>
+          <button class="btn btn-wa" type="submit" data-act="send">Send invoice to customer</button>
           <button class="btn btn-primary" type="submit" data-act="print">Save &amp; open invoice</button>
         </div>
       </form>`;
@@ -725,7 +753,8 @@
     f.addEventListener("submit", async (e) => {
       e.preventDefault();
       const act = e.submitter?.dataset.act || "save";
-      const win = act === "print" ? window.open("", "_blank") : null;
+      // opened before saving so the WhatsApp tab isn't blocked; filled in once the invoice is stored
+      const win = act === "print" || act === "send" ? window.open("", "_blank") : null;
       const patch = { invoice_items: read(), discount: Number(f.discount.value) || 0, amount_paid: Number(f.amount_paid.value) || 0,
         invoice_date: f.invoice_date.value || today(), invoice_notes: f.invoice_notes.value.trim() || null,
         invoice_no: f.invoice_no.value.trim() || null };
@@ -737,10 +766,23 @@
       }
       await Promise.all([loadBookings(), loadSettings()]);
       const nb = fresh(b.id);
-      toast(`Invoice ${nb.invoice_no} saved`);
-      if (win) renderInvoice(win, nb, f.doc_type.value);
+      const docTitle = f.doc_type.value;
+      if (act === "send") {
+        const url = nb.phone ? waLink(nb.phone, invoiceMsg(nb, docTitle)) : "";
+        let opened = !!url;
+        if (url) {
+          if (win) win.location.href = url;
+          else opened = !!window.open(url, "_blank", "noopener");
+        } else if (win) win.close();
+        toast(url
+          ? (opened ? `Invoice ${nb.invoice_no} sent to ${nb.name} on WhatsApp` : `Invoice ${nb.invoice_no} saved. Allow pop-ups to open WhatsApp.`)
+          : `Invoice ${nb.invoice_no} saved, but this booking has no customer phone number.`);
+      } else {
+        toast(`Invoice ${nb.invoice_no} saved`);
+      }
+      if (win && act === "print") renderInvoice(win, nb, docTitle);
       openInvoice(nb);
-      $("#invForm").doc_type.value = f.doc_type.value;
+      $("#invForm").doc_type.value = docTitle;
     });
     openDrawer("#drawer");
   }
