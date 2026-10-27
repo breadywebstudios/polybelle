@@ -254,6 +254,25 @@
     const phones = state.phones.split("|").map((p) => p.trim()).filter(Boolean);
     $("#asidePhones").textContent = phones[0] || "";
     $("#asidePhones").href = phones[0] ? telLink(phones[0]) : "#contact";
+    $$(".about-facebook-card").forEach((card) => {
+      const pageLink = $("a", card), preview = $("iframe", card);
+      if (!pageLink || !preview) return;
+      const currentSrc = preview.getAttribute("src");
+      const currentPageUrl = currentSrc
+        ? new URL(currentSrc, window.location.href).searchParams.get("href")
+        : null;
+      if (currentPageUrl === pageLink.href) return;
+      const pluginUrl = new URL("https://www.facebook.com/plugins/page.php");
+      pluginUrl.searchParams.set("href", pageLink.href);
+      pluginUrl.searchParams.set("tabs", "timeline");
+      pluginUrl.searchParams.set("width", "220");
+      pluginUrl.searchParams.set("height", "340");
+      pluginUrl.searchParams.set("small_header", "true");
+      pluginUrl.searchParams.set("adapt_container_width", "true");
+      pluginUrl.searchParams.set("hide_cover", "false");
+      pluginUrl.searchParams.set("show_facepile", "false");
+      preview.src = pluginUrl.href;
+    });
     const whatsappChoices = (C.bookingWhatsappChoices || [{ number: state.whatsapp, label: "WhatsApp" }])
       .map((choice) => ({ number: String(choice.number || "").replace(/\D/g, ""), label: choice.label || "WhatsApp" }))
       .filter((choice) => choice.number);
