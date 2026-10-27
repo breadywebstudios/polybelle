@@ -250,7 +250,8 @@ b, strong { font-weight: 500; }
 .whatsapp-choice { display: grid; justify-items: center; align-content: start; gap: 5px; min-width: 0; }
 .whatsapp-choice .btn { width: 100%; min-width: 0; padding: 12px 6px; font-size: .82rem; letter-spacing: .04em; line-height: 1.25; white-space: normal; overflow-wrap: anywhere; }
 .whatsapp-choice .whatsapp-button-icon { width: 17px; height: 17px; flex: 0 0 auto; }
-.whatsapp-shortcut { display: grid; place-items: center; width: 22px; height: 22px; padding: 0; border: 0; background: none; color: #25D366; cursor: pointer; }
+.whatsapp-shortcut { display: grid; place-items: center; width: 22px; height: 22px; padding: 0; border: 0; background: none; color: #25D366; cursor: pointer; opacity: 0; visibility: hidden; transition: opacity .2s ease, visibility .2s ease; }
+.whatsapp-choice:hover .whatsapp-shortcut, .whatsapp-choice:focus-within .whatsapp-shortcut { opacity: 1; visibility: visible; }
 .whatsapp-shortcut.busy, .whatsapp-shortcut:disabled { opacity: .45; cursor: default; }
 .whatsapp-shortcut svg { width: 17px; height: 17px; fill: currentColor; }
 .whatsapp-shortcut:focus-visible { outline: 2px solid var(--gold-soft); outline-offset: 2px; }
