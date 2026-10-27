@@ -568,15 +568,22 @@
       const avg = R.items.reduce((s, r) => s + r.rating, 0) / n;
       $("#rSummary").innerHTML = `<b>${avg.toFixed(1)}</b><span class="stars">${starStr(Math.round(avg))}</span><span>from ${n} review${n > 1 ? "s" : ""}</span>`;
     }
-    $("#rGrid").innerHTML = R.items.slice(0, R.shown).map((r, i) => `
-      <article class="r-card reveal" style="--d:${i % 3}">
+    // rolling strip: one set of cards (repeated if there are only a few) + an identical copy, scrolled by -50% in a loop
+    const card = (r, copy) => `
+      <article class="r-card ${r.comment ? "" : "r-card-rating"}"${copy ? ' aria-hidden="true"' : ""}>
         <span class="stars" aria-label="${r.rating} out of 5 stars">${starStr(r.rating)}</span>
-        <p>${esc(r.comment)}</p>
+        ${r.comment ? `<p>${esc(r.comment)}</p>` : `<p class="r-rated">Rated ${r.rating} out of 5</p>`}
         <div class="who">${esc(r.name)}<small>${[r.event_type, r.source !== "Website" ? "via " + r.source : ""].filter(Boolean).map(esc).join(" · ")}</small></div>
-      </article>`).join("");
-    $("#rMore").hidden = n <= R.shown;
-    observe();
+      </article>`;
+    const reps = n ? Math.max(1, Math.ceil(6 / n)) : 0;
+    const set = Array.from({ length: reps }, (_, k) => R.items.map((r) => card(r, k > 0)).join("")).join("");
+    $("#rMarquee").hidden = !n;
+    $("#rGrid").innerHTML = set + set.replace(/<article class="r-card([^"]*)"(?! aria-hidden)/g, '<article class="r-card$1" aria-hidden="true"');
+    $("#rGrid").style.setProperty("--r-dur", `${Math.max(30, n * reps * 7)}s`);
+    $("#rMore").hidden = true;
   }
+  // tap the strip to pause / resume it on touch screens
+  $("#rMarquee").addEventListener("click", (e) => { if (!e.target.closest("a")) e.currentTarget.classList.toggle("paused"); });
   $("#rMore").addEventListener("click", () => { R.shown += 6; renderReviews(); });
   const rModal = $("#reviewModal");
   $("#rWrite").addEventListener("click", () => { rModal.classList.add("open"); $("#reviewForm").name.focus(); });

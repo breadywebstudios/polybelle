@@ -238,14 +238,24 @@ b, strong { font-weight: 500; }
 .r-summary b { font: 400 2rem/1 var(--serif); color: var(--ink); }
 .stars { color: var(--gold); letter-spacing: 3px; font-size: .9rem; }
 .stars .off { color: #D9CBBD; }
-.r-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 0; border-top: 1px solid var(--line); }
-.r-grid:empty { display: none; }
-.r-card { padding: 40px 34px; display: flex; flex-direction: column; gap: 18px; border-bottom: 1px solid var(--line); }
-.r-card + .r-card { border-left: 1px solid var(--line); }
-.r-card p { margin: 0; font: italic 400 1.3rem/1.5 var(--serif); color: var(--ink); white-space: pre-line; }
+
+
+
+
+/* reviews: rolling strip (pauses on hover / tap; still for reduced-motion users) */
+.r-marquee { position: relative; overflow: hidden; margin: 0 calc(50% - 50vw); padding: 6px 0; -webkit-mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent); mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent); cursor: pointer; }
+.r-track { display: flex; width: max-content; gap: 18px; animation: rRoll var(--r-dur, 60s) linear infinite; }
+.r-marquee:hover .r-track, .r-marquee.paused .r-track, .r-marquee:focus-within .r-track { animation-play-state: paused; }
+@keyframes rRoll { to { transform: translateX(calc(-50% - 9px)); } }
+.r-card { flex: 0 0 auto; width: 340px; padding: 30px 28px; display: flex; flex-direction: column; gap: 14px; background: var(--ivory); border: 1px solid var(--line); border-radius: 4px; }
+.r-card p { margin: 0; font: italic 400 1.2rem/1.5 var(--serif); color: var(--ink); white-space: pre-line; display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; }
+.r-card p.r-rated { font-style: normal; font-size: 1rem; color: var(--muted); }
+.r-card-rating .stars { font-size: 1.5rem; }
+@media (max-width: 700px) { .r-card { width: 270px; padding: 24px 20px; } .r-card p { font-size: 1.08rem; } }
+@media (prefers-reduced-motion: reduce) { .r-track { animation: none; } .r-marquee { overflow-x: auto; -webkit-mask-image: none; mask-image: none; } .r-track > [aria-hidden="true"] { display: none; } }
 .r-card .who { margin-top: auto; font: 400 .7rem/1.6 var(--sans); letter-spacing: .22em; text-transform: uppercase; }
 .r-card .who small { display: block; color: var(--muted); letter-spacing: .14em; }
-@media (max-width: 700px) { .r-grid { grid-template-columns: minmax(0, 1fr); } .r-card + .r-card { border-left: 0; } .r-card { min-width: 0; padding: 32px 4px; } }
+
 .r-empty { text-align: center; color: var(--muted); font: italic 400 1.4rem var(--serif); margin: 0; }
 
 /* ---------- Booking ---------- */

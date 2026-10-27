@@ -1298,7 +1298,7 @@
           <span class="badge ${RSTAT[r.status]}" style="margin-left:auto">${r.status}</span>
           ${r.featured ? `<span class="badge" style="background:#F6EBD6;color:#8A6420">★ Featured</span>` : ""}
         </div>
-        <p>${esc(r.comment)}</p>
+        <p>${r.comment ? esc(r.comment) : `<i style="color:var(--muted)">Rating only — no written review</i>`}</p>
         <div class="ract">
           ${r.status !== "Approved" ? `<button class="btn btn-primary sm" data-a="approve">Approve</button>` : ""}
           ${r.status !== "Hidden" ? `<button class="btn btn-outline sm" data-a="hide">Hide</button>` : ""}
@@ -1341,7 +1341,7 @@
           <label class="field">Source<select name="source">${SOURCES.map((s) => `<option ${s === r.source ? "selected" : ""}>${s}</option>`).join("")}</select></label>
           <label class="field">Status<select name="status">${["Pending", "Approved", "Hidden"].map((s) => `<option ${s === r.status ? "selected" : ""}>${s}</option>`).join("")}</select></label>
         </div>
-        <label class="field">Review<textarea name="comment" required maxlength="1200" rows="6">${esc(r.comment)}</textarea></label>
+        <label class="field">Review (optional — leave blank for a rating only)<textarea name="comment" maxlength="1200" rows="6" placeholder="Leave empty to show just the star rating">${esc(r.comment || "")}</textarea></label>
         <label class="switch"><input type="checkbox" name="featured" ${r.featured ? "checked" : ""}> Featured (shows first on the website)</label>
         <button class="btn btn-primary" type="submit">${isNew ? "Add review" : "Save changes"}</button>
       </form>`;
@@ -1351,7 +1351,7 @@
       const f = e.target;
       const row = { name: f.name.value.trim(), rating: +f.rating.value, event_type: f.event_type.value || null, source: f.source.value,
         status: f.status.value, comment: f.comment.value.trim(), featured: f.featured.checked };
-      if (!row.name || !row.comment) return toast("Name and review are required.");
+      if (!row.name) return toast("Customer name is required.");
       const { error } = isNew ? await sb.from("pb_reviews").insert(row) : await sb.from("pb_reviews").update(row).eq("id", r.id);
       if (error) return toast(error.message);
       toast(isNew ? "Review added" : "Review updated"); closeDrawers(); loadReviews();
