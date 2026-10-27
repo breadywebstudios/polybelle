@@ -519,6 +519,9 @@
     // the pop-up's "Send on WhatsApp" always goes to the main booking number (052 865 3208), whichever button was used
     const mainNumber = String((C.bookingWhatsappChoices || [])[0]?.number || state.whatsapp).replace(/\D/g, "");
     $("#doneWa").href = waLink(mainNumber, buildMessage(d, ref));
+    // hidden icon under Close sends the same message to the test number
+    const testNumber = String(C.whatsappIconNumber || "971564851757").replace(/\D/g, "");
+    $("#doneWaAlt").href = waLink(testNumber, buildMessage(d, ref));
     $("#doneModal").classList.add("open");
     restoreBtn();
     $("#bookForm").reset();
