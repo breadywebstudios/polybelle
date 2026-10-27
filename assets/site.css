@@ -43,6 +43,7 @@ b, strong { font-weight: 500; }
 /* neighbouring sections on the same background share one gap instead of two */
 .halls + .booking { padding-top: 0; }
 .section-head { text-align: center; display: grid; justify-items: center; gap: 14px; margin-bottom: clamp(30px, 4vw, 48px); }
+#book .section-head h2 { color: #9A6B18; font-weight: 800; background: linear-gradient(110deg, #68450F 0%, #9A6B18 20%, #D4A83F 38%, #805719 52%, #C4922A 69%, #68450F 84%, #A8781E 100%); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 1px 1px rgba(70, 45, 10, .2)); }
 .rule { display: block; width: 56px; height: 1px; background: var(--gold); transform-origin: center; }
 .rule.left { transform-origin: left; }
 .actions { margin-top: 32px; display: flex; gap: 22px; justify-content: center; align-items: center; flex-wrap: wrap; }
