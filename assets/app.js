@@ -424,25 +424,28 @@
   $("#bookForm").addEventListener("change", () => { $("#formError").style.display = "none"; update(); });
   $("#bookForm").addEventListener("input", (e) => { if (e.target.name === "guests" || e.target.name === "event_location") update(); });
 
+  // WhatsApp turns dates, times, phone numbers and addresses into green tappable links. An invisible
+  // "word joiner" after each digit stops that, so those details show in normal text colour.
+  const plain = (x) => String(x ?? "").replace(/\d/g, "$&\u2060");
   function buildMessage(d, ref) {
     const sess = C.sessions.find((s) => s.id === d.session);
     return [
       `Hi Polybelle! I'd like to book an event 🎉`,
       ``,
-      `🔖 *Booking Ref:* ${ref}`,
+      `🔖 *Booking Ref:* ${plain(ref)}`,
       ``,
       d.booking_type === "Services" ? `🏡 *Venue:* ${otherVenue.name} (packages & services)` : `🏢 *Hall:* ${d.venue.name}`,
-      d.booking_type === "Hall" && d.venue.venue_address ? `📍 *Hall address:* ${d.venue.venue_address}` : null,
-      d.booking_type === "Services" ? `📍 *Event location:* ${d.event_location || "To be confirmed"}` : null,
-      `📅 *Date:* ${fmtDate(d.date)}`,
-      `⏰ *Session:* ${d.session}${sess ? ` (${sess.time})` : ""}`,
+      d.booking_type === "Hall" && d.venue.venue_address ? `📍 *Hall address:* ${plain(d.venue.venue_address)}` : null,
+      d.booking_type === "Services" ? `📍 *Event location:* ${plain(d.event_location || "To be confirmed")}` : null,
+      `📅 *Date:* ${plain(fmtDate(d.date))}`,
+      `⏰ *Session:* ${d.session}${sess ? ` (${plain(sess.time)})` : ""}`,
       `🎈 *Occasion:* ${d.event_type}`,
       d.guests ? `👥 *Guests:* ${d.guests}` : null,
       d.add_ons.length ? `\n🎁 *Packages & services:*\n${d.add_ons.map((a) => `🔹 ${a}`).join("\n")}` : null,
       d.promo_code ? `🎫 *Promo code:* ${d.promo_code}` : null,
       ``,
       `👤 *Name:* ${d.name}`,
-      `📱 *Mobile:* ${d.phone}`,
+      `📱 *Mobile:* ${plain(d.phone)}`,
       d.email ? `📧 *Email:* ${d.email}` : null,
       d.notes ? `📝 *Notes:* ${d.notes}` : null,
       ``,

@@ -349,30 +349,33 @@
     const num = String(C.whatsappIconNumber || "").replace(/\D/g, "");
     return num ? `<a class="wa-test" target="_blank" rel="noopener" href="${waLink(num, text)}" title="Test: send this message to ${esc(num.replace(/^971/, "0"))}" aria-label="Test: send this message to the test number">${WA_ICON}</a>` : "";
   };
+  // WhatsApp turns dates, times, phone numbers and addresses into green tappable links. An invisible
+  // "word joiner" after each digit stops that, so those details show in normal text colour.
+  const plain = (x) => String(x ?? "").replace(/\d/g, "$&\u2060");
   function customerMsg(b, status) {
     const sess = C.sessions.find((x) => x.id === b.session);
     const t = invTotals(b);
     const hasInvoice = !!b.invoice_no || t.total > 0;
     const details = [
-      `🔖 *Booking Ref:* ${b.ref}`,
+      `🔖 *Booking Ref:* ${plain(b.ref)}`,
       ``,
       isServices(b) ? `🏡 *Venue:* Other venues (packages & services)` : `🏢 *Hall:* ${b.venue_name}`,
-      !isServices(b) && hallAddress(b) ? `📍 *Hall address:* ${hallAddress(b)}` : null,
-      isServices(b) ? `📍 *Event location:* ${b.event_location || "To be confirmed"}` : null,
-      `📅 *Date:* ${fmtDate(b.event_date)}`,
-      `⏰ *Session:* ${b.session}${sess ? ` (${sess.time})` : ""}`,
+      !isServices(b) && hallAddress(b) ? `📍 *Hall address:* ${plain(hallAddress(b))}` : null,
+      isServices(b) ? `📍 *Event location:* ${plain(b.event_location || "To be confirmed")}` : null,
+      `📅 *Date:* ${plain(fmtDate(b.event_date))}`,
+      `⏰ *Session:* ${b.session}${sess ? ` (${plain(sess.time)})` : ""}`,
       `🎈 *Occasion:* ${b.event_type}`,
       b.guests ? `👥 *Guests:* ${b.guests}` : null,
       b.add_ons?.length ? `\n🎁 *Packages & services:*\n${b.add_ons.map((a) => `🔹 ${a}`).join("\n")}` : null,
-      b.custom_items?.length ? `\n➕ *Additional items:*\n${b.custom_items.map((c) => `🔹 ${ciText(c)}${ciTotal(c) ? ` (AED ${money(ciTotal(c))})` : ""}`).join("\n")}` : null,
+      b.custom_items?.length ? `\n➕ *Additional items:*\n${b.custom_items.map((c) => `🔹 ${ciText(c)}${ciTotal(c) ? ` (AED ${plain(money(ciTotal(c)))})` : ""}`).join("\n")}` : null,
       b.notes ? `\n📝 *Your notes:* ${b.notes}` : null,
       hasInvoice ? [
         ``,
-        b.invoice_no ? `🧾 *Invoice No:* ${b.invoice_no}` : null,
-        +b.discount ? `💸 *Discount:* AED ${money(b.discount)}` : null,
-        `💰 *Total:* AED ${money(t.total)}`,
-        t.paid ? `✅ *Paid:* AED ${money(t.paid)}` : null,
-        `⏳ *Balance due:* AED ${money(t.balance)}`
+        b.invoice_no ? `🧾 *Invoice No:* ${plain(b.invoice_no)}` : null,
+        +b.discount ? `💸 *Discount:* AED ${plain(money(b.discount))}` : null,
+        `💰 *Total:* AED ${plain(money(t.total))}`,
+        t.paid ? `✅ *Paid:* AED ${plain(money(t.paid))}` : null,
+        `⏳ *Balance due:* AED ${plain(money(t.balance))}`
       ].filter((l) => l !== null).join("\n") : null
     ].filter((l) => l !== null).join("\n");
     const pay = hasInvoice && t.balance > 0 && S.settings?.payment_details ? `\n\n🏦 *Payment details:*\n${S.settings.payment_details}` : "";
@@ -403,18 +406,18 @@
     return [
       `Hi ${b.name}! 🧾 Here is your *${docType}* from Polybelle Event Halls & Studio.`,
       ``,
-      `🧾 *${docType} No:* ${b.invoice_no}`,
-      `📅 *Issue date:* ${issue}`,
-      `🔖 *Booking Ref:* ${b.ref}`,
+      `🧾 *${docType} No:* ${plain(b.invoice_no)}`,
+      `📅 *Issue date:* ${plain(issue)}`,
+      `🔖 *Booking Ref:* ${plain(b.ref)}`,
       `🎈 *Event:* ${whereText(b)} · ${b.event_type}`,
-      `📆 *Date:* ${fmtDate(b.event_date)}`,
-      `⏰ *Session:* ${b.session}${sess ? ` (${sess.time})` : ""}`,
+      `📆 *Date:* ${plain(fmtDate(b.event_date))}`,
+      `⏰ *Session:* ${b.session}${sess ? ` (${plain(sess.time)})` : ""}`,
       b.guests ? `👥 *Guests:* ${b.guests}` : null,
-      items.length ? `\n🎁 *Items:*\n${items.map((it) => `🔹 ${it.description}${it.amount ? ` — AED ${money(it.amount)}` : ""}`).join("\n")}` : null,
-      +b.discount ? `\n🧮 *Subtotal:* AED ${money(t.subtotal)}\n💸 *Discount:* − AED ${money(b.discount)}` : null,
-      `\n💰 *Total:* AED ${money(t.total)}`,
-      t.paid ? `✅ *Paid:* AED ${money(t.paid)}` : null,
-      `⏳ *Balance due:* AED ${money(t.balance)}`,
+      items.length ? `\n🎁 *Items:*\n${items.map((it) => `🔹 ${it.description}${it.amount ? ` — AED ${plain(money(it.amount))}` : ""}`).join("\n")}` : null,
+      +b.discount ? `\n🧮 *Subtotal:* AED ${plain(money(t.subtotal))}\n💸 *Discount:* − AED ${plain(money(b.discount))}` : null,
+      `\n💰 *Total:* AED ${plain(money(t.total))}`,
+      t.paid ? `✅ *Paid:* AED ${plain(money(t.paid))}` : null,
+      `⏳ *Balance due:* AED ${plain(money(t.balance))}`,
       b.invoice_notes ? `\n📝 *Note:* ${b.invoice_notes}` : null,
       t.balance > 0 && S.settings?.payment_details ? `\n🏦 *Payment details:*\n${S.settings.payment_details}` : null,
       pdfUrl ? `\n📄 *${docType} PDF:* ${pdfUrl}` : null,
