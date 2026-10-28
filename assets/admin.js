@@ -349,9 +349,10 @@
     const num = String(C.whatsappIconNumber || "").replace(/\D/g, "");
     return num ? `<a class="wa-test" target="_blank" rel="noopener" href="${waLink(num, text)}" title="Test: send this message to ${esc(num.replace(/^971/, "0"))}" aria-label="Test: send this message to the test number">${WA_ICON}</a>` : "";
   };
-  // WhatsApp turns dates, times, phone numbers and addresses into green tappable links. An invisible
-  // "word joiner" after each digit stops that, so those details show in normal text colour.
-  const plain = (x) => String(x ?? "").replace(/\d/g, "$&\u2060");
+  // WhatsApp turns numbers, dates and addresses into green tappable links (and re-checks when "Read more"
+  // is tapped). An invisible zero-width non-joiner after each digit stops that, so they stay normal colour.
+  // (Tested on Android WhatsApp: U+200C works after unfolding; U+2060 did not.)
+  const plain = (x) => String(x ?? "").replace(/\d/g, "$&\u200C");
   function customerMsg(b, status) {
     const sess = C.sessions.find((x) => x.id === b.session);
     const t = invTotals(b);

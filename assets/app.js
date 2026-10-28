@@ -424,9 +424,10 @@
   $("#bookForm").addEventListener("change", () => { $("#formError").style.display = "none"; update(); });
   $("#bookForm").addEventListener("input", (e) => { if (e.target.name === "guests" || e.target.name === "event_location") update(); });
 
-  // WhatsApp turns dates, times, phone numbers and addresses into green tappable links. An invisible
-  // "word joiner" after each digit stops that, so those details show in normal text colour.
-  const plain = (x) => String(x ?? "").replace(/\d/g, "$&\u2060");
+  // WhatsApp turns numbers, dates and addresses into green tappable links (and re-checks when "Read more"
+  // is tapped). An invisible zero-width non-joiner after each digit stops that, so they stay normal colour.
+  // (Tested on Android WhatsApp: U+200C works after unfolding; U+2060 did not.)
+  const plain = (x) => String(x ?? "").replace(/\d/g, "$&\u200C");
   function buildMessage(d, ref) {
     const sess = C.sessions.find((s) => s.id === d.session);
     return [
