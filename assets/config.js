@@ -8,6 +8,7 @@ window.PB_CONFIG = {
   underConstruction: false,
   underConstructionMessage: "Our new website is almost ready. In the meantime, we'd love to help you plan your celebration on WhatsApp.",
 
+  siteUrl: "https://www.polybelle.me",          // used for short invoice links (www.polybelle.me/i/...)
   supabaseUrl: "https://ntohdxudxfggsmhxhvho.supabase.co",
   supabaseKey: "sb_publishable_81P5_TSD4SuHALFDM4Ao-w_W7C5UkuI",
   storageBucket: "polybelle",

@@ -423,44 +423,134 @@
     ].filter((l) => l !== null).join("\n");
   }
 
-  // A4 PDF of the invoice/receipt: the same HTML as the print view, painted to a canvas so every
-  // script and glyph the browser can show (Arabic names, dashes, emoji) comes through intact
+  // A4 PDF of the invoice/receipt, drawn as real text (crisp, small, selectable) with the same layout,
+  // sizes, colours and fonts as the printable invoice (Save & open invoice). Fonts: assets/fonts/pdf/*.ttf
+  const PDF_FONTS = [
+    ["Montserrat-Regular.ttf", "Montserrat", "normal"], ["Montserrat-SemiBold.ttf", "Montserrat", "bold"],
+    ["Lora-SemiBold.ttf", "Lora", "bold"], ["CormorantGaramond-Medium.ttf", "Cormorant", "normal"]
+  ];
+  let pdfFontData = null;
+  async function loadPdfFonts() {
+    if (pdfFontData) return pdfFontData;
+    const toB64 = (buf) => { let s = ""; const a = new Uint8Array(buf); for (let i = 0; i < a.length; i += 0x8000) s += String.fromCharCode.apply(null, a.subarray(i, i + 0x8000)); return btoa(s); };
+    pdfFontData = await Promise.all(PDF_FONTS.map(async ([file, fam, style]) => {
+      const r = await fetch(`assets/fonts/pdf/${file}`);
+      if (!r.ok) throw new Error(`font ${file} not found`);
+      return [file, fam, style, toB64(await r.arrayBuffer())];
+    }));
+    return pdfFontData;
+  }
   async function invoicePdf(b, docType) {
     const jsPDF = window.jspdf?.jsPDF;
-    if (!jsPDF || !window.html2canvas) return null;
-    const frame = document.createElement("iframe");
-    frame.setAttribute("aria-hidden", "true");
-    frame.style.cssText = "position:fixed;left:-10000px;top:0;width:210mm;height:297mm;border:0";
-    document.body.append(frame);
+    if (!jsPDF) return null;
     try {
-      const fdoc = frame.contentDocument;
-      fdoc.open(); fdoc.write(invoiceHtml(b, docType, true)); fdoc.close();
-      const link = fdoc.querySelector('link[rel="stylesheet"]');
-      if (link && !link.sheet) await new Promise((r) => { link.onload = r; link.onerror = r; setTimeout(r, 1500); });
-      if (fdoc.fonts?.ready) await fdoc.fonts.ready;
-      await new Promise((r) => setTimeout(r, 200)); // let the web fonts settle before painting
-      const canvas = await window.html2canvas(fdoc.querySelector(".page"), { scale: 2, backgroundColor: "#ffffff", useCORS: true, logging: false });
-      const pdf = new jsPDF({ unit: "mm", format: "a4" });
-      const pageW = 210, pageH = 297, imgH = canvas.height * pageW / canvas.width;
-      if (imgH <= pageH + 2) {
-        pdf.addImage(canvas.toDataURL("image/jpeg", 0.94), "JPEG", 0, 0, pageW, imgH);
-      } else {
-        const pagePx = Math.floor(canvas.width * pageH / pageW);
-        for (let top = 0; top < canvas.height; top += pagePx) {
-          const slice = document.createElement("canvas");
-          slice.width = canvas.width;
-          slice.height = Math.min(pagePx, canvas.height - top);
-          slice.getContext("2d").drawImage(canvas, 0, top, slice.width, slice.height, 0, 0, slice.width, slice.height);
-          if (top) pdf.addPage();
-          pdf.addImage(slice.toDataURL("image/jpeg", 0.94), "JPEG", 0, 0, pageW, slice.height * pageW / canvas.width);
-        }
+      const pdf = new jsPDF({ unit: "mm", format: "a4", compress: true });
+      let fontsOk = true;
+      try { (await loadPdfFonts()).forEach(([file, fam, style, data]) => { pdf.addFileToVFS(file, data); pdf.addFont(file, fam, style); }); }
+      catch (err) { console.error("PDF fonts didn't load, using built-in fonts:", err); fontsOk = false; }
+      const F = fontsOk ? { body: "Montserrat", head: "Lora", logo: "Cormorant" } : { body: "helvetica", head: "times", logo: "times" };
+      const s = S.settings || {}, t = invTotals(b), isReceipt = docType === "Receipt";
+      const sess = C.sessions.find((x) => x.id === b.session);
+      const issue = new Date((b.invoice_date || today()) + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+      // only characters the PDF fonts carry (emoji and unsupported scripts are dropped)
+      const clean = (x) => String(x ?? "").replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}️‍]/gu, "").replace(/−/g, fontsOk ? "−" : "-");
+      const px = (n) => n * 0.2646, pt = (n) => n * 0.75;           // CSS px -> mm / pt (96 dpi)
+      const GOLD = [184, 146, 62], INK = [43, 43, 43], L = 18, R = 192, W = R - L, BOTTOM = 297 - 16;
+      const font = (fam, style, sizePx, color = INK) => { pdf.setFont(fam, style); pdf.setFontSize(pt(sizePx)); pdf.setTextColor(...color); };
+      const lh = (sizePx) => px(sizePx * 1.45);
+      let y = 20;
+      const page = (need) => { if (y + need > BOTTOM) { pdf.addPage(); y = 20; } };
+      const lines = (txt, x, width, sizePx, opts = {}) => {
+        const out = []; clean(txt).split("\n").forEach((ln) => out.push(...(width ? pdf.splitTextToSize(ln, width) : [ln])));
+        out.forEach((ln) => { pdf.text(ln, x, y, { baseline: "top", ...opts }); y += lh(sizePx); });
+        return out.length;
+      };
+      // top: logo + tagline (left), business name & address (right)
+      font(F.logo, "normal", 40, GOLD);
+      pdf.text("POLYBELLE", L, y, { baseline: "top", charSpace: px(40 * 0.26) });
+      font(F.body, "bold", 7.6, GOLD);
+      pdf.text("MAKING MEMORABLE MEMORIES, ONE MILESTONE AT A TIME", L, y + px(40) + px(6), { baseline: "top", charSpace: px(7.6 * 0.06) });
+      // right column (business address + event details): 62mm wide, or wider if a line needs it
+      const eventLines = `${isServices(b) ? whereText(b) : b.venue_name} · ${b.event_type}\n${fmtDate(b.event_date)}\n${b.session}${sess ? ` (${sess.time})` : ""}${b.guests ? ` · ${b.guests} guests` : ""}`;
+      const widest = (txt, sizePx, fam = F.body) => { pdf.setFont(fam, "normal"); pdf.setFontSize(pt(sizePx)); return Math.max(0, ...clean(txt).split("\n").map((l) => pdf.getTextWidth(l))); };
+      const BX = Math.max(L + 70, Math.min(130, R - Math.max(widest([s.business_name, s.business_address].filter(Boolean).join("\n"), 11.5), widest(eventLines, 12.5)) - 1));
+      font(F.body, "normal", 11.5);
+      const y0 = y; lines([s.business_name, s.business_address].filter(Boolean).join("\n"), BX, R - BX, 11.5);
+      y = Math.max(y, y0 + px(40) + px(6) + px(11));
+      // invoice details (left) + event details (right)
+      const head = (txt, x) => { font(F.head, "bold", 13.5, GOLD); pdf.text(clean(txt).toUpperCase(), x, y, { baseline: "top", charSpace: px(13.5 * 0.06) }); };
+      y += px(26); const ySec = y;
+      head(docType, L); y += px(13.5 * 1.45) + px(3); font(F.body, "normal", 12.5);
+      lines(`No: ${b.invoice_no || ""}\nIssue Date: ${issue}\nBooking Ref: ${b.ref}`, L, BX - L - 6, 12.5);
+      const yLeft = y; y = ySec;
+      head("Event Details", BX); y += px(13.5 * 1.45) + px(3); font(F.body, "normal", 12.5);
+      lines(eventLines, BX, R - BX, 12.5);
+      y = Math.max(y, yLeft);
+      // customer
+      y += px(26); head("Customer Contact Details", L); y += px(13.5 * 1.45) + px(3); font(F.body, "normal", 12.5);
+      lines([b.name, b.customer_address || "", [b.phone, b.email].filter(Boolean).join(" · ")].filter(Boolean).join("\n"), L, W, 12.5);
+      // items table
+      y += px(26);
+      const thH = px(6) * 2 + px(13 * 1.45), AMTW = 32, cellX = px(12);
+      const tableHead = () => {
+        pdf.setFillColor(220, 202, 185); pdf.rect(L, y, W, thH, "F");
+        font(F.head, "bold", 13, [176, 138, 74]);
+        const ty = y + px(6);
+        pdf.text("DESCRIPTION", L + cellX, ty, { baseline: "top", charSpace: px(13 * 0.06) });
+        pdf.text("AMOUNT", R - cellX, ty, { baseline: "top", align: "right", charSpace: px(13 * 0.06) });
+        y += thH;
+      };
+      tableHead();
+      const items = (b.invoice_items || []).filter((it) => it.description || it.amount);
+      font(F.body, "normal", 12.5);
+      if (!items.length) { y += px(22); font(F.body, "normal", 12.5, [153, 153, 153]); lines("No items yet", L + cellX, 0, 12.5); y += px(3); }
+      items.forEach((it, i) => {
+        font(F.body, "normal", 12.5);
+        const desc = pdf.splitTextToSize(clean(it.description), W - AMTW - cellX * 2);
+        const rowH = px(i === 0 ? 22 : 3) + desc.length * lh(12.5) + px(3);
+        if (y + rowH > BOTTOM) { pdf.addPage(); y = 20; tableHead(); font(F.body, "normal", 12.5); }
+        y += px(i === 0 ? 22 : 3);
+        if (it.amount) pdf.text(money(it.amount), R - cellX, y, { baseline: "top", align: "right" });
+        desc.forEach((ln) => { pdf.text(ln, L + cellX, y, { baseline: "top" }); y += lh(12.5); });
+        y += px(3);
+      });
+      // totals (80mm wide, right aligned)
+      const TX = R - 80, row = (label, value, opt = {}) => {
+        const size = opt.grand ? 13 : 12.5, pad = opt.due ? px(6) : px(3), h = pad * 2 + lh(size);
+        page(h + px(opt.due ? 4 : 0));
+        if (opt.due) { y += px(4); pdf.setFillColor(244, 236, 227); pdf.rect(TX, y, 80, h, "F"); }
+        font(F.body, opt.grand || opt.due ? "bold" : "normal", size);
+        pdf.text(label, TX + cellX, y + pad, { baseline: "top" });
+        pdf.text(value, R - cellX, y + pad, { baseline: "top", align: "right" });
+        y += h;
+      };
+      y += px(26);
+      if (+b.discount) { row("Subtotal", `${money(t.subtotal)} AED`); row("Discount", `${fontsOk ? "−" : "-"} ${money(b.discount)} AED`); }
+      row("Total Amount", `${money(t.total)} AED`, { grand: true });
+      if (t.paid) row("Amount Paid", `${money(t.paid)} AED`);
+      if (t.paid || !isReceipt) row("Balance Due", `${money(t.balance)} AED`, { due: true });
+      if (isReceipt && t.balance === 0 && t.total > 0) {
+        y += px(8); const sw = 26, sh = 9, sx = R - cellX - sw;
+        pdf.setDrawColor(79, 122, 90); pdf.setLineWidth(0.6); pdf.roundedRect(sx, y, sw, sh, 1.5, 1.5, "S");
+        font(F.body, "bold", 12, [79, 122, 90]); pdf.text("PAID", sx + sw / 2, y + sh / 2, { baseline: "middle", align: "center", charSpace: px(12 * 0.14) });
+        y += sh;
       }
+      // note
+      if (b.invoice_notes) { y += px(22); font(F.body, "normal", 11.5, [85, 85, 85]); page(lh(11.5)); lines(b.invoice_notes, L, W, 11.5); }
+      // footer: payment details + invoice footer, pinned to the bottom of the last page
+      font(F.body, "normal", 11.5);
+      const pay = pdf.splitTextToSize(clean(s.payment_details || ""), W), foot = pdf.splitTextToSize(clean(s.invoice_footer || ""), W);
+      const footH = lh(13) + px(3) + pay.length * lh(11.5) + px(12) + foot.length * lh(11.5);
+      if (y + px(30) + footH > BOTTOM) { pdf.addPage(); y = 20; }
+      y = Math.max(y + px(30), BOTTOM - footH);
+      font(F.body, "bold", 13); pdf.text("Payment Details", L, y, { baseline: "top" }); y += lh(13) + px(3);
+      font(F.body, "normal", 11.5); pay.forEach((ln) => { pdf.text(ln, L, y, { baseline: "top" }); y += lh(11.5); });
+      y += px(12); foot.forEach((ln) => { pdf.text(ln, L, y, { baseline: "top" }); y += lh(11.5); });
+      pdf.setProperties({ title: `${docType} ${b.invoice_no || ""} – ${b.name || ""}`, author: s.business_name || "Polybelle", creator: "Polybelle admin" });
       return pdf;
     } catch (err) {
       console.error("Couldn't build the invoice PDF:", err);
       return null;
-    } finally {
-      frame.remove();
     }
   }
   async function invoiceFile(b, docType) {
@@ -470,23 +560,44 @@
     const name = `${docType}-${b.invoice_no || b.ref}-${b.name || ""}`.replace(/[^A-Za-z0-9 ._-]+/g, "-").replace(/\s+/g, "-").replace(/-+/g, "-") + ".pdf";
     return { blob, name };
   }
-  // Upload the PDF and return a link for the WhatsApp message: a 7-day signed link from the private
-  // "invoices" bucket (see supabase/migrations/20261028120000_invoice_pdf_links.sql); if that bucket
-  // isn't set up, the public bucket is used instead, signed when allowed and unguessable otherwise
-  async function invoicePdfLink(b, pdf) {
+  // Upload the PDF and return a clean link for the WhatsApp message: https://www.polybelle.me/i/<code>.
+  // Each booking keeps one short code (table pb_invoice_files) that always opens its LATEST PDF; every send
+  // uploads a fresh file to the private "invoices" bucket, so nobody ever sees an outdated copy. The link is
+  // served by the "invoice" Edge Function (vercel.json rewrites /i/<code> to it).
+  // If the table isn't set up yet, it falls back to a 7-day signed storage link.
+  const newInvoiceCode = () => {
+    const abc = "23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz", r = crypto.getRandomValues(new Uint8Array(10));
+    return Array.from(r, (n) => abc[n % abc.length]).join("");
+  };
+  async function invoicePdfLink(b, pdf, docType = "Invoice") {
     if (!sb || !pdf) return "";
-    const key = `invoices/${b.id}/${String(b.invoice_no || b.ref).replace(/[^\w.-]+/g, "-")}.pdf`;
-    for (const bucket of ["invoices", C.storageBucket]) {
-      const { error } = await sb.storage.from(bucket).upload(key, pdf.blob, { contentType: "application/pdf", cacheControl: "3600", upsert: true });
-      if (error) { console.error(`Couldn't upload the invoice PDF to ${bucket}:`, error.message); continue; }
-      try {
-        const signed = await sb.storage.from(bucket).createSignedUrl(key, 60 * 60 * 24 * 7);
-        if (!signed.error && signed.data?.signedUrl) return signed.data.signedUrl;
-        console.error(`Couldn't create a signed invoice link in ${bucket}:`, signed.error?.message);
-      } catch (err) { console.error(`Couldn't create a signed invoice link in ${bucket}:`, err.message); }
-      if (bucket !== "invoices") return sb.storage.from(bucket).getPublicUrl(key).data.publicUrl || "";
-    }
-    return "";
+    const no = String(b.invoice_no || b.ref).replace(/[^\w.-]+/g, "-");
+    const path = `${b.id}/${no}-${Date.now()}.pdf`;
+    const up = await sb.storage.from("invoices").upload(path, pdf.blob, { contentType: "application/pdf", cacheControl: "60", upsert: false });
+    if (up.error) { console.error("Couldn't upload the invoice PDF:", up.error.message); return ""; }
+    const fileName = `${docType}-${no}.pdf`;
+    const site = (C.siteUrl || "https://www.polybelle.me").replace(/\/$/, "");
+    const { data: cur, error: findErr } = await sb.from("pb_invoice_files").select("code, path").eq("booking_id", b.id).maybeSingle();
+    if (!findErr) {
+      const row = { path, file_name: fileName, doc_type: docType, invoice_no: b.invoice_no || null, updated_at: new Date().toISOString() };
+      if (cur) {
+        const { error } = await sb.from("pb_invoice_files").update(row).eq("booking_id", b.id);
+        if (!error) {
+          if (cur.path && cur.path !== path) sb.storage.from("invoices").remove([cur.path]);   // tidy up the previous version
+          return `${site}/i/${cur.code}`;
+        }
+        console.error("Couldn't update the invoice link:", error.message);
+      } else {
+        for (let i = 0; i < 3; i++) {
+          const code = newInvoiceCode();
+          const { error } = await sb.from("pb_invoice_files").insert({ code, booking_id: b.id, ...row });
+          if (!error) return `${site}/i/${code}`;
+          if (error.code !== "23505") { console.error("Couldn't save the invoice link:", error.message); break; }
+        }
+      }
+    } else console.error("Invoice links table not available yet:", findErr.message);
+    const signed = await sb.storage.from("invoices").createSignedUrl(path, 60 * 60 * 24 * 7);
+    return signed.data?.signedUrl || "";
   }
   function downloadPdf(pdf) {
     const url = URL.createObjectURL(pdf.blob);
@@ -842,7 +953,7 @@
       const docTitle = f.doc_type.value;
       if (act === "send") {
         const pdf = await invoiceFile(nb, docTitle);
-        const pdfLink = await invoicePdfLink(nb, pdf);
+        const pdfLink = await invoicePdfLink(nb, pdf, docTitle);
         const url = nb.phone ? waLink(nb.phone, invoiceMsg(nb, docTitle, pdfLink)) : "";
         const moveTo = (u) => {
           if (win) { win.location.href = u; return true; }

@@ -1,0 +1,5 @@
+{
+  "rewrites": [
+    { "source": "/i/:code", "destination": "https://ntohdxudxfggsmhxhvho.supabase.co/functions/v1/invoice?c=:code" }
+  ]
+}
