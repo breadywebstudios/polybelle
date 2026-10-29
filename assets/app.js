@@ -313,7 +313,7 @@
   function renderVenues() {
     $("#venueGrid").innerHTML = allVenues().map((v, i) => `
       <article class="venue" style="--d:${i % 4}">
-        <div class="venue-img">
+        <div class="venue-img"${v.other ? "" : ` data-zoom="${i}" role="button" tabindex="0" aria-label="View larger photo of ${esc(v.name)}"`}>
           <img src="${esc(imgFor(v, i))}"${posStyle(v)} alt="${esc(v.other ? `${v.name}: Polybelle events at your venue in Abu Dhabi` : `${v.name}, event hall at Polybelle, Abu Dhabi`)}" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'ph'}))">
           <span class="cap">${v.other ? "At your location" : `Up to ${v.capacity} guests`}</span>
         </div>
@@ -334,6 +334,17 @@
     $("#hallPick").innerHTML = allVenues().map((v) => `
       <label class="chip-radio ${v.other ? "other" : ""}"><input type="radio" name="venue" value="${esc(v.id || v.name)}" ${keep === (v.id || v.name) ? "checked" : ""} required>
         <span><b>${esc(v.name)}</b>${v.capacity != null ? `<small>Up to ${esc(v.capacity)} guests</small>` : ""}</span></label>`).join("");
+    // tap a hall photo to see the whole room, uncropped, in the photo viewer
+    const halls = allVenues().map((v, i) => ({ v, i })).filter(({ v }) => !v.other);
+    $$("[data-zoom]").forEach((el) => {
+      const open = () => {
+        if (!$("img", el)) return;   // photo failed to load
+        const list = halls.map(({ v, i }) => ({ src: imgFor(v, i), alt: `${v.name}, event hall at Polybelle, Abu Dhabi`, cap: [v.name, v.capacity != null ? `Up to ${v.capacity} guests` : ""].filter(Boolean).join(" · ") }));
+        openLb(halls.findIndex(({ i }) => i === +el.dataset.zoom), list);
+      };
+      el.addEventListener("click", open);
+      el.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } });
+    });
     $$("[data-avail]").forEach((b) => b.addEventListener("click", () => {
       if (CAL.open && CAL.hall === b.dataset.avail) return closeAvail();
       openAvail(b.dataset.avail);
@@ -539,7 +550,7 @@
   $("#doneModal").addEventListener("click", (e) => { if (e.target.id === "doneModal") e.currentTarget.classList.remove("open"); });
 
   // ---------- gallery
-  const G = { items: [], filter: "All", shown: 9, view: [], idx: 0 };
+  const G = { items: [], filter: "All", shown: 9, view: [] };
   $("#gFb").href = C.facebook;
   function renderGallery() {
     const cats = ["All", ...C.galleryCategories.filter((c) => G.items.some((g) => g.category === c))];
@@ -552,29 +563,34 @@
         <img src="${esc(g.image_url)}" alt="${esc([g.caption, g.category && g.category !== g.caption ? g.category : "", "Polybelle, Abu Dhabi"].filter(Boolean).join(" · "))}" loading="lazy" onerror="this.style.visibility='hidden'">
         <span><small>${esc(g.category)}</small>${esc(g.caption || "")}</span>
       </button>`).join("") : `<p class="g-empty">New event photos coming soon.</p>`;
-    $$("#gGrid .g-item").forEach((b) => b.addEventListener("click", () => openLb(+b.dataset.i)));
+    $$("#gGrid .g-item").forEach((b) => b.addEventListener("click", () => openLb(+b.dataset.i, G.view.map((g) => ({ src: g.image_url, alt: g.caption || g.category, cap: [g.caption, g.category].filter(Boolean).join(" · ") })))));
     $("#gMore").hidden = G.view.length <= G.shown;
   }
   $("#gMore").addEventListener("click", () => { G.shown += 9; renderGallery(); });
-  function openLb(i) {
-    G.idx = (i + G.view.length) % G.view.length;
-    const g = G.view[G.idx];
-    $("#lbImg").src = g.image_url; $("#lbImg").alt = g.caption || g.category;
-    $("#lbCap").textContent = [g.caption, g.category].filter(Boolean).join(" · ");
+  // photo viewer, shared by the gallery and the hall photos: list = [{ src, alt, cap }]
+  const LB = { list: [], idx: 0 };
+  function openLb(i, list = LB.list) {
+    LB.list = list;
+    if (!list.length) return;
+    LB.idx = (i + list.length) % list.length;
+    const p = list[LB.idx];
+    $("#lbImg").src = p.src; $("#lbImg").alt = p.alt;
+    $("#lbCap").textContent = p.cap;
+    $("#lbPrev").hidden = $("#lbNext").hidden = list.length < 2;
     $("#lightbox").classList.add("open"); document.body.style.overflow = "hidden";
   }
   const closeLb = () => { $("#lightbox").classList.remove("open"); document.body.style.overflow = ""; };
   $("#lbClose").addEventListener("click", closeLb);
-  $("#lbPrev").addEventListener("click", () => openLb(G.idx - 1));
-  $("#lbNext").addEventListener("click", () => openLb(G.idx + 1));
+  $("#lbPrev").addEventListener("click", () => openLb(LB.idx - 1));
+  $("#lbNext").addEventListener("click", () => openLb(LB.idx + 1));
   $("#lightbox").addEventListener("click", (e) => { if (e.target.id === "lightbox") closeLb(); });
   document.addEventListener("keydown", (e) => {
     if (!$("#lightbox").classList.contains("open")) return;
-    if (e.key === "Escape") closeLb(); if (e.key === "ArrowLeft") openLb(G.idx - 1); if (e.key === "ArrowRight") openLb(G.idx + 1);
+    if (e.key === "Escape") closeLb(); if (e.key === "ArrowLeft") openLb(LB.idx - 1); if (e.key === "ArrowRight") openLb(LB.idx + 1);
   });
   let touchX = null;
   $("#lightbox").addEventListener("touchstart", (e) => (touchX = e.touches[0].clientX), { passive: true });
-  $("#lightbox").addEventListener("touchend", (e) => { if (touchX === null) return; const dx = e.changedTouches[0].clientX - touchX; if (Math.abs(dx) > 50) openLb(G.idx + (dx < 0 ? 1 : -1)); touchX = null; });
+  $("#lightbox").addEventListener("touchend", (e) => { if (touchX === null) return; const dx = e.changedTouches[0].clientX - touchX; if (Math.abs(dx) > 50) openLb(LB.idx + (dx < 0 ? 1 : -1)); touchX = null; });
 
   // ---------- reviews
   const R = { items: [], shown: 6 };

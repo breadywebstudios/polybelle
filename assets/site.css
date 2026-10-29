@@ -175,6 +175,8 @@ b, strong { font-weight: 500; }
 }
 .venue-img img, .venue-img .ph { position: absolute; inset: 5px; width: calc(100% - 10px); height: calc(100% - 10px); object-fit: cover; transform: scale(1.12); transition: transform 1.4s var(--ease); }
 .venue-img .ph { background: linear-gradient(140deg, var(--blush), var(--sand)); }
+.venue-img[data-zoom] { cursor: zoom-in; }
+.venue-img[data-zoom]:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
 .venue.in .venue-img img, .venue.in .venue-img .ph { transform: scale(1); }
 .venue:hover .venue-img img { transform: scale(1.05); }
 .venue-img::after { content: ""; position: absolute; inset: 5px; background: var(--ivory); transform-origin: bottom; transition: transform 1.2s var(--ease); transition-delay: calc(var(--d, 0) * .12s); }
