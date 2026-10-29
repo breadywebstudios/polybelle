@@ -142,27 +142,42 @@ b, strong { font-weight: 500; }
 .occasions { margin: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 0; color: var(--muted); font-size: .72rem; letter-spacing: .24em; text-transform: uppercase; }
 .occasions span { white-space: nowrap; display: inline-flex; align-items: center; }
 .occasions span + span::before { content: ""; width: 4px; height: 4px; border-radius: 50%; background: var(--gold); margin: 0 16px; }
-.about-social-label { margin: 28px 0 12px; color: var(--muted); font-size: .72rem; letter-spacing: .18em; text-transform: uppercase; }
+.about-head { display: grid; justify-items: center; gap: 16px; margin-bottom: 30px; }
 .about-wrap { max-width: 1180px; }
 .about-wrap .statement, .about-wrap .occasions, .about-wrap .seo-about { max-width: 760px; margin-inline: auto; }
-.about-facebook-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; text-align: left; }
-.about-facebook-card { display: flex; flex: 0 1 calc((100% - 24px) / 3); flex-direction: column; min-width: 0; padding: 12px; border: 1px solid var(--line); border-radius: 8px; transition: background .25s, color .25s, border-color .25s; }
-.about-facebook-card > a { display: grid; align-content: start; gap: 8px; color: var(--ink); text-decoration: none; }
-.about-facebook-preview { display: block; width: 100%; height: var(--fb-h, 420px); margin-top: auto; border: 0; border-radius: 4px; background: #fff; overflow: hidden; }
-@media (max-width: 700px) { .about-facebook-preview { --fb-h: 380px; } }
-.about-facebook-heading { display: flex; align-items: center; gap: 8px; }
-.about-facebook-heading svg { width: 22px; height: 22px; flex: 0 0 auto; fill: #1877F2; }
-.about-facebook-card a strong { font: 500 1.1rem/1.2 var(--serif); }
-.about-facebook-card a span, .about-facebook-card a ul { color: var(--muted); font-size: .82rem; line-height: 1.5; }
-.about-facebook-links .about-facebook-heading { color: var(--ink); font-size: 1rem; line-height: 1.2; }
-.about-facebook-links .about-facebook-heading strong { font-size: 1.1rem; }
-.about-facebook-card a ul { margin: 0; padding-left: 1.2em; }
-.about-facebook-card a li + li { margin-top: 3px; }
-.about-facebook-card:hover { border-color: var(--ink); background: var(--ink); color: #fff; }
-.about-facebook-card:hover a span, .about-facebook-card:hover a ul { color: #CFC2B8; }
-.about-facebook-card:hover .about-facebook-heading { color: #fff; }
-@media (max-width: 700px) { .about-facebook-card { flex-basis: calc((100% - 12px) / 2); } }
-@media (max-width: 420px) { .about-facebook-card { flex-basis: 100%; } }
+.about-social-label { display: flex; align-items: center; justify-content: center; gap: 16px; margin: 56px 0 26px; color: var(--gold); font: 500 .72rem/1 var(--sans); letter-spacing: .28em; text-transform: uppercase; }
+.about-social-label::before, .about-social-label::after { content: ""; width: 48px; height: 1px; background: var(--gold-shine); }
+.about-swipe-hint { display: none; }
+
+/* Facebook page cards: photo on top, then the page name and what it offers; thin shiny gold frame */
+.about-facebook-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 22px; text-align: left; }
+.about-facebook-card { position: relative; display: flex; flex-direction: column; flex: 0 1 calc((100% - 44px) / 3); min-width: 0; overflow: hidden; border: 1px solid transparent; border-radius: 14px; background: linear-gradient(var(--white), var(--white)) padding-box, var(--gold-shine) border-box; box-shadow: 0 1px 2px rgba(43,33,29,.05), 0 14px 34px -22px rgba(43,33,29,.35); transition: transform .45s var(--ease), box-shadow .45s var(--ease); }
+.about-facebook-card:hover { transform: translateY(-4px); box-shadow: 0 1px 2px rgba(43,33,29,.05), 0 26px 44px -24px rgba(43,33,29,.5); }
+.about-facebook-card > a:first-child { order: 2; flex: 1; display: grid; align-content: start; gap: 12px; padding: 20px 22px 24px; color: var(--ink); text-decoration: none; }
+.about-facebook-heading { display: flex; align-items: center; gap: 10px; color: var(--ink); }
+.about-facebook-heading svg { width: 20px; height: 20px; flex: 0 0 auto; fill: #1877F2; }
+.about-facebook-card a strong { font: 500 1.4rem/1.15 var(--serif); }
+.about-facebook-card a > span:not(.about-facebook-heading), .about-facebook-card a ul { color: var(--muted); font-size: .86rem; line-height: 1.6; }
+.about-facebook-card a > span:not(.about-facebook-heading) { display: block; }
+.about-facebook-card a ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.about-facebook-card a li { position: relative; padding-left: 18px; }
+.about-facebook-card a li::before { content: ""; position: absolute; left: 2px; top: .62em; width: 5px; height: 5px; background: var(--gold-soft); transform: rotate(45deg); }
+
+@media (max-width: 1000px) { .about-facebook-card { flex-basis: calc((100% - 22px) / 2); } }
+/* phones: one swipeable row, the next card peeking in from the right */
+@media (max-width: 700px) {
+  .about-social-label { margin: 44px 0 10px; }
+  .about-swipe-hint { display: block; margin: 0 0 16px; color: var(--hint); font-size: .78rem; letter-spacing: .06em; }
+  .about-swipe-hint span { display: inline-block; animation: swipeNudge 1.8s var(--ease) infinite; }
+  .about-facebook-links { flex-wrap: nowrap; justify-content: flex-start; gap: 14px; margin-inline: -20px; padding: 4px 20px 22px; overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: 20px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .about-facebook-links::-webkit-scrollbar { display: none; }
+  .about-facebook-card { flex: 0 0 84%; scroll-snap-align: start; }
+  .about-facebook-card:hover { transform: none; }
+  .about-facebook-card > a:first-child { padding: 18px 18px 20px; }
+  .about-facebook-card a strong { font-size: 1.3rem; }
+}
+@keyframes swipeNudge { 0%, 100% { transform: none; } 50% { transform: translateX(5px); } }
+@media (prefers-reduced-motion: reduce) { .about-swipe-hint span { animation: none; } .about-facebook-card { transition: none; } }
 
 /* ---------- Halls ---------- */
 
@@ -672,18 +687,15 @@ html.uc-preview .wa-float { bottom: 58px; }
 /* short plain-text description of halls and services (also read by search engines) */
 .seo-about { max-width: 640px; margin: 22px auto 0; color: var(--muted); font-size: .92rem; line-height: 1.7; }
 
-/* Facebook cards whose page Facebook won't embed (profiles / restricted pages): photo + page name + Visit button */
-.fb-fallback { position: relative; display: block; height: var(--fb-h, 420px); margin-top: auto; overflow: hidden; border-radius: 4px; background: var(--sand); text-decoration: none; }
-@media (max-width: 700px) { .fb-fallback { --fb-h: 380px; } }
-.fb-fallback img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform 1s var(--ease); }
-.fb-fallback:hover img { transform: scale(1.04); }
-.about-facebook-card .fb-fallback .fb-fallback-bar { position: absolute; left: 10px; right: 10px; bottom: 10px; display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; background: #fff; box-shadow: 0 4px 18px rgba(0,0,0,.18); }
-.fb-fallback-logo svg { display: block; width: 30px; height: 30px; fill: #1877F2; }
-.about-facebook-card .fb-fallback .fb-fallback-name { display: grid; min-width: 0; flex: 1; line-height: 1.25; }
-.fb-fallback-name b { overflow: hidden; color: #1c1e21; font: 600 .9rem/1.25 var(--sans); white-space: nowrap; text-overflow: ellipsis; }
-.about-facebook-card .fb-fallback .fb-fallback-name small, .about-facebook-card:hover .fb-fallback .fb-fallback-name small { color: #65676b; font-size: .74rem; }
-.about-facebook-card .fb-fallback .fb-fallback-btn, .about-facebook-card:hover .fb-fallback .fb-fallback-btn { flex: 0 0 auto; padding: 8px 12px; border-radius: 6px; background: #1877F2; color: #fff; font: 600 .78rem/1 var(--sans); }
-.about-facebook-card .fb-fallback:hover .fb-fallback-btn { background: #0B5FD3; }
+/* Facebook card photo (sits on top of the card) with a small "Visit page" badge */
+.fb-fallback { order: 1; position: relative; display: block; aspect-ratio: 4 / 3; overflow: hidden; background: var(--sand); text-decoration: none; }
+.fb-fallback img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform 1.2s var(--ease); }
+.about-facebook-card:hover .fb-fallback img { transform: scale(1.05); }
+.about-facebook-card .fb-fallback .fb-fallback-bar { position: absolute; right: 12px; bottom: 12px; display: flex; align-items: center; gap: 8px; padding: 6px 14px 6px 6px; border-radius: 999px; background: rgba(255,255,255,.95); box-shadow: 0 8px 20px -8px rgba(0,0,0,.45); transition: background .3s; }
+.fb-fallback-logo svg { display: block; width: 24px; height: 24px; fill: #1877F2; }
+.about-facebook-card .fb-fallback .fb-fallback-name { display: none; }
+.about-facebook-card .fb-fallback .fb-fallback-btn { color: #1877F2; font: 600 .76rem/1 var(--sans); letter-spacing: .02em; }
+.about-facebook-card .fb-fallback:hover .fb-fallback-bar { background: #fff; }
 
 /* reviews: "Read full review" link on cards + slide-in reading pane */
 .r-card .r-read { align-self: flex-start; padding: 0; border: 0; background: none; color: var(--gold); font: 500 .7rem/1 var(--sans); letter-spacing: .16em; text-transform: uppercase; cursor: pointer; }
@@ -727,3 +739,30 @@ html.uc-preview .wa-float { bottom: 58px; }
   .r-pane-foot { padding: 12px 22px calc(12px + env(safe-area-inset-bottom)); }
 }
 @media (prefers-reduced-motion: reduce) { .r-pane-box, .r-pane-bg { transition: none; } .r-pane-read { animation: none; } }
+
+/* ---------- FAQ (open/close is native <details>, so it works without JavaScript) ---------- */
+.faq { background: var(--ivory); }
+.faq .section-head { margin-bottom: clamp(22px, 3vw, 34px); }
+/* two independent columns on wider screens, so opening an answer only pushes down the questions under it */
+.faq-list { max-width: 1080px; margin: 0 auto; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 14px; align-items: start; }
+.faq-col { display: grid; gap: 10px; }
+.faq-item { border: 1px solid transparent; border-radius: 12px; background: linear-gradient(var(--white), var(--white)) padding-box, var(--gold-shine) border-box; box-shadow: 0 10px 28px -24px rgba(43,33,29,.4); transition: box-shadow .35s var(--ease); }
+.faq-item[open] { box-shadow: 0 18px 36px -26px rgba(43,33,29,.55); }
+.faq-item summary { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 20px; cursor: pointer; list-style: none; }
+.faq-item summary::-webkit-details-marker { display: none; }
+.faq-item summary:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; border-radius: 12px; }
+.faq-item h3 { font: 500 1.12rem/1.3 var(--serif); color: var(--ink); }
+.faq-item summary::after { content: ""; flex: 0 0 auto; width: 9px; height: 9px; margin-right: 4px; border: solid var(--gold); border-width: 0 1.5px 1.5px 0; transform: translateY(-3px) rotate(45deg); transition: transform .35s var(--ease); }
+.faq-item[open] summary::after { transform: translateY(2px) rotate(-135deg); }
+.faq-item p { margin: 0; padding: 0 20px 16px; color: var(--muted); font-size: .9rem; line-height: 1.65; animation: faqIn .4s var(--ease); }
+.faq-more { margin: 20px 0 0; text-align: center; color: var(--muted); }
+.faq-more a { color: var(--gold); text-underline-offset: 4px; }
+@keyframes faqIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+@media (max-width: 700px) {
+  .faq-list { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .faq-col { gap: 8px; }
+  .faq-item summary { padding: 12px 16px; gap: 12px; }
+  .faq-item h3 { font-size: 1.04rem; }
+  .faq-item p { padding: 0 16px 14px; font-size: .88rem; }
+}
+@media (prefers-reduced-motion: reduce) { .faq-item p { animation: none; } }

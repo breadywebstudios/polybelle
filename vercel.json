@@ -1,5 +1,9 @@
 {
   "rewrites": [
     { "source": "/i/:code", "destination": "https://ntohdxudxfggsmhxhvho.supabase.co/functions/v1/invoice?c=:code" }
+  ],
+  "headers": [
+    { "source": "/i/:code", "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }] },
+    { "source": "/admin.html", "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }] }
   ]
 }
