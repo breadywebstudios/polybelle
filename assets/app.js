@@ -313,7 +313,7 @@
   function renderVenues() {
     $("#venueGrid").innerHTML = allVenues().map((v, i) => `
       <article class="venue" style="--d:${i % 4}">
-        <div class="venue-img"${v.other ? "" : ` data-zoom="${i}" role="button" tabindex="0" aria-label="View larger photo of ${esc(v.name)}"`}>
+        <div class="venue-img" data-zoom="${i}" role="button" tabindex="0" aria-label="View larger photo of ${esc(v.name)}">
           <img src="${esc(imgFor(v, i))}"${posStyle(v)} alt="${esc(v.other ? `${v.name}: Polybelle events at your venue in Abu Dhabi` : `${v.name}, event hall at Polybelle, Abu Dhabi`)}" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'ph'}))">
           <span class="cap">${v.other ? "At your location" : `Up to ${v.capacity} guests`}</span>
         </div>
@@ -334,12 +334,12 @@
     $("#hallPick").innerHTML = allVenues().map((v) => `
       <label class="chip-radio ${v.other ? "other" : ""}"><input type="radio" name="venue" value="${esc(v.id || v.name)}" ${keep === (v.id || v.name) ? "checked" : ""} required>
         <span><b>${esc(v.name)}</b>${v.capacity != null ? `<small>Up to ${esc(v.capacity)} guests</small>` : ""}</span></label>`).join("");
-    // tap a hall photo to see the whole room, uncropped, in the photo viewer
-    const halls = allVenues().map((v, i) => ({ v, i })).filter(({ v }) => !v.other);
+    // tap a hall (or Other venues) photo to see the whole picture, uncropped, in the photo viewer
+    const halls = allVenues().map((v, i) => ({ v, i }));
     $$("[data-zoom]").forEach((el) => {
       const open = () => {
         if (!$("img", el)) return;   // photo failed to load
-        const list = halls.map(({ v, i }) => ({ src: imgFor(v, i), alt: `${v.name}, event hall at Polybelle, Abu Dhabi`, cap: [v.name, v.capacity != null ? `Up to ${v.capacity} guests` : ""].filter(Boolean).join(" · ") }));
+        const list = halls.map(({ v, i }) => ({ src: imgFor(v, i), alt: v.other ? `${v.name}: Polybelle events at your venue in Abu Dhabi` : `${v.name}, event hall at Polybelle, Abu Dhabi`, cap: [v.name, v.other ? "At your location" : v.capacity != null ? `Up to ${v.capacity} guests` : ""].filter(Boolean).join(" · ") }));
         openLb(halls.findIndex(({ i }) => i === +el.dataset.zoom), list);
       };
       el.addEventListener("click", open);
