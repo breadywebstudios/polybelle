@@ -44,6 +44,8 @@
         <button data-tab="gallery">Gallery</button>
         <button data-tab="reviews">Reviews <span class="tab-count" id="rPendingCount" hidden></span></button>
         <button data-tab="promos">Promo codes</button>
+        <button data-tab="inbox">Inbox <span class="tab-count" id="inUnreadCount" hidden></span></button>
+        <button data-tab="email">Email</button>
         <button data-tab="settings">Settings</button>
       </div>
     </nav>
@@ -160,6 +162,56 @@
             <tbody id="promoRows"><tr><td colspan="6" class="empty">Loading promo codes…</td></tr></tbody>
           </table>
         </div>
+      </section>
+
+      <!-- Inbox -->
+      <section class="panel" id="tab-inbox">
+        <p class="lead" style="margin:0 0 18px">Emails sent to any <b>@polybelle.me</b> address. Open one to read it, then <b>Reply</b> — your answer is sent from the address it was written to and stays in the same conversation for the customer.</p>
+        <div class="toolbar">
+          <input type="search" id="inQ" placeholder="Search sender, subject…">
+          <select id="inFilter">
+            <option value="inbox">Inbox</option>
+            <option value="unread">Unread</option>
+            <option value="archived">Archived</option>
+            <option value="all">All emails</option>
+          </select>
+          <span class="hint" id="inCount" style="margin:0"></span>
+          <button class="btn btn-outline sm" id="inRefresh" type="button" style="margin-left:auto">Refresh</button>
+        </div>
+        <div class="rlist" id="inList"><p class="empty">Loading…</p></div>
+      </section>
+
+      <!-- Email -->
+      <section class="panel" id="tab-email">
+        <form class="card" id="emailForm" style="max-width:760px">
+          <h3>Send an email</h3>
+          <p class="hint" style="margin:0">Sent from a polybelle.me address. Replies go to the reply-to address (or the sender address if left empty).</p>
+          <div class="grid-2">
+            <label class="field">From name<input name="from_name" maxlength="80" value="Polybelle Event Halls" required></label>
+            <label class="field">From address
+              <span class="em-from"><input name="from_local" required maxlength="64" pattern="[A-Za-z0-9]([A-Za-z0-9._\-]*[A-Za-z0-9])?" value="info" autocomplete="off"><b>@polybelle.me</b></span>
+            </label>
+          </div>
+          <label class="field">To (separate several with commas)<input name="to" required list="emCustomers" placeholder="customer@example.com" autocomplete="off"></label>
+          <datalist id="emCustomers"></datalist>
+          <div class="grid-2">
+            <label class="field">CC (optional)<input name="cc" placeholder="Optional" autocomplete="off"></label>
+            <label class="field">Reply-to (optional)<input type="email" name="reply_to" placeholder="e.g. your Gmail" autocomplete="off"></label>
+          </div>
+          <label class="field">Subject<input name="subject" required maxlength="200"></label>
+          <label class="field">Message<textarea name="body" rows="12" required placeholder="Dear …"></textarea></label>
+          <label class="field">Attachments (optional, 10 MB total)<input type="file" name="files" multiple></label>
+          <input type="hidden" name="booking_ref">
+          <input type="hidden" name="inbox_id">
+          <p class="hint" id="emRef" hidden></p>
+          <div class="em-acts"><button class="btn btn-primary sm" type="submit">Send email</button><button class="btn btn-outline sm" type="reset">Clear</button></div>
+        </form>
+        <div class="toolbar">
+          <h3 style="font-size:1.4rem;margin:0">Sent emails</h3>
+          <span class="hint" id="emCount" style="margin:0"></span>
+          <button class="btn btn-outline sm" id="emRefresh" type="button" style="margin-left:auto">Refresh</button>
+        </div>
+        <div class="rlist" id="emLog"><p class="empty">Loading…</p></div>
       </section>
 
       <!-- Settings -->

@@ -325,3 +325,23 @@ i.c-Cancelled, .ac-chip.c-Cancelled { background: #F1E4E1; color: #9A4436; text-
 .gcard .g-acts { display: grid; justify-items: end; gap: 4px; }
 .g-edit-prev { display: grid; place-items: center; max-height: 340px; overflow: hidden; border: 1px solid var(--line); border-radius: 12px; background: var(--cream); }
 .g-edit-prev img { display: block; max-width: 100%; max-height: 340px; object-fit: contain; }
+
+/* Email */
+.em-from { display: flex; align-items: stretch; }
+.em-from input { flex: 1; min-width: 0; }
+.em-from b { display: grid; place-items: center; padding: 0 12px; border: 1px solid var(--line); border-left: 0; background: var(--white); font: 400 1rem var(--sans); letter-spacing: 0; text-transform: none; color: var(--muted); }
+.em-acts { display: flex; gap: 8px; flex-wrap: wrap; }
+.rcard.em-fail { border-color: #A9473A; }
+.rcard .em-body { color: var(--muted); font-size: .92rem; max-height: 4.8em; overflow: hidden; }
+.rcard.open .em-body { max-height: none; color: var(--ink); }
+
+/* Inbox */
+.in-row { text-align: left; font: inherit; color: inherit; cursor: pointer; gap: 4px; }
+.in-row:hover { border-color: var(--ink); }
+.in-row .in-when { margin-left: auto; }
+.in-row .in-subj { color: var(--muted); }
+.in-row.unread { border-left: 3px solid var(--rose); }
+.in-row.unread .in-subj { color: var(--ink); font-weight: 500; }
+.in-files { display: flex; gap: 8px; flex-wrap: wrap; }
+.in-frame { width: 100%; height: 60vh; min-height: 320px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+.in-text { white-space: pre-wrap; word-break: break-word; font-size: .95rem; line-height: 1.55; }

@@ -1,2 +1,9 @@
 [functions.admin-create-user]
 verify_jwt = true
+
+[functions.admin-send-email]
+verify_jwt = true
+
+# Resend calls this webhook; it checks the Resend (Svix) signature itself.
+[functions.email-inbound]
+verify_jwt = false

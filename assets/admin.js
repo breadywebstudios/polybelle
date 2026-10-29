@@ -144,8 +144,8 @@
     $("#whoEmail").textContent = user.email;
     $("#loginView").style.display = "none";
     $("#appView").classList.add("on");
-    await Promise.all([loadVenues(), loadBookings(), loadSettings(), loadAdmins(), loadGallery(), loadReviews(), loadServices(), loadPromos()]);
-    setInterval(() => { if (!document.hidden) loadBookings(true); }, 60000);
+    await Promise.all([loadVenues(), loadBookings(), loadSettings(), loadAdmins(), loadGallery(), loadReviews(), loadServices(), loadPromos(), loadEmails(), loadInbox()]);
+    setInterval(() => { if (!document.hidden) { loadBookings(true); loadInbox(true); } }, 60000);
   }
 
   $("#loginForm").addEventListener("submit", async (e) => {
@@ -179,6 +179,7 @@
     const newPending = S.bookings.length && bookings.filter((b) => b.status === "Pending" && !S.bookings.some((o) => o.id === b.id)).length;
     S.bookings = bookings;
     renderBookings();
+    if (S.inbox) renderInbox();   // "Customer · ref" tags come from booking emails
     if (quiet && newPending) toast(`${newPending} new booking request${newPending > 1 ? "s" : ""}`);
   }
 
@@ -816,12 +817,14 @@
       </div>
       <div class="drawer-foot">
         <a class="btn btn-wa sm" target="_blank" rel="noopener" href="${waLink(b.phone, customerMsg(b, b.status))}">WhatsApp customer</a>${waTest(customerMsg(b, b.status))}
+        ${b.email ? `<button class="btn btn-outline sm" id="emailBtn" type="button">Email customer</button>` : ""}
         <button class="btn btn-outline sm" id="delBtn" type="button" style="margin-left:auto">Delete</button>
       </div>`;
     $("[data-close]", d).addEventListener("click", closeDrawers);
     $("#editBtn").addEventListener("click", () => openBookingForm(b));
     $$("[data-goto]", d).forEach((x) => x.addEventListener("click", () => openBooking(fresh(x.dataset.goto))));
     $("#invBtn").addEventListener("click", () => openInvoice(b));
+    $("#emailBtn", d)?.addEventListener("click", () => emailBooking(b));
     $$("[data-st]", d).forEach((btn) => btn.addEventListener("click", async () => {
       const st = btn.dataset.st;
       if (st === b.status) return;
@@ -1745,6 +1748,307 @@
     toast(`Admin ${email} added`);
     loadAdmins();
   });
+
+  // ---------------- email (sent from @polybelle.me by the admin-send-email Edge Function)
+  const MAX_EMAIL_FILES = 10 * 1024 * 1024;
+  const fileBase64 = (file) => new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result).split(",")[1] || "");
+    r.onerror = () => reject(r.error);
+    r.readAsDataURL(file);
+  });
+
+  function emailCustomers() {
+    const seen = new Map();
+    S.bookings.forEach((b) => { const e = (b.email || "").trim().toLowerCase(); if (e && !seen.has(e)) seen.set(e, b.name); });
+    $("#emCustomers").innerHTML = [...seen].map(([e, n]) => `<option value="${esc(e)}">${esc(n || "")}</option>`).join("");
+  }
+
+  // what the email being written is linked to: a booking ref and/or the Inbox email it replies to
+  function setEmailLink(ref, inbox) {
+    const f = $("#emailForm");
+    f.booking_ref.value = ref || "";
+    f.inbox_id.value = inbox?.id || "";
+    const parts = [inbox ? `Reply to “${inbox.subject || "(no subject)"}” from ${inbox.from_address}` : "", ref ? `Linked to booking ${ref}` : ""].filter(Boolean);
+    $("#emRef").hidden = !parts.length;
+    $("#emRef").textContent = parts.join(" · ") + (parts.length ? "." : "");
+  }
+
+  function emailBooking(b) {
+    const f = $("#emailForm");
+    ["cc", "reply_to", "files"].forEach((n) => { f[n].value = ""; });   // nothing left over from an earlier draft
+    f.to.value = b.email || "";
+    f.subject.value = `Your Polybelle booking ${b.ref}`;
+    f.body.value = `Dear ${b.name || "customer"},\n\n\n\nKind regards,\nPolybelle Event Halls & Studio`;
+    setEmailLink(b.ref);
+    closeDrawers();
+    $(`.tabs [data-tab="email"]`).click();
+    emailCustomers();
+    f.body.focus();
+    f.body.setSelectionRange(f.body.value.indexOf("\n\n") + 2, f.body.value.indexOf("\n\n") + 2);
+  }
+
+  async function loadEmails() {
+    const { data, error } = await sb.from("pb_emails").select("*").order("created_at", { ascending: false }).limit(200);
+    if (error) {
+      $("#emLog").innerHTML = `<p class="empty">Couldn't load sent emails: ${esc(error.message)}</p>`;
+      return;
+    }
+    $("#emCount").textContent = data.length ? `${data.length}${data.length === 200 ? "+" : ""} email${data.length > 1 ? "s" : ""}` : "";
+    $("#emLog").innerHTML = data.length ? data.map((m) => `
+      <div class="rcard${m.status === "Failed" ? " em-fail" : ""}" data-em="${m.id}">
+        <div class="rtop"><b>${esc(m.subject)}</b><span class="badge ${m.status === "Failed" ? "b-Cancelled" : "b-Confirmed"}">${esc(m.status)}</span><small>${fmtStamp(m.created_at)}</small></div>
+        <small>From ${esc(m.from_address)} to ${esc(m.to_addresses.join(", "))}${m.cc_addresses?.length ? ` · CC ${esc(m.cc_addresses.join(", "))}` : ""}${m.booking_ref ? ` · Booking ${esc(m.booking_ref)}` : ""} · by ${esc(m.sent_by)}</small>
+        ${m.attachments?.length ? `<small>📎 ${esc(m.attachments.join(", "))}</small>` : ""}
+        ${m.error ? `<small style="color:#A9473A">${esc(m.error)}</small>` : ""}
+        <p class="em-body">${esc(m.body)}</p>
+        <div class="ract"><button class="linkbtn" type="button" data-em-open>Show / hide full message</button><button class="linkbtn" type="button" data-em-reuse>Send again / edit</button></div>
+      </div>`).join("") : `<p class="empty">No emails sent yet.</p>`;
+    $$("#emLog [data-em]").forEach((card) => {
+      const m = data.find((x) => x.id === card.dataset.em);
+      $("[data-em-open]", card).addEventListener("click", () => card.classList.toggle("open"));
+      $("[data-em-reuse]", card).addEventListener("click", () => {
+        const f = $("#emailForm");
+        f.from_local.value = m.from_address.split("@")[0];
+        f.to.value = m.to_addresses.join(", ");
+        f.cc.value = m.cc_addresses?.join(", ") || "";
+        f.reply_to.value = m.reply_to || "";
+        f.subject.value = m.subject;
+        f.body.value = m.body;
+        f.files.value = "";
+        // a reply sent again stays a reply (same conversation, marks the Inbox email Replied)
+        const inbox = m.inbox_id ? (S.inbox?.find((x) => x.id === m.inbox_id) || { id: m.inbox_id, subject: m.subject.replace(/^re:\s*/i, ""), from_address: m.to_addresses[0] }) : null;
+        setEmailLink(m.booking_ref, inbox);
+        f.scrollIntoView({ behavior: "smooth" });
+      });
+    });
+  }
+
+  $("#emailForm").addEventListener("reset", () => setTimeout(() => setEmailLink(), 0));
+  $("#emRefresh").addEventListener("click", loadEmails);
+  $(`.tabs [data-tab="email"]`).addEventListener("click", emailCustomers);
+  $("#emailForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const f = e.target;
+    const files = [...f.files.files];
+    if (files.reduce((n, x) => n + x.size, 0) > MAX_EMAIL_FILES) return toast("Attachments must total 10 MB or less.");
+    const to = f.to.value.split(/[,;\s]+/).filter(Boolean);
+    if (!to.length) return toast("Enter at least one recipient.");
+    if (!confirm(`Send “${f.subject.value.trim()}” to ${to.join(", ")}?`)) return;
+    const button = f.querySelector("button[type='submit']");
+    button.disabled = true; button.textContent = "Sending…";
+    let result;
+    try {
+      const attachments = await Promise.all(files.map(async (x) => ({ filename: x.name, content: await fileBase64(x) })));
+      result = await sb.functions.invoke("admin-send-email", { body: {
+        from_name: f.from_name.value.trim(), from_local: f.from_local.value.trim(),
+        to, cc: f.cc.value, reply_to: f.reply_to.value.trim(),
+        subject: f.subject.value.trim(), body: f.body.value, booking_ref: f.booking_ref.value || null,
+        inbox_id: f.inbox_id.value || null, attachments
+      } });
+    } catch (error) {
+      result = { error };
+    }
+    button.disabled = false; button.textContent = "Send email";
+    const { data, error } = result;
+    if (error || data?.success !== true) {
+      let message = error?.message || "The email service returned an unexpected response.";
+      try {
+        const details = await error?.context?.json?.();
+        if (details?.error) message = details.error;
+      } catch (parseError) {
+        console.warn("Could not read the send-email error response:", parseError);
+      }
+      loadEmails();
+      return toast("Couldn't send: " + message);
+    }
+    const fromName = f.from_name.value, fromLocal = f.from_local.value, replied = f.inbox_id.value;
+    f.reset();
+    f.from_name.value = fromName; f.from_local.value = fromLocal;
+    toast(`Email sent from ${data.from}`);
+    loadEmails();
+    if (replied) loadInbox(true);
+  });
+
+  // ---------------- inbox (received by Resend → email-inbound Edge Function → pb_inbox)
+  const IN_COLS = "id,received_at,from_address,from_name,to_addresses,cc_addresses,received_for,reply_to,subject,attachments,auth,is_read,archived,replied_at";
+  const OUR_DOMAIN = "@polybelle.me";
+  const inCustomer = (addr) => S.bookings.find((b) => (b.email || "").trim().toLowerCase() === addr);
+  // a received HTML email → plain text (DOMParser doesn't run scripts or load images)
+  const htmlText = (html) => {
+    const doc = new DOMParser().parseFromString(html || "", "text/html");
+    $$("style,script,head", doc).forEach((x) => x.remove());
+    $$("br", doc).forEach((x) => x.replaceWith("\n"));
+    $$("p,div,tr,li,h1,h2,h3,h4,h5,h6", doc).forEach((x) => x.append("\n"));
+    return (doc.body?.textContent || "").replace(/[ \t ]+/g, " ").replace(/ *\n */g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+  };
+  // a received HTML email → srcdoc for the sandboxed iframe (no scripts, no forms). Every link opens in a new
+  // tab with noopener, so a page it opens can't redirect the admin tab. Pictures from the internet load
+  // only when asked (remote = true), so senders can't track opens.
+  const emailFrame = (html, remote) => {
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    $$("script,base,meta,form,iframe,frame,object,embed,link[rel~=import]", doc).forEach((x) => x.remove());
+    $$("a,area", doc).forEach((a) => { a.setAttribute("target", "_blank"); a.setAttribute("rel", "noopener noreferrer"); });
+    const csp = `default-src 'none'; img-src data:${remote ? " https: http:" : ""}; style-src 'unsafe-inline'${remote ? " https:" : ""}; font-src data:${remote ? " https:" : ""}; form-action 'none'`;
+    return `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${csp}"><meta name="referrer" content="no-referrer"><base target="_blank"><style>body{font-family:Helvetica,Arial,sans-serif;font-size:15px;line-height:1.5;color:#3A2A24;margin:12px;word-wrap:break-word}img{max-width:100%;height:auto}</style>${doc.head.innerHTML}</head><body>${doc.body.innerHTML}</body></html>`;
+  };
+  // failed SPF/DKIM/DMARC from Resend's receiving server: the sender may not be who they claim
+  const inSuspicious = (m) => {
+    const a = m.auth || {};
+    return [a.spf, a.dkim, a.dmarc].some((r) => /^(fail|softfail)/i.test(String(r?.result ?? r?.status ?? r ?? "")));
+  };
+
+  async function loadInbox(quiet) {
+    const { data, error } = await sb.from("pb_inbox").select(IN_COLS).order("received_at", { ascending: false }).limit(500);
+    if (error) {
+      if (!quiet) $("#inList").innerHTML = `<p class="empty">Couldn't load the inbox: ${esc(error.message)}</p>`;
+      return;
+    }
+    const fresh = S.inbox && data.filter((m) => !m.is_read && !S.inbox.some((o) => o.id === m.id)).length;
+    S.inbox = data;
+    renderInbox();
+    if (quiet && fresh) toast(`${fresh} new email${fresh > 1 ? "s" : ""} in the Inbox`);
+  }
+
+  function renderInbox() {
+    const unread = S.inbox.filter((m) => !m.is_read && !m.archived).length;
+    $("#inUnreadCount").hidden = !unread; $("#inUnreadCount").textContent = unread;
+    const f = $("#inFilter").value, q = $("#inQ").value.trim().toLowerCase();
+    const list = S.inbox.filter((m) =>
+      (f === "all" || (f === "archived" ? m.archived : !m.archived && (f !== "unread" || !m.is_read))) &&
+      (!q || [m.from_name, m.from_address, m.subject, m.to_addresses.join(" ")].join(" ").toLowerCase().includes(q)));
+    $("#inCount").textContent = `${list.length} email${list.length === 1 ? "" : "s"}${unread ? ` · ${unread} unread` : ""}`;
+    $("#inList").innerHTML = list.length ? list.map((m) => {
+      const c = inCustomer(m.from_address);
+      return `<button type="button" class="rcard in-row${m.is_read ? "" : " unread"}" data-in="${m.id}">
+        <span class="rtop"><b>${esc(m.from_name || m.from_address)}</b>${c ? `<span class="badge b-Confirmed">Customer · ${esc(c.ref)}</span>` : ""}${m.replied_at ? `<small>↩ Replied</small>` : ""}${inSuspicious(m) ? `<span class="badge b-Cancelled">Check sender</span>` : ""}<small class="in-when">${fmtStamp(m.received_at)}</small></span>
+        <span class="in-subj">${esc(m.subject || "(no subject)")}${m.attachments?.length ? " 📎" : ""}</span>
+        <small>To ${esc(m.to_addresses.join(", "))}</small>
+      </button>`;
+    }).join("") : `<p class="empty">${S.inbox.length ? "No emails match." : "No emails yet. Mail sent to any @polybelle.me address will appear here."}</p>`;
+    $$("#inList [data-in]").forEach((b) => b.addEventListener("click", () => openInboxEmail(b.dataset.in)));
+  }
+
+  async function setInbox(m, changes) {
+    const { error } = await sb.from("pb_inbox").update(changes).eq("id", m.id);
+    if (error) { toast(error.message); return false; }
+    Object.assign(m, changes);
+    const cur = S.inbox.find((x) => x.id === m.id);   // the minute poll may have replaced the list meanwhile
+    if (cur && cur !== m) Object.assign(cur, changes);
+    renderInbox();
+    return true;
+  }
+
+  let inOpenSeq = 0;
+  async function openInboxEmail(id) {
+    const m = S.inbox.find((x) => x.id === id);
+    if (!m) return;
+    const d = $("#drawer"), loading = "in" + (++inOpenSeq);
+    d.innerHTML = `<div class="drawer-head"><div><span class="eyebrow">Inbox</span><h3>${esc(m.subject || "(no subject)")}</h3></div><button class="xbtn" data-close aria-label="Close">×</button></div><div class="drawer-body"><p class="empty" id="${loading}">Loading…</p></div>`;
+    $("[data-close]", d).addEventListener("click", closeDrawers);
+    openDrawer("#drawer");
+    const { data: body, error } = await sb.from("pb_inbox").select("body_text,body_html,message_id").eq("id", id).maybeSingle();
+    if (!$("#" + loading, d) || !d.classList.contains("open")) return;   // closed, or another email/booking opened meanwhile
+    if (error || !body) { $(".drawer-body", d).innerHTML = `<p class="empty">Couldn't load this email${error ? ": " + esc(error.message) : "."}</p>`; return; }
+    if (!m.is_read) setInbox(m, { is_read: true });
+    const c = inCustomer(m.from_address);
+    const files = (m.attachments || []);
+    d.innerHTML = `
+      <div class="drawer-head"><div><span class="eyebrow">${esc(fmtStamp(m.received_at))}</span><h3>${esc(m.subject || "(no subject)")}</h3></div><button class="xbtn" data-close aria-label="Close">×</button></div>
+      <div class="drawer-body">
+        ${inSuspicious(m) ? `<div class="ovbox ov-clash-box"><b>Check the sender.</b> This email failed sender checks (SPF/DKIM/DMARC), so it may not really be from ${esc(m.from_address)}. Don't open links or pay anything it asks for without confirming by phone.</div>` : ""}
+        <dl class="kv">
+          <dt>From</dt><dd>${m.from_name ? esc(m.from_name) + " · " : ""}<a href="mailto:${esc(m.from_address)}">${esc(m.from_address)}</a></dd>
+          <dt>To</dt><dd>${esc(m.to_addresses.join(", "))}</dd>
+          ${m.cc_addresses?.length ? `<dt>CC</dt><dd>${esc(m.cc_addresses.join(", "))}</dd>` : ""}
+          ${m.reply_to?.length ? `<dt>Reply-to</dt><dd>${esc(m.reply_to.join(", "))}</dd>` : ""}
+          ${c ? `<dt>Customer</dt><dd><button type="button" class="linkbtn" id="inBooking">${esc(c.name)} · ${esc(c.ref)}</button></dd>` : ""}
+          ${m.replied_at ? `<dt>Replied</dt><dd>${fmtStamp(m.replied_at)}</dd>` : ""}
+        </dl>
+        ${files.length ? `<div class="in-files">${files.map((a, i) => a.path
+          ? `<button type="button" class="btn btn-outline sm" data-file="${i}">📎 ${esc(a.filename)}${a.size ? ` <small>${Math.max(1, Math.round(a.size / 1024))} KB</small>` : ""}</button>`
+          : `<span class="hint">📎 ${esc(a.filename)}: ${esc(a.error || "not available")}</span>`).join("")}</div>` : ""}
+        ${body.body_html && /\b(src|href)\s*=\s*["']?https?:|url\(\s*["']?https?:/i.test(body.body_html) ? `<div><button type="button" class="linkbtn" id="inImages">Show pictures from the internet</button> <small class="hint">Hidden so senders can't tell you opened their email.</small></div>` : ""}
+        ${body.body_html ? `<iframe class="in-frame" sandbox="allow-popups allow-popups-to-escape-sandbox" referrerpolicy="no-referrer" title="Email message"></iframe>`
+          : `<div class="in-text">${esc(body.body_text || "(This email has no text.)")}</div>`}
+      </div>
+      <div class="drawer-foot">
+        <button class="btn btn-primary sm" type="button" data-act="reply">Reply</button>
+        ${m.to_addresses.length + (m.cc_addresses?.length || 0) > 1 ? `<button class="btn btn-outline sm" type="button" data-act="all">Reply all</button>` : ""}
+        <button class="btn btn-outline sm" type="button" data-act="fwd">Forward</button>
+        <button class="btn btn-outline sm" type="button" data-act="unread">Mark unread</button>
+        <button class="btn btn-outline sm" type="button" data-act="archive">${m.archived ? "Move to inbox" : "Archive"}</button>
+        <button class="btn btn-outline sm" type="button" data-act="delete" style="margin-left:auto">Delete</button>
+      </div>`;
+    if (body.body_html) {
+      const showFrame = (remote) => { $(".in-frame", d).srcdoc = emailFrame(body.body_html, remote); };
+      showFrame(false);
+      $("#inImages", d)?.addEventListener("click", (e) => { showFrame(true); e.target.remove(); });
+    }
+    $("[data-close]", d).addEventListener("click", closeDrawers);
+    $("#inBooking", d)?.addEventListener("click", () => openBooking(c));
+    $$("[data-file]", d).forEach((b) => b.addEventListener("click", async () => {
+      const a = files[Number(b.dataset.file)];
+      const tab = window.open("", "_blank");
+      const { data: signed, error: signError } = await sb.storage.from("inbox").createSignedUrl(a.path, 300, { download: a.filename });
+      if (signError) { tab?.close(); return toast("Couldn't open the attachment: " + signError.message); }
+      if (tab) tab.location = signed.signedUrl; else location.href = signed.signedUrl;
+    }));
+    $$("[data-act]", d).forEach((b) => b.addEventListener("click", async () => {
+      const act = b.dataset.act;
+      if (act === "reply" || act === "all" || act === "fwd") return composeFromInbox(m, body, act);
+      if (act === "unread") { if (await setInbox(m, { is_read: false })) closeDrawers(); return; }
+      if (act === "archive") {
+        if (await setInbox(m, { archived: !m.archived })) { toast(m.archived ? "Archived" : "Moved to inbox"); closeDrawers(); }
+        return;
+      }
+      if (act === "delete") {
+        if (!confirm(`Delete “${m.subject || "(no subject)"}” from ${m.from_address}? This can't be undone.`)) return;
+        const { error: delError } = await sb.from("pb_inbox").delete().eq("id", m.id);
+        if (delError) return toast(delError.message);
+        const paths = files.map((a) => a.path).filter(Boolean);
+        if (paths.length) sb.storage.from("inbox").remove(paths).then(({ error: rmError }) => rmError && console.warn("Couldn't remove attachments:", rmError.message));
+        S.inbox = S.inbox.filter((x) => x.id !== m.id);
+        renderInbox(); closeDrawers(); toast("Email deleted");
+      }
+    }));
+  }
+
+  // Reply / Reply all / Forward → fill in the Email form
+  function composeFromInbox(m, body, act) {
+    const f = $("#emailForm");
+    ["to", "cc", "reply_to", "subject", "body", "files"].forEach((n) => { f[n].value = ""; });   // not f.reset(): its handler clears the reply link
+    const ours = (a) => a.toLowerCase().endsWith(OUR_DOMAIN);
+    // reply from the address it reached (received_for also covers BCC), else the form's default
+    const sentTo = [...(m.received_for || []), ...m.to_addresses, ...(m.cc_addresses || [])].find(ours);
+    f.from_local.value = sentTo ? sentTo.slice(0, -OUR_DOMAIN.length) : f.from_local.defaultValue;
+    const text = body.body_text || htmlText(body.body_html);
+    const quoted = text.split("\n").map((l) => "> " + l).join("\n");
+    const subj = m.subject || "";
+    if (act === "fwd") {
+      f.subject.value = /^fwd?:/i.test(subj) ? subj : "Fwd: " + subj;
+      f.body.value = `\n\n---------- Forwarded message ----------\nFrom: ${m.from_name ? `${m.from_name} <${m.from_address}>` : m.from_address}\nDate: ${fmtStamp(m.received_at)}\nSubject: ${subj}\nTo: ${m.to_addresses.join(", ")}\n\n${text}`;
+      setEmailLink(inCustomer(m.from_address)?.ref);
+      if ((m.attachments || []).length) toast("Attachments aren't forwarded automatically. Download and re-attach them if needed.");
+    } else {
+      const replyTo = m.reply_to?.length ? m.reply_to : [m.from_address];
+      const others = act === "all" ? [...m.to_addresses, ...(m.cc_addresses || [])].filter((a) => !ours(a) && !replyTo.includes(a)) : [];
+      f.to.value = replyTo.join(", ");
+      f.cc.value = others.join(", ");
+      f.subject.value = /^re:/i.test(subj) ? subj : "Re: " + subj;
+      f.body.value = `\n\n\nOn ${fmtStamp(m.received_at)}, ${m.from_name || m.from_address} wrote:\n${quoted}`;
+      setEmailLink(inCustomer(m.from_address)?.ref, m);
+    }
+    closeDrawers();
+    $(`.tabs [data-tab="email"]`).click();
+    f.body.focus();
+    f.body.setSelectionRange(0, 0);
+    f.scrollIntoView({ behavior: "smooth" });
+  }
+
+  $("#inFilter").addEventListener("change", renderInbox);
+  $("#inQ").addEventListener("input", renderInbox);
+  $("#inRefresh").addEventListener("click", () => loadInbox());
 
   // ---------------- promo codes
   async function loadPromos() {

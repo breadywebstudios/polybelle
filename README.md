@@ -28,6 +28,27 @@ Only emails in `pb_admins` can use the admin page. Add a new admin in Admin → 
 
 Passwords (Admin → Settings): **Change my password** updates the signed-in admin's own password after re-checking the current one. **Set password** next to another admin sets a new password through the same `admin-create-user` function (`action: "set_password"`); it only works for emails on the Polybelle admin list (checked by the server-only `pb_admin_auth_user_id` SQL function), because the login system is shared with other sites in this Supabase project.
 
+## Email (Admin → Email)
+Admins can send emails from any `@polybelle.me` address (e.g. `info@polybelle.me`), with CC, reply-to and attachments up to 10 MB in total. Every email (sent or failed) is listed under **Sent emails**, and **Send again / edit** copies one back into the form. In a booking, **Email customer** (shown when the booking has an email) opens the form already addressed to the customer and linked to the booking ref.
+
+Sending goes through the protected `admin-send-email` Edge Function and [Resend](https://resend.com). It checks that the caller is a Polybelle admin and logs each email in `pb_emails`. One-time setup:
+1. Create a Resend account, add the domain `polybelle.me` and add the DNS records it shows (SPF/DKIM, usually in Vercel → Domains → polybelle.me → DNS). Wait until Resend shows the domain as **Verified**.
+2. Create a Resend API key with **Full access** (the Inbox uses the same key to read received emails; a "Sending access" key can't, and the Inbox would stay empty) and save it as a Supabase secret: `supabase secrets set RESEND_API_KEY=re_...` (or Dashboard → Edge Functions → Secrets).
+3. Apply `supabase/migrations/20261029120000_admin_emails.sql` in the SQL Editor.
+4. Deploy: `supabase functions deploy admin-send-email`.
+
+## Inbox (Admin → Inbox)
+Mail sent to **any** `@polybelle.me` address shows up in Admin → Inbox (unread count on the tab; the admin checks every minute). Open an email to read it. HTML emails are shown in a sandbox, so they can't run scripts. Attachments are listed with the email. Then use **Reply**, **Reply all** or **Forward**, which fill in the Email form. A reply is sent from the address the email was written to, keeps the customer's mail thread together (`In-Reply-To`/`References`), and marks the email **Replied**. Emails from an address that matches a booking are tagged **Customer · ref**. Emails that fail sender checks (SPF/DKIM/DMARC) are flagged **Check sender**. **Archive** hides an email from the Inbox view; **Delete** removes it and its attachments.
+
+How it works: Resend receives the mail and calls the public `email-inbound` Edge Function with a signed webhook (`email.received`). The function checks the signature, fetches the full email from Resend, copies attachments (up to 25 MB each) into the private `inbox` bucket and saves the email in `pb_inbox`. Retried webhooks don't create duplicates. Received emails count toward Resend's 3,000 emails/month on the free plan.
+
+One-time setup (after the Email setup above):
+1. Apply `supabase/migrations/20261029130000_admin_inbox.sql` in the SQL Editor.
+2. Deploy: `supabase functions deploy email-inbound --no-verify-jwt` (Resend can't send a Supabase login; the function checks Resend's signature instead).
+3. Resend → Domains → polybelle.me → **Enable Receiving**. Add the MX record it shows on `polybelle.me` in Vercel DNS. It must have the lowest priority number on the domain, so delete any other mail service's MX records (e.g. Zoho's `mx.zoho.com`, `mx2`, `mx3`) first; that service then stops receiving. Click "I've added the record" and wait for **Verified**.
+4. Resend → Webhooks → **Add webhook**: endpoint `https://ntohdxudxfggsmhxhvho.supabase.co/functions/v1/email-inbound`, event `email.received`. Copy its signing secret (`whsec_…`) and save it as the Supabase secret `RESEND_WEBHOOK_SECRET`.
+5. Send a test email to `info@polybelle.me` and check that it appears in the Inbox. If it doesn't, check Resend → Webhooks for the delivery status. Failed deliveries are retried automatically and can be replayed from there.
+
 ## Calendars
 - **Website → Halls → Check availability:** each hall card expands a monthly calendar under its row (below the swipe row on phones), built from `pb_booked_slots` (confirmed bookings only, no customer details). Days show available / some sessions booked / fully booked; tapping a day lists its sessions, and **Book this date** fills the booking form.
 - **Admin → Calendar:** a monthly calendar of all bookings, filterable by hall (or services only), colour-coded by status with hall clashes outlined. Tap a booking to open it, tap the **+** on any day (today onwards) to add a booking for that date (and the selected hall), or tap a day to see its sessions and **+ Add booking**.
