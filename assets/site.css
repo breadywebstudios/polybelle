@@ -514,7 +514,7 @@ label.field { display: grid; gap: 7px; font-size: .74rem; font-weight: 500; lett
 .book-form .chip-radio:hover span, .book-form .addon:hover span, .book-form .svc:hover .svc-card, .book-form .svc-check:hover, .book-form .svc-card[aria-expanded="true"] { border-color: transparent; box-shadow: 0 0 0 3px rgba(194,160,106,.14); }
 .book-form .chip-radio input:checked + span, .book-form .addon input:checked + span, .book-form .svc input:checked ~ .svc-check { --fill: var(--ink); border-color: transparent; }
 .book-form .svc input:checked ~ .svc-card { border-color: transparent; box-shadow: 0 0 0 1px #C9A75F; }
-.book-form .hall-pick .chip-radio.other input:not(:checked) + span { --fill: var(--ivory); border-style: solid; }
+.book-form .hall-pick .chip-radio.other input:not(:checked) + span { border-style: solid; background: linear-gradient(var(--ivory), var(--ivory)) padding-box, var(--gold-shine) border-box; }
 .promo-offer { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
 .promo-offer p { margin: 0; color: var(--muted); font-size: .88rem; }
 .promo-offer strong { color: var(--ink); }
