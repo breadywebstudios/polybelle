@@ -14,6 +14,8 @@
   --line: #E4D9CE;
   --gold: #77551F;
   --gold-soft: #C2A06A;
+  /* thin shiny gold border for the booking form: painted under a transparent 1px border */
+  --gold-shine: linear-gradient(115deg, #9C7738 0%, #E9D08F 22%, #B48D47 45%, #F6E6B4 62%, #A47F3C 82%, #D9BC78 100%);
   --rose: #754333;
   --rose-dark: #633A30;
   --ok: #356342;
@@ -499,6 +501,20 @@ label.field { display: grid; gap: 7px; font-size: .74rem; font-weight: 500; lett
 .pay-card-note svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.7; }
 .promo-panel { display: grid; gap: 12px; padding: 18px; border: 1px solid var(--line); background: var(--cream); }
 .promo-offers { display: grid; gap: 8px; }
+
+/* Booking form: every box gets the thin shiny gold line (fill on padding-box, gradient on border-box) */
+.book-form .field input, .book-form .field select, .book-form .field textarea,
+.book-form .chip-radio span, .book-form .addon span, .book-form .svc-card, .book-form .svc-check, .book-form .promo-panel {
+  border: 1px solid transparent; background: linear-gradient(var(--fill, var(--ivory)), var(--fill, var(--ivory))) padding-box, var(--gold-shine) border-box;
+}
+.book-form .svc-card { --fill: var(--white); }
+.book-form .svc-check { --fill: rgba(255,255,255,.92); }
+.book-form .promo-panel { --fill: var(--cream); }
+.book-form .field input:focus, .book-form .field select:focus, .book-form .field textarea:focus { --fill: #fff; border-color: transparent; box-shadow: 0 0 0 3px rgba(194,160,106,.18); }
+.book-form .chip-radio:hover span, .book-form .addon:hover span, .book-form .svc:hover .svc-card, .book-form .svc-check:hover, .book-form .svc-card[aria-expanded="true"] { border-color: transparent; box-shadow: 0 0 0 3px rgba(194,160,106,.14); }
+.book-form .chip-radio input:checked + span, .book-form .addon input:checked + span, .book-form .svc input:checked ~ .svc-check { --fill: var(--ink); border-color: transparent; }
+.book-form .svc input:checked ~ .svc-card { border-color: transparent; box-shadow: 0 0 0 1px #C9A75F; }
+.book-form .hall-pick .chip-radio.other input:not(:checked) + span { --fill: var(--ivory); border-style: solid; }
 .promo-offer { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
 .promo-offer p { margin: 0; color: var(--muted); font-size: .88rem; }
 .promo-offer strong { color: var(--ink); }
