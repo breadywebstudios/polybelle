@@ -121,6 +121,8 @@ b, strong { font-weight: 500; }
 .hero h1 .line { display: block; overflow: hidden; padding-bottom: .08em; }
 .hero h1 .line > * { display: inline-block; }
 .hero h1 em { font-style: italic; color: #EAD7C4; }
+/* "one milestone at a time": shiny gold lettering (text-shadow would show through the clipped text, so drop-shadow) */
+.hero h1 em { background: linear-gradient(100deg, #B8904A 0%, #F7E7B6 20%, #C9A257 38%, #FFF1C9 52%, #B98F45 70%, #EBD08D 86%, #A98136 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent; text-shadow: none; filter: drop-shadow(0 2px 14px rgba(0,0,0,.75)) drop-shadow(0 1px 2px rgba(0,0,0,.7)); padding: 0 .08em; }
 .hero .eyebrow { color: #E4CCA4; }
 .hero p { max-width: 520px; font-size: 1.08rem; color: #fff; margin: 0 0 40px; }
 .hero-cta { display: flex; gap: 30px; align-items: center; flex-wrap: wrap; justify-content: center; }
