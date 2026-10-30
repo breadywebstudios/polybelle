@@ -80,3 +80,9 @@ Some halls use the same room (e.g. **Hall A&B** includes **Hall B**). In Admin â
 - `robots.txt` (blocks `admin.html`) and `sitemap.xml`. Submit `https://www.polybelle.me/sitemap.xml` in Google Search Console.
 - The admin page has `noindex`. Photos get descriptive alt text from hall names, service names and gallery captions, so write clear gallery captions.
 
+
+## GEO (AI search: ChatGPT, Google AI Overviews, Perplexity, Claude)
+- `llms.txt`: a plain fact sheet (halls, addresses, capacities, sessions, services, contacts) that AI assistants can read and quote. Keep it in step with the FAQ and the structured data when anything changes.
+- `robots.txt` explicitly allows the AI crawlers (GPTBot, OAI-SearchBot, ClaudeBot, PerplexityBot, Google-Extended, etc.) and blocks only `admin.html`.
+- Structured data: each hall is an `EventVenue` with its address, capacity and map; plus the `FAQPage` matching the FAQ section.
+- The FAQ and About text are plain HTML (not loaded by JavaScript), so AI crawlers can read them. Halls, gallery and reviews load from the database, so key facts are repeated in the FAQ and `llms.txt`.
