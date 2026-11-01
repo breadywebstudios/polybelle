@@ -330,9 +330,9 @@
           </span>
         </div>
       </article>`).join("");
-    const keep = document.querySelector('#hallPick input:checked')?.value;
+    const keep = $$('#hallPick input:checked').map((x) => x.value);
     $("#hallPick").innerHTML = allVenues().map((v) => `
-      <label class="chip-radio ${v.other ? "other" : ""}"><input type="radio" name="venue" value="${esc(v.id || v.name)}" ${keep === (v.id || v.name) ? "checked" : ""} required>
+      <label class="chip-radio ${v.other ? "other" : ""}"><input type="checkbox" name="venue" value="${esc(v.id || v.name)}" ${keep.includes(v.id || v.name) ? "checked" : ""}>
         <span><b>${esc(v.name)}</b>${v.capacity != null ? `<small>Up to ${esc(v.capacity)} guests</small>` : ""}</span></label>`).join("");
     // tap a hall (or Other venues) photo to see the whole picture, uncropped, in the photo viewer
     const halls = allVenues().map((v, i) => ({ v, i }));
@@ -354,10 +354,10 @@
   }
 
   function renderSessions() {
-    const venue = selectedVenue();
+    const venues = selectedVenues(), venue = venues.length ? { ...venues[0], name: hallNames(venues) } : null;
     const date = $("#dateInput").value;
     const servicesOnly = bookingType() === "Services";
-    const taken = venue && date ? takenFor(venue.id, date) : [];
+    const taken = venue && date ? takenForMany(venues, date) : [];
     const wholeTaken = taken.includes("Whole day");
     const current = document.querySelector('#sessionPick input:checked')?.value;
     $("#sessionPick").innerHTML = C.sessions.map((s) => {
@@ -372,14 +372,21 @@
     else { hint.textContent = "Some sessions are already booked — open ones are still available."; hint.className = "hint"; }
   }
 
-  const fullyBooked = (d) => d.venue?.id && d.date && dayState(takenFor(d.venue.id, d.date)) === "full";
-  const sessionTaken = (venue, date, sess) => { const t = takenFor(venue?.id, date); return t.includes(sess) || t.includes("Whole day") || (sess === "Whole day" && t.length > 0); };
+  const fullyBooked = (d) => d.venue?.id && d.date && dayState(takenForMany(d.venues, d.date)) === "full";
+  const sessionTaken = (venues, date, sess) => { const t = takenForMany(venues, date); return t.includes(sess) || t.includes("Whole day") || (sess === "Whole day" && t.length > 0); };
   // choosing "Other venues" makes it a package / services booking at the customer's location
   const bookingType = () => (document.querySelector('#hallPick input:checked')?.value === OTHER ? "Services" : "Hall");
-  const selectedVenue = () => {
-    const val = document.querySelector('#hallPick input:checked')?.value;
-    return allVenues().find((v) => (v.id || v.name) === val);
-  };
+  // several halls can be booked together (same date and session); Other venues is booked on its own
+  const selectedVenues = () => $$('#hallPick input:checked').map((x) => allVenues().find((v) => (v.id || v.name) === x.value)).filter(Boolean);
+  const selectedVenue = () => selectedVenues()[0];
+  const hallNames = (vs) => vs.map((v) => v.name).join(" + ");
+  const hallAddrs = (vs) => { const a = [...new Set(vs.filter((v) => !v.other).map((v) => (v.venue_address || "").trim()).filter(Boolean))];
+    return a.length > 1 ? vs.filter((v) => (v.venue_address || "").trim()).map((v) => `${v.name}: ${v.venue_address.trim()}`).join("\n") : a[0] || ""; };
+  const capOf = (vs) => (vs.every((v) => v.capacity != null) ? vs.reduce((n, v) => n + Number(v.capacity), 0) : null);
+  $("#hallPick").addEventListener("change", (e) => {
+    const t = e.target; if (!t.checked) return;
+    $$('#hallPick input:checked').forEach((x) => { if (x !== t && (t.value === OTHER || x.value === OTHER)) x.checked = false; });
+  });
 
   function readForm() {
     const f = $("#bookForm");
@@ -387,7 +394,8 @@
     return {
       booking_type: bookingType(),
       event_location: (fd.get("event_location") || "").trim(),
-      venue: selectedVenue(),
+      venues: selectedVenues(),
+      venue: (() => { const vs = selectedVenues(); return vs.length ? { ...vs[0], name: hallNames(vs), capacity: capOf(vs), venue_address: hallAddrs(vs) } : undefined; })(),
       date: fd.get("date"),
       session: fd.get("session"),
       event_type: fd.get("event_type"),
@@ -405,7 +413,7 @@
     const servicesOnly = bookingType() === "Services";
     $("#locWrap").hidden = !servicesOnly;
     // address of the chosen hall, shown under the hall buttons
-    const addrV = selectedVenue(), addr = addrV && !addrV.other ? (addrV.venue_address || "").trim() : "";
+    const addr = hallAddrs(selectedVenues());
     const addrEl = $("#hallAddr");
     if ($("span", addrEl).textContent !== addr) { $("span", addrEl).textContent = addr; addrEl.classList.remove("in"); void addrEl.offsetWidth; addrEl.classList.add("in"); }
     addrEl.hidden = !addr;
@@ -419,7 +427,7 @@
     $("#dateInput").toggleAttribute("aria-invalid", !!full);
     $$('#bookForm button[type="submit"], button[type="submit"][form="bookForm"]').forEach((b) => (b.disabled = !!full));
     const set = (k, v) => ($(`[data-s="${k}"]`).textContent = v || "—");
-    set("kind", servicesOnly ? "Packages at your venue" : d.venue ? "Hall" : "");
+    set("kind", servicesOnly ? "Packages at your venue" : d.venue ? (d.venues.length > 1 ? "Halls" : "Hall") : "");
     set("hall", servicesOnly ? `${otherVenue.name}${d.event_location ? " · " + d.event_location : ""}` : d.venue ? `${d.venue.name}${d.venue.venue_address ? " · " + d.venue.venue_address : ""}` : "");
     set("date", d.date ? fmtDate(d.date) : "");
     set("session", d.session);
@@ -428,7 +436,7 @@
     set("addons", d.add_ons.length ? d.add_ons.length + " selected" : "");
     const cap = $("#capHint");
     if (d.venue?.capacity && d.guests && +d.guests > d.venue.capacity) {
-      cap.textContent = `${d.venue.name} fits up to ${d.venue.capacity} guests. Consider a larger hall, or tell us in the notes.`;
+      cap.textContent = `${d.venue.name} ${d.venues.length > 1 ? "fit" : "fits"} up to ${d.venue.capacity} guests. Consider a larger hall or adding another hall, or tell us in the notes.`;
       cap.className = "hint warn";
     } else cap.textContent = "";
   }
@@ -446,8 +454,8 @@
       ``,
       `🔖 *Booking Ref:* ${plain(ref)}`,
       ``,
-      d.booking_type === "Services" ? `🏡 *Venue:* ${otherVenue.name} (packages & services)` : `🏢 *Hall:* ${d.venue.name}`,
-      d.booking_type === "Hall" && d.venue.venue_address ? `📍 *Hall address:* ${plain(d.venue.venue_address)}` : null,
+      d.booking_type === "Services" ? `🏡 *Venue:* ${otherVenue.name} (packages & services)` : `🏢 *${d.venues.length > 1 ? "Halls" : "Hall"}:* ${d.venue.name}`,
+      d.booking_type === "Hall" && d.venue.venue_address ? `📍 *${d.venues.length > 1 ? "Hall addresses" : "Hall address"}:* ${plain(d.venue.venue_address)}` : null,
       d.booking_type === "Services" ? `📍 *Event location:* ${plain(d.event_location || "To be confirmed")}` : null,
       `📅 *Date:* ${plain(fmtDate(d.date))}`,
       `⏰ *Session:* ${d.session}${sess ? ` (${plain(sess.time)})` : ""}`,
@@ -483,7 +491,7 @@
     if (d.date < todayDubai()) return showError("Please choose a future date.");
     if (fullyBooked(d)) { update(); $("#fullWarn").scrollIntoView({ behavior: "smooth", block: "center" }); return; }
     if (!d.session) return showError("Please choose a session.");
-    if (sessionTaken(d.venue, d.date, d.session)) return showError(servicesOnly
+    if (sessionTaken(d.venues, d.date, d.session)) return showError(servicesOnly
       ? `Our team is already booked for the ${d.session.toLowerCase()} session on ${fmtDate(d.date)}. Please choose another session or date.`
       : `The ${d.session.toLowerCase()} session at ${d.venue.name} is already booked on ${fmtDate(d.date)}. Please choose another session, date or hall.`);
     if (!d.event_type) return showError("Please choose the occasion.");
@@ -501,10 +509,10 @@
 
     let ref;
     try {
-      if (!sb || (!servicesOnly && !d.venue.id)) throw new Error("offline");
+      if (!sb || (!servicesOnly && d.venues.some((v) => !v.id))) throw new Error("offline");
       const bookingPayload = {
         booking_type: d.booking_type, event_location: d.event_location,
-        venue_id: servicesOnly ? null : d.venue.id, date: d.date, session: d.session, event_type: d.event_type,
+        venue_id: servicesOnly ? null : d.venue.id, venue_ids: servicesOnly ? null : d.venues.map((v) => v.id), date: d.date, session: d.session, event_type: d.event_type,
         guests: d.guests || null, add_ons: d.add_ons, name: d.name, phone: d.phone, email: d.email, notes: d.notes
       };
       const { data, error } = d.promo_code
@@ -695,7 +703,7 @@
   const CAL = { hall: null, open: false, y: +todayDubai().slice(0, 4), m: +todayDubai().slice(5, 7) - 1, sel: null };
   const SESS_ORDER = ["Morning", "Afternoon", "Evening", "Whole day"];
   // Other venues: sessions our team already has confirmed at customers' own locations (bookings with no hall)
-  // Halls that share space (e.g. "Hall A&B" and "Hall B") block each other: a booking in one takes that session in both
+  // Halls that share space (set in the admin) block each other: a booking in one takes that session in both
   function linkedIds(venueId) {
     const v = state.venues.find((x) => x.id === venueId);
     return new Set([venueId, ...(v?.shares_with || []), ...state.venues.filter((x) => (x.shares_with || []).includes(venueId)).map((x) => x.id)]);
@@ -705,6 +713,7 @@
     const ids = venueId === OTHER ? null : linkedIds(venueId);
     return state.booked.filter((b) => (ids ? ids.has(b.venue_id) : !b.venue_id) && b.event_date === date).map((b) => b.session);
   }
+  const takenForMany = (vs, date) => [...new Set((vs || []).flatMap((v) => takenFor(v.id, date)))];
   function dayState(taken) {
     if (taken.includes("Whole day") || ["Morning", "Afternoon", "Evening"].every((x) => taken.includes(x))) return "full";
     return taken.length ? "part" : "free";
@@ -812,7 +821,7 @@
     box.querySelectorAll("[data-sess]").forEach((b) => b.addEventListener("click", () => { CAL.sess = CAL.sess === b.dataset.sess ? null : b.dataset.sess; renderCalDay(hall); }));
     calEl("book")?.addEventListener("click", () => {
       const r = document.querySelector(`#hallPick input[value="${CSS.escape(hall.id || hall.name)}"]`);
-      if (r) r.checked = true;
+      if (r && !r.checked) { if (hall.other) $$("#hallPick input").forEach((x) => (x.checked = false)); else { const o = document.querySelector(`#hallPick input[value="${OTHER}"]`); if (o) o.checked = false; } r.checked = true; }
       $("#dateInput").value = CAL.sel;
       update();                                   // re-renders the session choices for this hall/date
       if (CAL.sess) {

@@ -185,7 +185,12 @@
 
   // ---------- overlaps (ignores cancelled bookings)
   const sessOverlap = (a, b) => a === b || a === "Whole day" || b === "Whole day";
-  // a hall plus the halls it shares space with (either direction), e.g. "Hall A&B" ↔ "Hall B"
+  // a hall plus the halls it shares space with (either direction), set under "Shares space with"
+  // every hall a booking uses (one booking can hold several halls)
+  const hallIds = (b) => (b && b.venue_id ? [...new Set([b.venue_id, ...(b.extra_venue_ids || [])])] : []);
+  const venueName = (id, b) => S.venues.find((v) => v.id === id)?.name || (id === b?.venue_id ? b.venue_name : "") || "Hall";
+  const hallsUse = (b, set) => hallIds(b).some((id) => set.has(id));
+  const linkedMany = (ids) => new Set(ids.flatMap((id) => [...linkedHalls(id)]));
   function linkedHalls(id) {
     const v = S.venues.find((x) => x.id === id);
     return new Set([id, ...(v?.shares_with || []), ...S.venues.filter((x) => (x.shares_with || []).includes(id)).map((x) => x.id)]);
@@ -195,7 +200,7 @@
     if (b.status === "Cancelled") return res;
     S.bookings.forEach((o) => {
       if (o.id === b.id || o.status === "Cancelled" || o.event_date !== b.event_date) return;
-      const sameHall = !isServices(b) && !isServices(o) && o.venue_id && b.venue_id && linkedHalls(b.venue_id).has(o.venue_id);
+      const sameHall = !isServices(b) && !isServices(o) && o.venue_id && b.venue_id && hallsUse(o, linkedMany(hallIds(b)));
       if (sameHall && sessOverlap(o.session, b.session)) res.clash.push(o);
       else if (sameHall) res.hallDay.push(o);
       if ((o.event_type || "").toLowerCase() === (b.event_type || "").toLowerCase()) res.occasion.push(o);
@@ -217,7 +222,7 @@
     const v = $("#fVenue").value, when = $("#fWhen").value, t = today();
     let list = S.bookings.filter((b) =>
       (!S.statusFilter || (S.statusFilter === "__overlap" ? hasOverlap(b) : b.status === S.statusFilter)) &&
-      (!v || (v === "__services" ? isServices(b) : b.venue_id === v)) &&
+      (!v || (v === "__services" ? isServices(b) : hallIds(b).includes(v))) &&
       (when === "all" || (when === "upcoming" ? b.event_date >= t : b.event_date < t)) &&
       (!q || [b.ref, b.name, b.phone, b.email, b.venue_name, b.event_location, b.event_type].join(" ").toLowerCase().includes(q)));
     if ($("#fSort").value === "new") list = list.slice().sort((a, b) => b.created_at.localeCompare(a.created_at));
@@ -234,7 +239,7 @@
   function acBookings(date) {
     const showCx = $("#acCancelled").checked;
     return S.bookings.filter((b) => b.event_date === date && (showCx || b.status !== "Cancelled") &&
-      (!AC.hall || (AC.hall === "__services" ? isServices(b) : b.venue_id === AC.hall)))
+      (!AC.hall || (AC.hall === "__services" ? isServices(b) : hallIds(b).includes(AC.hall))))
       .sort((a, b) => (SESS_RANK[a.session] ?? 9) - (SESS_RANK[b.session] ?? 9));
   }
   function renderAdminCal() {
@@ -273,7 +278,7 @@
     const list = acBookings(AC.sel), hall = S.venues.find((v) => v.id === AC.hall);
     const other = AC.hall === "__services";
     const shared = hall ? linkedHalls(hall.id) : null;
-    const live = (hall ? S.bookings.filter((b) => b.event_date === AC.sel && shared.has(b.venue_id)) : list)
+    const live = (hall ? S.bookings.filter((b) => b.event_date === AC.sel && hallsUse(b, shared)) : list)
       .filter((b) => b.status !== "Cancelled" && (other ? isServices(b) : !isServices(b)));
     const hits = (sess, pool) => pool.some((b) => b.session === sess || b.session === "Whole day" || sess === "Whole day");
     const confirmed = live.filter((b) => b.status === "Confirmed" || b.status === "Completed");
@@ -343,7 +348,11 @@
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeDrawers(); });
 
   // full booking summary for the "WhatsApp customer" button
-  const hallAddress = (b) => (S.venues || []).find((v) => v.id === b.venue_id)?.venue_address || "";
+  const hallAddress = (b) => {
+    const vs = hallIds(b).map((id) => (S.venues || []).find((v) => v.id === id)).filter((v) => v && (v.venue_address || "").trim());
+    const uniq = [...new Set(vs.map((v) => v.venue_address.trim()))];
+    return uniq.length > 1 ? vs.map((v) => `${v.name}: ${v.venue_address.trim()}`).join("\n") : uniq[0] || "";
+  };
   // TEMPORARY test icon: sends the same customer message to the test number (config.js → whatsappIconNumber)
   const WA_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm5.3 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .1-3.3-.8-2.8-1.1-4.5-3.9-4.7-4.1-.1-.2-1.1-1.5-1.1-2.9s.7-2 1-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 1.9c.1.1.1.3 0 .5l-.3.5-.4.4c-.1.1-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.4 2.4 1.5.3.1.5.1.6-.1l.9-1c.2-.3.4-.2.6-.1l1.9.9c.3.1.4.2.5.3.1.2.1.7-.1 1.3Z"/></svg>';
   const waTest = (text) => {
@@ -361,8 +370,8 @@
     const details = [
       `🔖 *Booking Ref:* ${plain(b.ref)}`,
       ``,
-      isServices(b) ? `🏡 *Venue:* Other venues (packages & services)` : `🏢 *Hall:* ${b.venue_name}`,
-      !isServices(b) && hallAddress(b) ? `📍 *Hall address:* ${plain(hallAddress(b))}` : null,
+      isServices(b) ? `🏡 *Venue:* Other venues (packages & services)` : `🏢 *${hallIds(b).length > 1 ? "Halls" : "Hall"}:* ${b.venue_name}`,
+      !isServices(b) && hallAddress(b) ? `📍 *${hallIds(b).length > 1 ? "Hall addresses" : "Hall address"}:* ${plain(hallAddress(b))}` : null,
       isServices(b) ? `📍 *Event location:* ${plain(b.event_location || "To be confirmed")}` : null,
       `📅 *Date:* ${plain(fmtDate(b.event_date))}`,
       `⏰ *Session:* ${b.session}${sess ? ` (${plain(sess.time)})` : ""}`,
@@ -682,6 +691,9 @@
       <div class="drawer-head"><div><span class="eyebrow">${isNew ? "New booking" : "Edit · " + esc(b.ref)}</span><h3>${isNew ? "Add a booking" : esc(b.name)}</h3></div><button class="xbtn" data-close aria-label="Close">×</button></div>
       <form class="drawer-body" id="bkForm">
         <label class="field">Hall<select name="venue_id" id="bkVenue">${venueOpts}</select></label>
+        <fieldset class="field share-set" id="bkExtraWrap"><legend>Also book these halls (same date &amp; session)</legend>
+          <div class="share-opts" id="bkExtra"></div>
+          <small class="hint">For one event using several halls. Each hall gets its own price line on the invoice.</small></fieldset>
         <label class="field" id="bkLocWrap">Event location (Other venues)<input name="event_location" maxlength="200" value="${esc(b.event_location || "")}" placeholder="e.g. customer's villa, Khalifa City"></label>
         <div class="grid-2">
           <label class="field">Event date<input type="date" name="event_date" required value="${esc(b.event_date)}"></label>
@@ -729,7 +741,15 @@
       const g = cb.closest(".ao-group"); $(".ao-head i", g).textContent = $$("input:checked", g).length || "";
     }));
     wireAddonDetails(d);
-    const syncLoc = () => ($("#bkLocWrap").hidden = !!$("#bkVenue").value);
+    let extraOn = new Set((b.extra_venue_ids || []).filter((id) => id !== b.venue_id));
+    const syncLoc = () => {
+      const main = $("#bkVenue").value;
+      $$("#bkExtra input:checked").forEach((x) => extraOn.add(x.value));
+      $$("#bkExtra input:not(:checked)").forEach((x) => extraOn.delete(x.value));
+      $("#bkLocWrap").hidden = !!main;
+      $("#bkExtraWrap").hidden = !main;
+      $("#bkExtra").innerHTML = S.venues.filter((v) => v.id !== main && (v.active || extraOn.has(v.id))).map((v) => `<label class="switch"><input type="checkbox" name="extra_venue" value="${v.id}" ${extraOn.has(v.id) ? "checked" : ""}> ${esc(v.name)}${v.capacity != null ? ` <small>(up to ${v.capacity})</small>` : ""}</label>`).join("");
+    };
     $("#bkVenue").addEventListener("change", syncLoc); syncLoc();
     $("[data-close]", d).addEventListener("click", () => (isNew ? closeDrawers() : openBooking(fresh(b.id))));
     $("#bkForm").addEventListener("submit", async (e) => {
@@ -737,8 +757,10 @@
       const f = e.target, fd = new FormData(f);
       const v = S.venues.find((x) => x.id === fd.get("venue_id"));
       if (!v && !fd.getAll("add_ons").length) return toast("Choose a hall, or at least one package or service.");
+      const extra = v ? fd.getAll("extra_venue").filter((id) => id !== v.id) : [];
       const row = {
-        booking_type: v ? "Hall" : "Services", venue_id: v ? v.id : null, venue_name: v ? v.name : null,
+        booking_type: v ? "Hall" : "Services", venue_id: v ? v.id : null, extra_venue_ids: extra,
+        venue_name: v ? [v.id, ...extra].map((id) => venueName(id)).join(" + ") : null,
         event_location: v ? null : fd.get("event_location").trim() || null, event_date: fd.get("event_date"), session: fd.get("session"),
         event_type: fd.get("event_type"), guests: fd.get("guests") || null, name: fd.get("name").trim(), phone: fd.get("phone").trim(),
         email: fd.get("email").trim() || null, customer_address: fd.get("customer_address").trim() || null,
@@ -849,15 +871,14 @@
   }
 
   // ---------- invoice editor
-  const hallLine = (b) => `${b.venue_name} rental · ${b.event_type} · ${fmtDate(b.event_date)} (${b.session})`;
+  const hallLine = (b, vid) => `${venueName(vid || b.venue_id, b)} rental · ${b.event_type} · ${fmtDate(b.event_date)} (${b.session})`;
   const venueLine = (b) => `Event location: ${b.event_location || "customer's venue"} · ${b.event_type} · ${fmtDate(b.event_date)} (${b.session})`;
   // the priced "where" line: hall rental for hall bookings, event location for Other venues
-  const placeLine = (b) => {
-    const v = S.venues.find((x) => x.id === b.venue_id);
-    return isServices(b) ? { kind: "venue", description: venueLine(b), amount: 0 } : { kind: "hall", description: hallLine(b), amount: v?.price_from ? Number(v.price_from) : 0 };
-  };
+  const hallItem = (b, vid) => { const v = S.venues.find((x) => x.id === vid); return { kind: "hall", vid, description: hallLine(b, vid), amount: v?.price_from ? Number(v.price_from) : 0 }; };
+  // one priced line per hall (several for a multi-hall booking)
+  const placeLines = (b) => (isServices(b) ? [{ kind: "venue", description: venueLine(b), amount: 0 }] : hallIds(b).map((vid) => hallItem(b, vid)));
   function defaultItems(b) {
-    const items = [placeLine(b)];
+    const items = [...placeLines(b)];
     (b.add_ons || []).forEach((a) => items.push({ description: a, amount: 0 }));
     return [...items, ...customLines(b)];
   }
@@ -866,13 +887,21 @@
     // the hall-rental line always reflects the booking's current hall, occasion, date and session
     // hall line and custom items always mirror the booking; other lines keep what was saved on the invoice
     const cur = new Map(customLines(b).map((l) => [l.cid, l]));
+    const halls = hallIds(b);
     const items = (b.invoice_items?.length ? b.invoice_items : defaultItems(b))
-      .filter((x) => !(x.kind === "hall" && isServices(b)) && !(x.kind === "venue" && !isServices(b)) && !(x.kind === "custom" && !cur.has(x.cid)))
-      .map((x) => (x.kind === "hall" ? { ...x, description: hallLine(b) } : x.kind === "venue" ? { ...x, description: venueLine(b) } : x.kind === "custom" ? { ...cur.get(x.cid) } : { ...x }));
+      .map((x) => (x.kind === "hall" && !x.vid ? { ...x, vid: b.venue_id } : x))   // older invoices: the hall line is the main hall
+      .filter((x) => !(x.kind === "hall" && (isServices(b) || !halls.includes(x.vid))) && !(x.kind === "venue" && !isServices(b)) && !(x.kind === "custom" && !cur.has(x.cid)))
+      .map((x) => (x.kind === "hall" ? { ...x, description: hallLine(b, x.vid) } : x.kind === "venue" ? { ...x, description: venueLine(b) } : x.kind === "custom" ? { ...cur.get(x.cid) } : { ...x }));
+    // a hall added to the booking later gets its own line (unless the hall pricing was removed altogether)
+    if (items.some((x) => x.kind === "hall")) {
+      const missing = halls.filter((vid) => !items.some((x) => x.kind === "hall" && x.vid === vid));
+      const at = items.map((x) => x.kind).lastIndexOf("hall") + 1;
+      items.splice(at, 0, ...missing.map((vid) => hallItem(b, vid)));
+    }
     cur.forEach((l, id) => { if (!items.some((x) => x.cid === id)) items.push(l); });
     const d = $("#drawer");
     const itemRow = (it, i) => `
-      <div class="inv-row ${it.kind === "custom" ? "locked" : ""}" data-i="${i}" data-kind="${esc(it.kind || "")}" data-cid="${esc(it.cid || "")}" ${it.kind === "custom" ? 'title="Custom item from the booking — change it with Edit booking"' : ""}>
+      <div class="inv-row ${it.kind === "custom" ? "locked" : ""}" data-i="${i}" data-kind="${esc(it.kind || "")}" data-cid="${esc(it.cid || "")}" data-vid="${esc(it.vid || "")}" ${it.kind === "custom" ? 'title="Custom item from the booking — change it with Edit booking"' : ""}>
         <textarea class="inv-desc" rows="1" placeholder="Description, e.g. 15 pieces Scented Candles" ${it.kind === "custom" ? "readonly" : ""}>${esc(it.description)}</textarea>
         <input class="inv-amt" type="number" step="0.01" min="0" value="${it.amount || ""}" placeholder="0.00" aria-label="Amount (AED)" ${it.kind === "custom" ? "readonly" : ""}>
         ${it.kind === "custom" ? `<span class="inv-lock" aria-hidden="true">Booking</span>` : `<button type="button" class="xbtn inv-del" aria-label="Remove line">×</button>`}
@@ -908,7 +937,7 @@
     const f = $("#invForm");
     const t0 = invTotals(b);
     if (b.invoice_no && t0.paid > 0 && t0.balance === 0) f.doc_type.value = "Receipt";
-    const read = () => $$(".inv-row", d).map((r) => ({ ...(r.dataset.kind ? { kind: r.dataset.kind } : {}), ...(r.dataset.cid ? { cid: r.dataset.cid } : {}), description: $(".inv-desc", r).value.trim(), amount: Number($(".inv-amt", r).value) || 0 })).filter((x) => x.description || x.amount);
+    const read = () => $$(".inv-row", d).map((r) => ({ ...(r.dataset.kind ? { kind: r.dataset.kind } : {}), ...(r.dataset.cid ? { cid: r.dataset.cid } : {}), ...(r.dataset.vid ? { vid: r.dataset.vid } : {}), description: $(".inv-desc", r).value.trim(), amount: Number($(".inv-amt", r).value) || 0 })).filter((x) => x.description || x.amount);
     let promoDiscountTouched = Number(b.discount) > 0;
     const sum = () => {
       if (b.promo && !promoDiscountTouched) {
@@ -923,9 +952,14 @@
       $("#invSum").innerHTML = `<div><span>Subtotal</span><b>AED ${money(t.subtotal)}</b></div>${+f.discount.value ? `<div><span>Discount</span><b>− AED ${money(f.discount.value)}</b></div>` : ""}<div><span>Total</span><b>AED ${money(t.total)}</b></div><div><span>Paid</span><b>AED ${money(t.paid)}</b></div><div class="due"><span>Balance due</span><b>AED ${money(t.balance)}</b></div>`;
     };
     const kindOf = isServices(b) ? "venue" : "hall";
-    const syncPlace = () => ($("#addPlace").hidden = !!$(`.inv-row[data-kind="${kindOf}"]`, d));
+    // lines the booking needs but the invoice doesn't have (the event location, or a hall without a price line)
+    const missingPlace = () => placeLines(b).filter((x) => !$$(`.inv-row[data-kind="${kindOf}"]`, d).some((r) => kindOf === "venue" || r.dataset.vid === x.vid));
+    const syncPlace = () => ($("#addPlace").hidden = !missingPlace().length);
     $("#addPlace").onclick = () => {
-      $("#invItems").insertAdjacentHTML("afterbegin", itemRow(placeLine(b), 0));
+      const add = missingPlace();
+      const last = $$(`.inv-row[data-kind="${kindOf}"]`, d).pop();
+      if (last) last.insertAdjacentHTML("afterend", add.map((x) => itemRow(x, 0)).join(""));
+      else $("#invItems").insertAdjacentHTML("afterbegin", add.map((x) => itemRow(x, 0)).join(""));
       wire(); sum(); $(`.inv-row[data-kind="${kindOf}"] .inv-amt`, d).focus();
     };
     const wire = () => {
@@ -1151,7 +1185,7 @@
           const on = v.id ? linkedHalls(v.id) : new Set();
           return `<fieldset class="field share-set"><legend>Shares space with</legend>
             <div class="share-opts">${others.map((x) => `<label class="switch"><input type="checkbox" name="shares" value="${x.id}" ${on.has(x.id) ? "checked" : ""}> ${esc(x.name)}</label>`).join("")}</div>
-            <small class="hint">Tick halls that use the same room (e.g. Hall A&amp;B and Hall B). A booking in one blocks that session in the other.</small></fieldset>`; })()}
+            <small class="hint">Tick halls that use the same room (e.g. a big hall that includes a smaller one). A booking in one blocks that session in the other.</small></fieldset>`; })()}
         <label class="field">Google Maps link or embed code (optional)<input type="text" name="google_maps_url" maxlength="5000" value="${esc(v.google_maps_url || "")}" placeholder="Paste a Google Maps URL or iframe code"><small class="hint">Copy the link or full iframe code from Google Maps → Share → Embed a map.</small></label>
         <label class="switch"><input type="checkbox" name="active" ${v.active ? "checked" : ""}> Show on website &amp; accept bookings</label>
         <div class="venue-form-actions">
@@ -1176,7 +1210,7 @@
     });
     $("#vDel")?.addEventListener("click", async () => {
       if (!confirm(`Delete “${v.name}”? This can't be undone. If it has booking history, deletion will be blocked; hide it instead to preserve records.`)) return;
-      const { count, error: checkError } = await sb.from("pb_bookings").select("id", { count: "exact", head: true }).eq("venue_id", v.id);
+      const { count, error: checkError } = await sb.from("pb_bookings").select("id", { count: "exact", head: true }).or(`venue_id.eq.${v.id},extra_venue_ids.cs.{${v.id}}`);
       if (checkError) return toast("Couldn't check hall booking history: " + checkError.message);
       if (count) return toast("This hall has booking history and can't be deleted. Hide it instead to preserve its records.");
       const { error } = await sb.from("pb_venues").delete().eq("id", v.id);

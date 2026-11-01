@@ -72,7 +72,7 @@ Powered by Bready Web Studios.
 - **Admin:** the hall filters call these "Other venues". In the calendar, each Other venues booking shows its event location (📍) and the day panel shows which sessions are free or booked. On the invoice, Other venues bookings start with a priced **Event location** line, hall bookings with the priced **hall rental** line; if it was removed, **+ Event location price** / **+ Hall price** adds it back.
 
 ## Halls that share space
-Some halls use the same room (e.g. **Hall A&B** includes **Hall B**). In Admin → Halls & Services → Edit hall, tick them under **Shares space with** (the link is saved on both halls). A confirmed booking in one then blocks that session in the other: on the website calendar and booking form, in the booking check on the server (`pb_request_booking` via `pb_linked_venues`), and in the admin's Hall clash warnings and calendar day panel. Hall A&B and Hall B are already linked.
+Some halls use the same room (e.g. a big hall that includes a smaller one). In Admin → Halls & Services → Edit hall, tick them under **Shares space with** (the link is saved on both halls). A confirmed booking in one then blocks that session in the other: on the website calendar and booking form, in the booking check on the server (`pb_request_booking` via `pb_linked_venues`), and in the admin's Hall clash warnings and calendar day panel.
 
 ## SEO
 - Live address: **https://www.polybelle.me** (canonical; it's the primary domain in Vercel, and polybelle.me forwards to it). Don't add redirect rules between polybelle.me and www in code: Vercel's domain settings already handle that, and an opposite rule breaks the site.
@@ -86,3 +86,9 @@ Some halls use the same room (e.g. **Hall A&B** includes **Hall B**). In Admin �
 - `robots.txt` explicitly allows the AI crawlers (GPTBot, OAI-SearchBot, ClaudeBot, PerplexityBot, Google-Extended, etc.) and blocks only `admin.html`.
 - Structured data: each hall is an `EventVenue` with its address, capacity and map; plus the `FAQPage` matching the FAQ section.
 - The FAQ and About text are plain HTML (not loaded by JavaScript), so AI crawlers can read them. Halls, gallery and reviews load from the database, so key facts are repeated in the FAQ and `llms.txt`.
+
+## Booking several halls together
+- **Website:** the hall buttons in the booking form can be ticked together (e.g. Hall A + Hall B for up to 100 guests). Only sessions free in every chosen hall can be picked, the guest limit adds up, and the WhatsApp message lists all halls and addresses. "Other venues" is booked on its own.
+- **Database:** `pb_bookings.venue_id` is the first hall and `extra_venue_ids` holds the others; `venue_name` reads "Hall A + Hall B". `pb_request_booking` accepts `venue_ids`, and the clash check (`pb_check_clash`), `pb_booked_slots` and the calendars treat every hall in the booking as taken (migration `20261101180000_multi_hall_bookings.sql`, applied).
+- **Admin:** Edit booking → **Also book these halls**. The invoice gets one priced line per hall; **+ Hall price** adds back any hall whose line was removed.
+- Hall A (formerly Hall A&B) is now its own room, no longer linked to Hall B. Its earlier bookings were converted to Hall A + Hall B.

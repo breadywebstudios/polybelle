@@ -43,7 +43,7 @@ window.PB_CONFIG = {
 
   branches: [
     {
-      name: "Polybelle - Hall A & B",
+      name: "Polybelle - Halls A & B",
       address: "603, 6th Floor, Tower B",
       landmark: "Metro Manila / Global Studio Building, behind City Season Hotel, Electra Street",
       mapUrl: "https://maps.app.goo.gl/iGwjTLTESVSD1wGN6"
