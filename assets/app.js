@@ -191,7 +191,7 @@
         <button type="button" class="svc-card" aria-expanded="false" aria-controls="svcDetail">
           <span class="svc-img">${sv.image_url ? `<img src="${esc(sv.image_url)}"${posStyle(sv)} alt="${esc(sv.name)}" loading="lazy" onerror="this.remove()">` : ""}<span class="svc-ph" aria-hidden="true">${esc(sv.name.trim()[0] || "")}</span>
             ${sv.kind === "Package" ? `<span class="svc-tag">Package</span>` : ""}</span>
-          <span class="svc-body"><b>${esc(sv.name)}</b><small>${sv.kind === "Package" ? "See what's included" : "Details"}</small></span>
+          <span class="svc-body"><b>${esc(sv.name)}</b>${sv.price_from ? `<span class="price">From ${esc(money(sv.price_from))}</span>` : ""}<small>${sv.kind === "Package" ? "See what's included" : "Details"}</small></span>
         </button>
         <button type="button" class="svc-check" aria-pressed="${picked.has(sv.name)}" aria-label="Add ${esc(sv.name)} to my booking"></button>
       </div>`).join("");
@@ -227,11 +227,12 @@
       <div class="sd-main">
         <span class="sd-kind">${pkg ? "Package" : "Service"} · ${esc(sv.category || "Event Services")}</span>
         <h4>${esc(sv.name)}</h4>
+        ${sv.price_from ? `<p class="price">From ${esc(money(sv.price_from))}</p>` : ""}
         ${sv.description ? `<p class="sd-desc">${esc(sv.description)}</p>` : ""}
       </div>
       ${pkg ? (inc.length
         ? `<div class="sd-inc"><span class="sd-sub">What's included</span><ul>${inc.map((x, k) => `<li style="--k:${k}">${esc(x)}</li>`).join("")}</ul></div>`
-        : `<div class="sd-inc"><span class="sd-sub">What's included</span><p class="sd-note">Our team will share the full inclusions and rates for this package on WhatsApp.</p></div>`) : ""}
+        : `<div class="sd-inc"><span class="sd-sub">What's included</span><p class="sd-note">Our team will share the full inclusions${sv.price_from ? "" : " and rates"} for this package on WhatsApp.</p></div>`) : ""}
       <div class="sd-actions">
         <button type="button" class="btn ${on ? "btn-outline" : "btn-dark"} sm" data-sd-toggle>${on ? "Remove" : "Add"}</button>
         ${on ? `<span class="sd-added">Added to your booking</span>` : ""}
@@ -321,7 +322,8 @@
           ${v.tagline ? `<span class="tag">${esc(v.tagline)}</span>` : ""}
           <h3>${esc(v.name)}</h3>
           ${v.description ? `<p>${esc(v.description)}</p>` : ""}
-          ${v.branch || v.price_from ? `<span class="meta">${[v.branch, v.price_from ? "From " + money(v.price_from) : ""].filter(Boolean).map(esc).join(" · ")}</span>` : ""}
+          ${v.branch ? `<span class="meta">${esc(v.branch)}</span>` : ""}
+          ${v.price_from ? `<span class="price">From ${esc(money(v.price_from))}</span>` : ""}
         </div>
         <div class="venue-footer">
           ${googleMapsUrl(v.google_maps_url) ? `<div class="venue-map-embed">${googleMapsEmbedUrl(v.google_maps_url) ? `<iframe src="${esc(googleMapsEmbedUrl(v.google_maps_url))}" title="Map showing ${esc(v.name)} location" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>` : `<p class="venue-map-hint">For an embedded map, add a Google Maps “Embed a map” URL in the admin.</p>`}<a class="venue-map-link" href="${esc(googleMapsOpenUrl(v.google_maps_url, v))}" target="_blank" rel="noopener noreferrer" aria-label="Open ${esc(v.name)} location in Google Maps"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>Open in Google Maps</a></div>` : ""}
@@ -333,7 +335,7 @@
     const keep = $$('#hallPick input:checked').map((x) => x.value);
     $("#hallPick").innerHTML = allVenues().map((v) => `
       <label class="chip-radio ${v.other ? "other" : ""}"><input type="radio" name="venue" value="${esc(v.id || v.name)}" ${keep.includes(v.id || v.name) ? "checked" : ""} required>
-        <span><b>${esc(v.name)}</b>${v.capacity != null ? `<small>Up to ${esc(v.capacity)} guests</small>` : ""}</span></label>`).join("");
+        <span><b>${esc(v.name)}</b>${v.capacity != null ? `<small>Up to ${esc(v.capacity)} guests</small>` : ""}${v.price_from ? `<small>From ${esc(money(v.price_from))}</small>` : ""}</span></label>`).join("");
     // tap a hall (or Other venues) photo to see the whole picture, uncropped, in the photo viewer
     const halls = allVenues().map((v, i) => ({ v, i }));
     $$("[data-zoom]").forEach((el) => {
@@ -867,7 +869,7 @@
     sb.from("pb_reviews").select("name,event_type,rating,comment,source,featured,created_at").eq("status", "Approved")
       .order("featured", { ascending: false }).order("created_at", { ascending: false }).limit(60)
       .then(({ data }) => { R.items = data || []; renderReviews(); });
-    sb.from("pb_services").select("name,kind,category,description,image_url,image_pos,inclusions").eq("active", true).order("sort_order").order("name")
+    sb.from("pb_services").select("name,kind,category,description,image_url,image_pos,inclusions,price_from").eq("active", true).order("sort_order").order("name")
       .then(({ data }) => { if (data?.length) { services = data; renderServices(); update(); } });
     const [venues, settings, otherVenueSettings] = await Promise.all([
       sb.from("pb_venues").select("id,name,tagline,description,venue_address,capacity,branch,google_maps_url,image_url,image_pos,price_from,sort_order,shares_with").eq("active", true).order("sort_order").order("name"),

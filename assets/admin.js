@@ -867,7 +867,7 @@
   const placeLines = (b) => (isServices(b) ? [{ kind: "venue", description: venueLine(b), amount: 0 }] : hallIds(b).map((vid) => hallItem(b, vid)));
   function defaultItems(b) {
     const items = [...placeLines(b)];
-    (b.add_ons || []).forEach((a) => items.push({ description: a, amount: 0 }));
+    (b.add_ons || []).forEach((a) => { const sv = (S.services || []).find((x) => x.name === a); items.push({ description: a, amount: sv?.price_from ? Number(sv.price_from) : 0 }); });
     return [...items, ...customLines(b)];
   }
 
@@ -1314,6 +1314,7 @@
         <div class="vb">
           <h3>${esc(sv.name)}</h3>
           ${sv.description ? `<p>${esc(sv.description)}</p>` : ""}
+          <p>${sv.price_from ? "From AED " + Number(sv.price_from).toLocaleString() : `<span style="color:var(--gold)">No price yet</span>`}</p>
           ${sv.kind === "Package" ? `<p>${(sv.inclusions || []).length ? `${sv.inclusions.length} included item${sv.inclusions.length > 1 ? "s" : ""}` : `<span style="color:var(--gold)">No inclusions listed yet</span>`}</p>` : ""}
           ${sv.image_url ? "" : `<p style="color:var(--gold)">No photo yet — add one.</p>`}
         </div>
@@ -1324,7 +1325,7 @@
   }
   function openService(sv) {
     const isNew = !sv;
-    sv = sv || { name: "", kind: "Service", category: "Event Services", description: "", image_url: "", sort_order: (S.services.at(-1)?.sort_order || 0) + 1, active: true };
+    sv = sv || { name: "", kind: "Service", category: "Event Services", description: "", image_url: "", price_from: null, sort_order: (S.services.at(-1)?.sort_order || 0) + 1, active: true };
     const cats = [...new Set([...(C.serviceCategories || []), sv.category].filter(Boolean))];
     const d = $("#vdrawer");
     d.innerHTML = `
@@ -1338,6 +1339,7 @@
           <label class="field">Group (tab in the booking form)<select name="category">${cats.map((c) => `<option ${c === sv.category ? "selected" : ""}>${esc(c)}</option>`).join("")}</select></label>
           <label class="field">Type<select name="kind">${["Package", "Service"].map((k) => `<option ${k === sv.kind ? "selected" : ""}>${k}</option>`).join("")}</select></label>
           <label class="field">Display order<input type="number" name="sort_order" value="${sv.sort_order}"></label>
+          <label class="field">Starting price (AED, optional)<input type="number" name="price_from" min="0" step="1" value="${sv.price_from ?? ""}"></label>
         </div>
         <label class="field">Short description<input name="description" maxlength="140" value="${esc(sv.description || "")}" placeholder="One or two lines, shown when a customer taps the card"></label>
         <label class="field" id="incWrap">What's included (one item per line)
@@ -1378,6 +1380,7 @@
       const f = e.target;
       const row = { name: f.name.value.trim(), kind: f.kind.value, category: f.category.value, description: f.description.value.trim() || null,
         image_url: f.image_url.value || null, image_pos: f.image_url.value ? posOk(f.image_pos.value) || null : null,
+        price_from: f.price_from.value === "" ? null : +f.price_from.value,
         sort_order: +f.sort_order.value || 0, active: f.active.checked,
         inclusions: f.kind.value === "Package" ? f.inclusions.value.split("\n").map((x) => x.trim()).filter(Boolean).slice(0, 40) : [] };
       if (!row.name) return toast("Name is required.");
