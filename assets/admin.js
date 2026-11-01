@@ -711,6 +711,12 @@
           <div id="ciRows" class="ci-rows"></div>
           <button type="button" class="btn btn-outline sm" id="ciAdd">+ Add custom item</button>
         </div>
+        <div>
+          <div class="ao-title">Prices <span>(AED, for this booking only)</span></div>
+          <div id="plRows" class="pl-rows"></div>
+          <div class="pl-sum"><span>Subtotal</span><b id="plSum"></b></div>
+          <p class="hint" style="margin:6px 0 0">${b.invoice_no ? `Saving updates invoice ${esc(b.invoice_no)}. If the customer already has it, send it again from <b>Invoice</b>.` : "Starting prices fill in by themselves. Changing one here doesn't change Halls &amp; Services. These prices go on the invoice, where you can add a discount."}</p>
+        </div>
         <label class="field">Customer notes<textarea name="notes">${esc(b.notes || "")}</textarea></label>
         ${isNew ? `<label class="field">Status<select name="status">${STATUSES.map((s) => `<option ${s === b.status ? "selected" : ""}>${s}</option>`).join("")}</select></label>` : ""}
         <button class="btn btn-primary" type="submit">${isNew ? "Save booking" : "Save changes"}</button>
@@ -734,12 +740,56 @@
       $("#ciRows").insertAdjacentHTML("beforeend", ciRow({ id: "c" + Date.now().toString(36), description: "", qty: 1, price: "" }));
       ciWire(); $("#ciRows .ci-row:last-child .ci-desc").focus();
     });
+    // prices live on the booking's invoice lines, so this form and the Invoice screen always match.
+    // lines already on the invoice keep their amount; a line that's new to it starts at the starting price.
+    const savedLines = (b.invoice_items || []).filter((x) => x.kind !== "custom");
+    const hadInvoice = (b.invoice_items || []).length > 0;
+    const hadAddons = new Set(b.add_ons || []);
+    const typed = new Map(), savedKeys = new Set();
+    let extras = [];   // lines typed on the invoice that aren't the hall or a package / service
+    savedLines.forEach((x) => {
+      const key = x.kind === "hall" ? "hall:" + (x.vid || b.venue_id) : x.kind === "venue" ? "venue" : hadAddons.has(x.description) ? "ao:" + x.description : null;
+      if (key) { savedKeys.add(key); typed.set(key, x.amount || ""); }
+      else { const k = "x:" + extras.length; extras.push({ key: k, label: x.description, description: x.description, removable: true }); savedKeys.add(k); typed.set(k, x.amount || ""); }
+    });
+    const startPrice = (name) => Number((S.services || []).find((x) => x.name === name)?.price_from) || 0;
+    const priceRows = () => {
+      const vid = $("#bkVenue").value, v = S.venues.find((x) => x.id === vid);
+      const place = v ? { key: "hall:" + vid, label: `${v.name} rental`, kind: "hall", vid, start: hadInvoice && vid === b.venue_id ? 0 : Number(v.price_from) || 0 }
+        : { key: "venue", label: "Event location", kind: "venue", start: 0 };
+      const items = $$(".ao-group input:checked", d).map((x) => ({ key: "ao:" + x.value, label: x.value, description: x.value, start: hadInvoice && hadAddons.has(x.value) ? 0 : startPrice(x.value) }));
+      return [place, ...items, ...extras];
+    };
+    const plRead = () => $$(".pl-row", d).forEach((r) => typed.set(r.dataset.key, $("input", r).value));
+    const plAmount = (r) => Number(typed.has(r.key) ? typed.get(r.key) : r.start) || 0;
+    const plTotal = () => { plRead();
+      const custom = $$(".ci-row", d).filter((r) => $(".ci-desc", r).value.trim()).reduce((n, r) => n + ciTotal({ qty: $(".ci-qty", r).value, price: $(".ci-price", r).value }), 0);
+      $("#plSum").textContent = "AED " + money(priceRows().reduce((n, r) => n + plAmount(r), custom));
+    };
+    function plRender() {
+      plRead();
+      $("#plRows").innerHTML = priceRows().map((r) => `
+        <div class="pl-row" data-key="${esc(r.key)}">
+          <span>${esc(r.label)}</span>
+          <input type="number" min="0" step="0.01" value="${esc(typed.has(r.key) ? typed.get(r.key) : r.start || "")}" placeholder="0.00" aria-label="Price of ${esc(r.label)} in AED">
+          ${r.removable ? `<button type="button" class="xbtn pl-del" aria-label="Remove ${esc(r.label)}">×</button>` : "<i></i>"}
+        </div>`).join("");
+      $$(".pl-del", d).forEach((x) => (x.onclick = () => { const k = x.closest(".pl-row").dataset.key; extras = extras.filter((e) => e.key !== k); typed.delete(k); x.closest(".pl-row").remove(); plTotal(); }));
+      plTotal();
+    }
+    $("#plRows").addEventListener("input", plTotal);
+    $("#ciRows").addEventListener("input", plTotal);
+    $("#ciRows").addEventListener("click", plTotal);
     $$(".ao-group input", d).forEach((cb) => cb.addEventListener("change", () => {
       const g = cb.closest(".ao-group"); $(".ao-head i", g).textContent = $$("input:checked", g).length || "";
+      plRender();
     }));
     wireAddonDetails(d);
     const syncLoc = () => ($("#bkLocWrap").hidden = !!$("#bkVenue").value);
-    $("#bkVenue").addEventListener("change", syncLoc); syncLoc();
+    $("#bkVenue").addEventListener("change", () => { syncLoc(); plRender(); }); syncLoc();
+    plRender();
+    const plSnap = () => { plRead(); return JSON.stringify(priceRows().map((r) => [r.key, plAmount(r)])); };
+    const plFirst = plSnap();
     $("[data-close]", d).addEventListener("click", () => (isNew ? closeDrawers() : openBooking(fresh(b.id))));
     $("#bkForm").addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -756,6 +806,12 @@
         custom_items: $$(".ci-row", f).map((r) => ({ id: r.dataset.id, description: $(".ci-desc", r).value.trim(),
           qty: Number($(".ci-qty", r).value) || 0, price: Number($(".ci-price", r).value) || 0 })).filter((c) => c.description)
       };
+      // starting prices only get saved once someone changes a price here, so a quick edit (e.g. a phone number) leaves them alone
+      const lines = priceRows().map((r) => ({ ...r, amount: plAmount(r) })).filter((r) => r.amount || !hadInvoice || savedKeys.has(r.key));
+      if (hadInvoice || (plSnap() !== plFirst && lines.some((r) => r.amount))) {
+        row.invoice_items = [...lines.map((r) => (r.kind === "hall" ? { kind: "hall", vid: r.vid, description: hallLine(row, r.vid), amount: r.amount }
+          : r.kind === "venue" ? { kind: "venue", description: venueLine(row), amount: r.amount } : { description: r.description, amount: r.amount })), ...customLines(row)];
+      }
       let res;
       if (isNew) {
         row.status = fd.get("status");
@@ -814,7 +870,7 @@
           ${b.customer_address ? `<dt>Address</dt><dd style="white-space:pre-wrap">${esc(b.customer_address)}</dd>` : ""}
           <dt>Customer notes</dt><dd style="white-space:pre-wrap">${esc(b.notes || "—")}</dd>
           <dt>Requested</dt><dd>${fmtStamp(b.created_at)}</dd>
-          ${b.invoice_no ? `<dt>Invoice</dt><dd>${esc(b.invoice_no)} · Total AED ${money(t.total)} · Paid AED ${money(t.paid)} · <b>Balance AED ${money(t.balance)}</b></dd>` : ""}
+          ${b.invoice_no ? `<dt>Invoice</dt><dd>${esc(b.invoice_no)} · Total AED ${money(t.total)} · Paid AED ${money(t.paid)} · <b>Balance AED ${money(t.balance)}</b></dd>` : t.total ? `<dt>Prices</dt><dd>${(b.invoice_items || []).filter((x) => x.amount).map((x) => `${esc(x.description)} · AED ${money(x.amount)}`).join("<br>")}<br><b>Total AED ${money(t.total)}</b></dd>` : ""}
         </dl>
         <div>
           <div style="font-size:.86rem;color:var(--muted);margin-bottom:8px">Status</div>

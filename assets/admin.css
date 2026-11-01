@@ -153,6 +153,12 @@ dl.kv dd { margin: 0; word-break: break-word; }
 .ci-row input { font: inherit; font-size: .92rem; letter-spacing: 0; text-transform: none; padding: 9px 10px; border: 1px solid var(--line); background: #fff; color: var(--ink); width: 100%; min-width: 0; }
 .ci-row .ci-qty, .ci-row .ci-price { text-align: right; }
 .ci-total { font-size: 1rem; letter-spacing: 0; color: var(--ink); padding: 9px 0; }
+.pl-rows { display: grid; gap: 8px; margin-bottom: 10px; }
+.pl-row { display: grid; grid-template-columns: 1fr 112px 36px; gap: 10px; align-items: center; padding: 8px 12px; background: var(--ivory); border: 1px solid var(--line); font-size: .9rem; }
+.pl-row span { min-width: 0; overflow-wrap: anywhere; }
+.pl-row input { font: inherit; padding: 9px 10px; border: 1px solid var(--line); background: #fff; color: var(--ink); width: 100%; min-width: 0; text-align: right; }
+.pl-row .pl-del { width: 36px; height: 38px; border-radius: 8px; }
+.pl-sum { display: flex; justify-content: space-between; gap: 12px; padding: 4px 12px; font-size: .95rem; }
 .inv-row.locked textarea, .inv-row.locked input { background: var(--cream); color: var(--muted); }
 .inv-lock { font-size: .6rem; letter-spacing: .1em; text-transform: uppercase; color: var(--gold); text-align: center; align-self: center; }
 
