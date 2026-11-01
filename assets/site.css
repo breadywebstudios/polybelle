@@ -184,8 +184,9 @@ b, strong { font-weight: 500; }
 
 /* ---------- Halls ---------- */
 
-.venue-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 28px 24px; }
-.venue { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 18px; }
+/* three cards per row; a shorter last row stays centered */
+.venue-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 28px 24px; }
+.venue { flex: 0 1 calc((100% - 48px) / 3); min-width: 0; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 18px; }
 .venue-img {
   position: relative;
   aspect-ratio: 3 / 4;
@@ -580,7 +581,7 @@ label.field { display: grid; gap: 7px; font-size: .74rem; font-weight: 500; lett
 }
 
 /* ---------- Availability window (expands under a hall card) ---------- */
-.avail-panel { grid-column: 1 / -1; position: relative; display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); gap: 20px; padding: 26px; margin-top: 4px; background: var(--cream); border: 1px solid var(--ink); }
+.avail-panel { flex: 0 0 100%; min-width: 0; position: relative; display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); gap: 20px; padding: 26px; margin-top: 4px; background: var(--cream); border: 1px solid var(--ink); }
 .avail-panel::before { content: ""; position: absolute; top: -8px; left: var(--arrow-x, 50%); width: 14px; height: 14px; background: var(--cream); border-left: 1px solid var(--ink); border-top: 1px solid var(--ink); transform: translateX(-50%) rotate(45deg); }
 .avail-panel.in { animation: sdIn .55s var(--ease) both; }
 .avail-panel .sd-x { z-index: 2; }
@@ -647,7 +648,7 @@ label.field { display: grid; gap: 7px; font-size: .74rem; font-weight: 500; lett
   .hero-cta { gap: 16px; }
   .hero-cta .btn { padding: 14px 18px; letter-spacing: .12em; }
   /* phones: two centered cards per row for readable names and capacities */
-  .venue-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 22px 12px; }
+  .venue-grid { gap: 22px 12px; }
   .venue { flex: 0 1 calc((100% - 12px) / 2); }
   .venue { gap: 8px; }
   .venue-img { aspect-ratio: 4 / 5; }
