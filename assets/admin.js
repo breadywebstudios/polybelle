@@ -694,7 +694,7 @@
         <label class="field" id="bkLocWrap">Event location (Other venues)<input name="event_location" maxlength="200" value="${esc(b.event_location || "")}" placeholder="e.g. customer's villa, Khalifa City"></label>
         <div class="grid-2">
           <label class="field">Event date<input type="date" name="event_date" required value="${esc(b.event_date)}"></label>
-          <label class="field">Session<select name="session">${C.sessions.map((s) => `<option value="${s.id}" ${s.id === b.session ? "selected" : ""}>${s.id} · ${s.time}</option>`).join("")}</select></label>
+          <label class="field">Session<select name="session">${C.sessions.some((s) => s.id === b.session) ? "" : `<option selected>${esc(b.session)}</option>`}${C.sessions.map((s) => `<option value="${s.id}" ${s.id === b.session ? "selected" : ""}>${s.id} · ${s.time}</option>`).join("")}</select></label>
           <label class="field">Occasion<select name="event_type">${typeOpts}</select></label>
           <label class="field">Guests<input type="number" name="guests" min="1" value="${b.guests ?? ""}"></label>
           <label class="field">Customer name<input name="name" required maxlength="120" value="${esc(b.name)}"></label>

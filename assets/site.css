@@ -301,6 +301,14 @@ b, strong { font-weight: 500; }
 .summary div { display: flex; justify-content: space-between; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,.1); }
 .summary dt { color: #A99A90; font-size: .72rem; letter-spacing: .2em; text-transform: uppercase; }
 .summary dd { margin: 0; text-align: right; color: #fff; }
+.estimate { display: grid; gap: 10px; font-size: .9rem; }
+.estimate[hidden] { display: none; }
+.estimate h4 { margin: 0; color: #A99A90; font: 400 .72rem/1.4 var(--sans); letter-spacing: .2em; text-transform: uppercase; }
+.estimate div { display: flex; justify-content: space-between; gap: 12px; }
+.estimate span:last-child { text-align: right; white-space: nowrap; }
+.estimate .est-todo { color: #BCAEA4; }
+.estimate .est-sub { padding-top: 12px; border-top: 1px solid rgba(255,255,255,.25); color: #fff; font-weight: 600; }
+.estimate p { margin: 0; font-size: .78rem; color: #BCAEA4; }
 .aside-note { margin: 0; font-size: .86rem; color: #BCAEA4; }
 .aside-note a { color: #fff; }
 .book-form { padding: 48px 44px; display: grid; gap: 38px; }

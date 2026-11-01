@@ -411,6 +411,24 @@
     };
   }
 
+  // price estimate from the starting prices; items with no price stay out of the subtotal
+  function estimateFor(d) {
+    const hallPrice = d.booking_type === "Hall" ? d.venues.reduce((n, v) => n + (Number(v.price_from) || 0), 0) : 0;
+    const hall = d.booking_type === "Hall" && d.venue ? [{ name: d.venue.name, price: hallPrice }] : [];
+    const items = d.add_ons.map((name) => ({ name, price: Number(services.find((x) => x.name === name)?.price_from) || 0 }));
+    const lines = [...hall, ...items];
+    return { lines, hallPrice, items, total: lines.reduce((n, l) => n + l.price, 0), unpriced: lines.some((l) => !l.price) };
+  }
+  function renderEstimate(d) {
+    const est = estimateFor(d), box = $("#estimate");
+    box.hidden = !est.total;
+    if (!est.total) { box.innerHTML = ""; return; }
+    box.innerHTML = `<h4>Estimated price</h4>
+      ${est.lines.map((l) => `<div><span>${esc(l.name)}</span><span class="${l.price ? "" : "est-todo"}">${l.price ? "From " + esc(money(l.price)) : "To be confirmed"}</span></div>`).join("")}
+      <div class="est-sub"><span>Estimated subtotal</span><span>From ${esc(money(est.total))}</span></div>
+      <p>Based on starting prices${est.unpriced ? ", not counting items to be confirmed" : ""}. ${d.promo_code ? "Promo discounts are applied on your invoice. " : ""}Our team confirms the final price on WhatsApp.</p>`;
+  }
+
   function update() {
     const servicesOnly = bookingType() === "Services";
     $("#locWrap").hidden = !servicesOnly;
@@ -436,6 +454,7 @@
     set("type", d.event_type);
     set("guests", d.guests);
     set("addons", d.add_ons.length ? d.add_ons.length + " selected" : "");
+    renderEstimate(d);
     const cap = $("#capHint");
     if (d.venue?.capacity && d.guests && +d.guests > d.venue.capacity) {
       cap.textContent = `${d.venue.name} ${d.venues.length > 1 ? "fit" : "fits"} up to ${d.venue.capacity} guests. Consider a larger hall or adding another hall, or tell us in the notes.`;
@@ -443,7 +462,7 @@
     } else cap.textContent = "";
   }
   $("#bookForm").addEventListener("change", () => { $("#formError").style.display = "none"; update(); });
-  $("#bookForm").addEventListener("input", (e) => { if (e.target.name === "guests" || e.target.name === "event_location") update(); });
+  $("#bookForm").addEventListener("input", (e) => { if (["guests", "event_location", "promo_code"].includes(e.target.name)) update(); });
 
   // WhatsApp turns numbers, dates and addresses into green tappable links (and re-checks when "Read more"
   // is tapped). An invisible zero-width non-joiner after each digit stops that, so they stay normal colour.
@@ -451,20 +470,24 @@
   const plain = (x) => String(x ?? "").replace(/\d/g, "$&\u200C");
   function buildMessage(d, ref) {
     const sess = C.sessions.find((s) => s.id === d.session);
+    const est = estimateFor(d);
+    const priceTag = (price) => (!est.total ? "" : price ? ` (from ${plain(money(price))})` : " (price to be confirmed)");
     return [
       `Hi Polybelle! I'd like to book an event 🎉`,
       ``,
       `🔖 *Booking Ref:* ${plain(ref)}`,
       ``,
-      d.booking_type === "Services" ? `🏡 *Venue:* ${otherVenue.name} (packages & services)` : `🏢 *${d.venues.length > 1 ? "Halls" : "Hall"}:* ${d.venue.name}`,
+      d.booking_type === "Services" ? `🏡 *Venue:* ${otherVenue.name} (packages & services)` : `🏢 *${d.venues.length > 1 ? "Halls" : "Hall"}:* ${d.venue.name}${priceTag(est.hallPrice)}`,
       d.booking_type === "Hall" && d.venue.venue_address ? `📍 *${d.venues.length > 1 ? "Hall addresses" : "Hall address"}:* ${plain(d.venue.venue_address)}` : null,
       d.booking_type === "Services" ? `📍 *Event location:* ${plain(d.event_location || "To be confirmed")}` : null,
       `📅 *Date:* ${plain(fmtDate(d.date))}`,
       `⏰ *Session:* ${d.session}${sess ? ` (${plain(sess.time)})` : ""}`,
       `🎈 *Occasion:* ${d.event_type}`,
       d.guests ? `👥 *Guests:* ${d.guests}` : null,
-      d.add_ons.length ? `\n🎁 *Packages & services:*\n${d.add_ons.map((a) => `🔹 ${a}`).join("\n")}` : null,
+      d.add_ons.length ? `\n🎁 *Packages & services:*\n${est.items.map((a) => `🔹 ${a.name}${priceTag(a.price)}`).join("\n")}` : null,
       d.promo_code ? `🎫 *Promo code:* ${d.promo_code}` : null,
+      est.total ? `\n💰 *Estimated subtotal:* From ${plain(money(est.total))}` : null,
+      est.total ? `_Based on starting prices${est.unpriced ? ", not counting items to be confirmed" : ""}. Final price to be confirmed._` : null,
       ``,
       `👤 *Name:* ${d.name}`,
       `📱 *Mobile:* ${plain(d.phone)}`,
@@ -717,7 +740,7 @@
   }
   const takenForMany = (vs, date) => [...new Set((vs || []).flatMap((v) => takenFor(v.id, date)))];
   function dayState(taken) {
-    if (taken.includes("Whole day") || ["Morning", "Afternoon", "Evening"].every((x) => taken.includes(x))) return "full";
+    if (taken.includes("Whole day") || C.sessions.every((s) => taken.includes(s.id))) return "full";   // "Whole day": older bookings
     return taken.length ? "part" : "free";
   }
   const availPanel = document.createElement("div");

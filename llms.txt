@@ -15,10 +15,8 @@ Payment: Visa, Mastercard; pay later with Tabby or Tamara
 - Other venues: Polybelle styles and runs events at the customer's own hotel, villa, park, home or other venue.
 
 ## Booking sessions
-- Morning: 9:00 AM – 1:00 PM
-- Afternoon: 2:00 PM – 6:00 PM
-- Evening: 7:00 PM – 11:00 PM
-- Whole day: 9:00 AM – 11:00 PM
+- Afternoon: 1:00 PM – 4:00 PM
+- Evening: 6:00 PM onwards
 Live availability for each hall is shown on the website ("Check availability").
 
 ## Packages and services

@@ -63,10 +63,8 @@ window.PB_CONFIG = {
   ],
 
   sessions: [
-    { id: "Morning", time: "9:00 AM – 1:00 PM" },
-    { id: "Afternoon", time: "2:00 PM – 6:00 PM" },
-    { id: "Evening", time: "7:00 PM – 11:00 PM" },
-    { id: "Whole day", time: "9:00 AM – 11:00 PM" }
+    { id: "Afternoon", time: "1:00 PM – 4:00 PM" },
+    { id: "Evening", time: "6:00 PM onwards" }
   ],
 
   eventTypes: ["Birthday", "Wedding", "Baby Shower", "Gender Reveal",
