@@ -63,6 +63,8 @@ All prices are in AED. Set **Starting price** in Admin → Halls & Services → 
 
 Admin → booking → **Edit booking** has a **Prices** section with one amount each for the hall (or event location) and the ticked packages and services, plus any extra lines from the invoice, and a live subtotal that includes custom items. These are the booking's invoice lines (`invoice_items`), so they match the Invoice screen, and they apply to that booking only. Starting prices are saved only when a price is changed there, or when the booking already has invoice lines. Once a booking has prices, its customer messages show the total and balance.
 
+**Export CSV** (Admin → Bookings) follows the current filters and has one row per line item, with the booking details repeated on each row. Booking totals (subtotal, discount, total, paid, balance) are on the booking's first row only, so each money column adds up. `price_source` says whether a row's price is **Saved** on the booking or the current **Starting price**.
+
 `pb_services.price_from` comes from migration `20261101200000_service_prices.sql`; apply it before deploying this feature.
 
 ## Under construction mode

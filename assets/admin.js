@@ -333,9 +333,24 @@
   $("#refreshBtn").addEventListener("click", () => loadBookings().then(() => toast("Bookings refreshed")));
 
   $("#csvBtn").addEventListener("click", () => {
-    const cols = ["ref", "status", "booking_type", "event_date", "session", "venue_name", "event_location", "event_type", "guests", "add_ons", "custom_items", "name", "phone", "email", "notes", "admin_notes", "created_at"];
-    const cell = (v) => Array.isArray(v) && v.length && typeof v[0] === "object" ? cell(v.map((c) => `${ciText(c)} @ ${c.price} = ${ciTotal(c)}`)) : `"${String(Array.isArray(v) ? v.join("; ") : v ?? "").replace(/"/g, '""')}"`;
-    const csv = [cols.join(","), ...filtered().map((b) => cols.map((c) => cell(b[c])).join(","))].join("\n");
+    // one row per line item. Booking details repeat on every row; booking totals sit on its first row only, so each money column adds up
+    const cols = ["ref", "status", "booking_type", "event_date", "session", "venue_name", "event_location", "event_type", "guests", "name", "phone", "email", "notes", "admin_notes", "created_at", "invoice_no", "invoice_date"];
+    const lineCols = ["line_no", "line_type", "line_description", "qty", "unit_price_aed", "line_amount_aed", "price_source"];
+    const totalCols = ["subtotal_aed", "discount_aed", "total_aed", "paid_aed", "balance_aed"];
+    const cell = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    const lineType = (b, it) => (it.kind === "hall" ? "Hall" : it.kind === "venue" ? "Event location" : it.kind === "custom" ? "Custom item"
+      : (b.add_ons || []).includes(it.description) ? (S.services || []).find((x) => x.name === it.description)?.kind || "Service" : "Other");
+    const rows = filtered().flatMap((b) => {
+      // bookings with no saved prices list their items at the starting prices, the same way a new invoice does
+      const saved = (b.invoice_items || []).length > 0, items = saved ? b.invoice_items : defaultItems(b);
+      const t = invTotals({ ...b, invoice_items: items });
+      return items.map((it, i) => {
+        const c = it.kind === "custom" ? (b.custom_items || []).find((x) => x.id === it.cid) : null, amount = Number(it.amount) || 0;
+        return [...cols.map((k) => b[k]), i + 1, lineType(b, it), it.description, c ? c.qty : 1, c ? c.price : amount, amount, saved ? "Saved" : "Starting price",
+          ...(i ? totalCols.map(() => "") : [t.subtotal, Number(b.discount) || 0, t.total, t.paid, t.balance])].map(cell).join(",");
+      });
+    });
+    const csv = [[...cols, ...lineCols, ...totalCols].join(","), ...rows].join("\n");
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv" }));
     a.download = `polybelle-bookings-${today()}.csv`; a.click();
