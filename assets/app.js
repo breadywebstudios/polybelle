@@ -332,7 +332,7 @@
       </article>`).join("");
     const keep = $$('#hallPick input:checked').map((x) => x.value);
     $("#hallPick").innerHTML = allVenues().map((v) => `
-      <label class="chip-radio ${v.other ? "other" : ""}"><input type="checkbox" name="venue" value="${esc(v.id || v.name)}" ${keep.includes(v.id || v.name) ? "checked" : ""}>
+      <label class="chip-radio ${v.other ? "other" : ""}"><input type="radio" name="venue" value="${esc(v.id || v.name)}" ${keep.includes(v.id || v.name) ? "checked" : ""} required>
         <span><b>${esc(v.name)}</b>${v.capacity != null ? `<small>Up to ${esc(v.capacity)} guests</small>` : ""}</span></label>`).join("");
     // tap a hall (or Other venues) photo to see the whole picture, uncropped, in the photo viewer
     const halls = allVenues().map((v, i) => ({ v, i }));
@@ -376,7 +376,7 @@
   const sessionTaken = (venues, date, sess) => { const t = takenForMany(venues, date); return t.includes(sess) || t.includes("Whole day") || (sess === "Whole day" && t.length > 0); };
   // choosing "Other venues" makes it a package / services booking at the customer's location
   const bookingType = () => (document.querySelector('#hallPick input:checked')?.value === OTHER ? "Services" : "Hall");
-  // several halls can be booked together (same date and session); Other venues is booked on its own
+  // one hall per booking; combined rooms (e.g. Hall A&B) are their own hall that blocks the halls it includes
   const selectedVenues = () => $$('#hallPick input:checked').map((x) => allVenues().find((v) => (v.id || v.name) === x.value)).filter(Boolean);
   const selectedVenue = () => selectedVenues()[0];
   const hallNames = (vs) => vs.map((v) => v.name).join(" + ");
@@ -821,7 +821,7 @@
     box.querySelectorAll("[data-sess]").forEach((b) => b.addEventListener("click", () => { CAL.sess = CAL.sess === b.dataset.sess ? null : b.dataset.sess; renderCalDay(hall); }));
     calEl("book")?.addEventListener("click", () => {
       const r = document.querySelector(`#hallPick input[value="${CSS.escape(hall.id || hall.name)}"]`);
-      if (r && !r.checked) { if (hall.other) $$("#hallPick input").forEach((x) => (x.checked = false)); else { const o = document.querySelector(`#hallPick input[value="${OTHER}"]`); if (o) o.checked = false; } r.checked = true; }
+      if (r) r.checked = true;
       $("#dateInput").value = CAL.sel;
       update();                                   // re-renders the session choices for this hall/date
       if (CAL.sess) {

@@ -87,8 +87,6 @@ Some halls use the same room (e.g. a big hall that includes a smaller one). In A
 - Structured data: each hall is an `EventVenue` with its address, capacity and map; plus the `FAQPage` matching the FAQ section.
 - The FAQ and About text are plain HTML (not loaded by JavaScript), so AI crawlers can read them. Halls, gallery and reviews load from the database, so key facts are repeated in the FAQ and `llms.txt`.
 
-## Booking several halls together
-- **Website:** the hall buttons in the booking form can be ticked together (e.g. Hall A + Hall B for up to 100 guests). Only sessions free in every chosen hall can be picked, the guest limit adds up, and the WhatsApp message lists all halls and addresses. "Other venues" is booked on its own.
-- **Database:** `pb_bookings.venue_id` is the first hall and `extra_venue_ids` holds the others; `venue_name` reads "Hall A + Hall B". `pb_request_booking` accepts `venue_ids`, and the clash check (`pb_check_clash`), `pb_booked_slots` and the calendars treat every hall in the booking as taken (migration `20261101180000_multi_hall_bookings.sql`, applied).
-- **Admin:** Edit booking → **Also book these halls**. The invoice gets one priced line per hall; **+ Hall price** adds back any hall whose line was removed.
-- Hall A (formerly Hall A&B) is now its own room, no longer linked to Hall B. Its earlier bookings were converted to Hall A + Hall B.
+## Hall A, Hall B and Hall A&B
+Six choices on the website: Hall A, Hall B, Hall C, Hall D, Hall A&B and Other venues. **Hall A&B** (both rooms together, up to 100 guests) is its own hall, linked under **Shares space with** to Hall A and Hall B: booking Hall A&B blocks Hall A and Hall B for that session, and a booking in Hall A or Hall B blocks Hall A&B. Hall A and Hall B don't block each other (migration `20261101190000_hall_ab_combined_option.sql`, applied).
+The database can also hold several halls on one booking (`extra_venue_ids`, migration `20261101180000_multi_hall_bookings.sql`); the website and admin no longer offer that, but the clash checks and invoice still handle it.

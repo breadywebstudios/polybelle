@@ -691,9 +691,6 @@
       <div class="drawer-head"><div><span class="eyebrow">${isNew ? "New booking" : "Edit · " + esc(b.ref)}</span><h3>${isNew ? "Add a booking" : esc(b.name)}</h3></div><button class="xbtn" data-close aria-label="Close">×</button></div>
       <form class="drawer-body" id="bkForm">
         <label class="field">Hall<select name="venue_id" id="bkVenue">${venueOpts}</select></label>
-        <fieldset class="field share-set" id="bkExtraWrap"><legend>Also book these halls (same date &amp; session)</legend>
-          <div class="share-opts" id="bkExtra"></div>
-          <small class="hint">For one event using several halls. Each hall gets its own price line on the invoice.</small></fieldset>
         <label class="field" id="bkLocWrap">Event location (Other venues)<input name="event_location" maxlength="200" value="${esc(b.event_location || "")}" placeholder="e.g. customer's villa, Khalifa City"></label>
         <div class="grid-2">
           <label class="field">Event date<input type="date" name="event_date" required value="${esc(b.event_date)}"></label>
@@ -741,15 +738,7 @@
       const g = cb.closest(".ao-group"); $(".ao-head i", g).textContent = $$("input:checked", g).length || "";
     }));
     wireAddonDetails(d);
-    let extraOn = new Set((b.extra_venue_ids || []).filter((id) => id !== b.venue_id));
-    const syncLoc = () => {
-      const main = $("#bkVenue").value;
-      $$("#bkExtra input:checked").forEach((x) => extraOn.add(x.value));
-      $$("#bkExtra input:not(:checked)").forEach((x) => extraOn.delete(x.value));
-      $("#bkLocWrap").hidden = !!main;
-      $("#bkExtraWrap").hidden = !main;
-      $("#bkExtra").innerHTML = S.venues.filter((v) => v.id !== main && (v.active || extraOn.has(v.id))).map((v) => `<label class="switch"><input type="checkbox" name="extra_venue" value="${v.id}" ${extraOn.has(v.id) ? "checked" : ""}> ${esc(v.name)}${v.capacity != null ? ` <small>(up to ${v.capacity})</small>` : ""}</label>`).join("");
-    };
+    const syncLoc = () => ($("#bkLocWrap").hidden = !!$("#bkVenue").value);
     $("#bkVenue").addEventListener("change", syncLoc); syncLoc();
     $("[data-close]", d).addEventListener("click", () => (isNew ? closeDrawers() : openBooking(fresh(b.id))));
     $("#bkForm").addEventListener("submit", async (e) => {
@@ -757,10 +746,9 @@
       const f = e.target, fd = new FormData(f);
       const v = S.venues.find((x) => x.id === fd.get("venue_id"));
       if (!v && !fd.getAll("add_ons").length) return toast("Choose a hall, or at least one package or service.");
-      const extra = v ? fd.getAll("extra_venue").filter((id) => id !== v.id) : [];
+      // combined rooms (e.g. Hall A&B) are their own hall, linked under "Shares space with"
       const row = {
-        booking_type: v ? "Hall" : "Services", venue_id: v ? v.id : null, extra_venue_ids: extra,
-        venue_name: v ? [v.id, ...extra].map((id) => venueName(id)).join(" + ") : null,
+        booking_type: v ? "Hall" : "Services", venue_id: v ? v.id : null, extra_venue_ids: [], venue_name: v ? v.name : null,
         event_location: v ? null : fd.get("event_location").trim() || null, event_date: fd.get("event_date"), session: fd.get("session"),
         event_type: fd.get("event_type"), guests: fd.get("guests") || null, name: fd.get("name").trim(), phone: fd.get("phone").trim(),
         email: fd.get("email").trim() || null, customer_address: fd.get("customer_address").trim() || null,
@@ -1185,7 +1173,7 @@
           const on = v.id ? linkedHalls(v.id) : new Set();
           return `<fieldset class="field share-set"><legend>Shares space with</legend>
             <div class="share-opts">${others.map((x) => `<label class="switch"><input type="checkbox" name="shares" value="${x.id}" ${on.has(x.id) ? "checked" : ""}> ${esc(x.name)}</label>`).join("")}</div>
-            <small class="hint">Tick halls that use the same room (e.g. a big hall that includes a smaller one). A booking in one blocks that session in the other.</small></fieldset>`; })()}
+            <small class="hint">Tick halls that use the same room (e.g. Hall A&amp;B with Hall A and Hall B). A booking in one blocks that session in the other.</small></fieldset>`; })()}
         <label class="field">Google Maps link or embed code (optional)<input type="text" name="google_maps_url" maxlength="5000" value="${esc(v.google_maps_url || "")}" placeholder="Paste a Google Maps URL or iframe code"><small class="hint">Copy the link or full iframe code from Google Maps → Share → Embed a map.</small></label>
         <label class="switch"><input type="checkbox" name="active" ${v.active ? "checked" : ""}> Show on website &amp; accept bookings</label>
         <div class="venue-form-actions">
