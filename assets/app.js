@@ -181,138 +181,61 @@
       const n = picked.filter((p) => p === c).length;
       return `<button type="button" role="tab" aria-label="${esc(c)}" aria-selected="${c === svcTab}" class="${c === svcTab ? "on" : ""}" data-cat="${esc(c)}"><span>${esc(c)}</span>${n ? `<i>${n}</i>` : ""}</button>`;
     }).join("") : "";
-    $$("#svcTabs button").forEach((b) => b.addEventListener("click", () => { svcTab = b.dataset.cat; closeSvcDetail(); renderSvcTabs(); }));
+    $$("#svcTabs button").forEach((b) => b.addEventListener("click", () => { svcTab = b.dataset.cat; renderSvcTabs(); }));
     $$("#addonPick .svc").forEach((el) => (el.hidden = cats.length > 1 && el.dataset.cat !== svcTab));
   }
   function renderServices() {
     const picked = new Set($$('#addonPick input:checked').map((i) => i.value));
-    const reopen = svcOpen;
     $("#addonPick").innerHTML = services.map((sv, i) => `
       <div class="svc" data-cat="${esc(sv.category || "Event Services")}" data-i="${i}">
         <input type="checkbox" name="add_ons" value="${esc(sv.name)}" ${picked.has(sv.name) ? "checked" : ""} tabindex="-1" aria-hidden="true">
-        <button type="button" class="svc-card" aria-expanded="false" aria-controls="svcDetail">
+        <button type="button" class="svc-card" aria-haspopup="dialog">
           <span class="svc-img">${sv.image_url ? `<img src="${esc(sv.image_url)}"${posStyle(sv)} alt="${esc(sv.name)}" loading="lazy" onerror="this.remove()">` : ""}<span class="svc-ph" aria-hidden="true">${esc(sv.name.trim()[0] || "")}</span>
             ${sv.kind === "Package" ? `<span class="svc-tag">Package</span>` : ""}</span>
           <span class="svc-body"><b>${esc(sv.name)}</b>${sv.price_from ? `<span class="price">From ${esc(money(sv.price_from))}</span>` : ""}<small>${sv.kind === "Package" ? "See what's included" : "Details"}</small></span>
         </button>
         <button type="button" class="svc-check" aria-pressed="${picked.has(sv.name)}" aria-label="Add ${esc(sv.name)} to my booking"></button>
       </div>`).join("");
-    svcOpen = null;
     $$("#addonPick .svc").forEach((el) => {
       const cb = $("input", el);
       // tapping the card only shows its details; adding happens with the Add button or the round check
-      $(".svc-card", el).addEventListener("click", () => (svcOpen === el ? closeSvcDetail() : openSvcDetail(el)));
+      $(".svc-card", el).addEventListener("click", () => openSvcDetail(el));
       $(".svc-check", el).addEventListener("click", () => setPicked(el, !cb.checked));
-      if (canHover) {
-        el.addEventListener("mousemove", () => { if (previewEl !== el && svcOpen !== el) showPreview(el); });   // shows once the mouse rests, and again after scrolling
-        el.addEventListener("mouseleave", hidePreview);
-        el.addEventListener("click", hidePreview);
-        el.addEventListener("focusin", () => { if ($(":focus-visible", el)) showPreview(el); });
-        el.addEventListener("focusout", hidePreview);
-      }
     });
     renderSvcTabs();
-    if (reopen) { const el = $(`#addonPick .svc[data-i="${reopen.dataset.i}"]`); if (el && !el.hidden) openSvcDetail(el); }
   }
 
-  // ---------- package / service details panel (opens under the tapped card's row)
-  let svcOpen = null;
-  const svcDetail = document.createElement("div");
-  svcDetail.className = "svc-detail"; svcDetail.id = "svcDetail"; svcDetail.setAttribute("role", "region");
-  // ---------- hover preview: the whole photo with the description, beside the card (mouse only;
-  // phones and tablets see the whole photo in the details panel instead)
-  const svcPreview = document.createElement("div");
-  svcPreview.className = "svc-preview"; svcPreview.setAttribute("aria-hidden", "true");
-  document.body.append(svcPreview);
-  const canHover = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
-  let previewEl = null, previewTimer;
-  function placePreview() {
-    if (!previewEl) return;
-    const r = previewEl.getBoundingClientRect(), w = svcPreview.offsetWidth, h = svcPreview.offsetHeight, gap = 14, edge = 12;
-    const right = r.right + gap + w <= document.documentElement.clientWidth - edge;
-    svcPreview.style.left = `${right ? r.right + gap : Math.max(edge, r.left - gap - w)}px`;
-    svcPreview.style.top = `${Math.max($(".nav").offsetHeight + edge, Math.min(r.top, window.innerHeight - h - edge))}px`;
-  }
-  function showPreview(el) {
-    clearTimeout(previewTimer);
-    previewTimer = setTimeout(() => {
-      const sv = services[+el.dataset.i];
-      if (!sv.image_url && !sv.description) return;
-      const pkg = sv.kind === "Package";
-      previewEl = el;
-      svcPreview.innerHTML = `${sv.image_url ? `<img src="${esc(sv.image_url)}" alt="">` : ""}
-        <div class="sp-body">
-          <span class="sd-kind">${pkg ? "Package" : "Service"} · ${esc(sv.category || "Event Services")}</span>
-          <h4>${esc(sv.name)}</h4>
-          ${sv.price_from ? `<span class="price">From ${esc(money(sv.price_from))}</span>` : ""}
-          ${sv.description ? `<p>${esc(sv.description)}</p>` : ""}
-          <small>${pkg ? "Click to see what's included" : "Click for details"}</small>
-        </div>`;
-      const img = $("img", svcPreview);
-      if (img) img.onload = placePreview;
-      placePreview();
-      svcPreview.classList.add("on");
-    }, 160);
-  }
-  function hidePreview() {
-    clearTimeout(previewTimer);
-    previewEl = null;
-    svcPreview.classList.remove("on");
-  }
-  window.addEventListener("scroll", hidePreview, { passive: true });
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape") hidePreview(); });
+  // ---------- package / service details: open in the photo viewer, the photo beside its description
   function setPicked(el, on) {
     const cb = $("input", el);
     cb.checked = on;
     $(".svc-check", el).setAttribute("aria-pressed", on);
     $(".svc-check", el).setAttribute("aria-label", `${on ? "Remove" : "Add"} ${cb.value} ${on ? "from" : "to"} my booking`);
     cb.dispatchEvent(new Event("change", { bubbles: true }));
-    if (svcOpen === el) fillSvcDetail(el);
+    if (LB.list[LB.idx]?.svc === el) fillSvcInfo(el);
   }
-  function fillSvcDetail(el) {
-    const sv = services[+el.dataset.i], on = $("input", el).checked, pkg = sv.kind === "Package";
+  function fillSvcInfo(el) {
+    const sv = services[+el.dataset.i], on = $("input", el).checked, pkg = sv.kind === "Package", box = $("#lbInfo");
     const inc = (sv.inclusions || []).filter(Boolean);
-    svcDetail.setAttribute("aria-label", `${sv.name} details`);
-    svcDetail.innerHTML = `
-      <button type="button" class="sd-x" aria-label="Close details">×</button>
-      <div class="sd-main">
-        ${sv.image_url ? `<img class="sd-photo" src="${esc(sv.image_url)}" alt="${esc(sv.name)}" loading="lazy">` : ""}
-        <span class="sd-kind">${pkg ? "Package" : "Service"} · ${esc(sv.category || "Event Services")}</span>
-        <h4>${esc(sv.name)}</h4>
-        ${sv.price_from ? `<p class="price">From ${esc(money(sv.price_from))}</p>` : ""}
-        ${sv.description ? `<p class="sd-desc">${esc(sv.description)}</p>` : ""}
-      </div>
+    box.innerHTML = `
+      <span class="sd-kind">${pkg ? "Package" : "Service"} · ${esc(sv.category || "Event Services")}</span>
+      <h4>${esc(sv.name)}</h4>
+      ${sv.price_from ? `<span class="price">From ${esc(money(sv.price_from))}</span>` : ""}
+      ${sv.description ? `<p class="sd-desc">${esc(sv.description)}</p>` : ""}
       ${pkg ? (inc.length
         ? `<div class="sd-inc"><span class="sd-sub">What's included</span><ul>${inc.map((x, k) => `<li style="--k:${k}">${esc(x)}</li>`).join("")}</ul></div>`
         : `<div class="sd-inc"><span class="sd-sub">What's included</span><p class="sd-note">Our team will share the full inclusions${sv.price_from ? "" : " and rates"} for this package on WhatsApp.</p></div>`) : ""}
       <div class="sd-actions">
-        <button type="button" class="btn ${on ? "btn-outline" : "btn-dark"} sm" data-sd-toggle>${on ? "Remove" : "Add"}</button>
+        <button type="button" class="btn btn-light" data-sd-toggle>${on ? "Remove" : "Add to my booking"}</button>
         ${inquiryBtn(`Hi Polybelle! I'd like to ask about the ${sv.name} ${pkg ? "package" : "service"}.`)}
         ${on ? `<span class="sd-added">Added to your booking</span>` : ""}
       </div>`;
-    $(".sd-x", svcDetail).onclick = closeSvcDetail;
-    $("[data-sd-toggle]", svcDetail).onclick = () => setPicked(el, !$("input", el).checked);
+    $("[data-sd-toggle]", box).onclick = () => setPicked(el, !$("input", el).checked);
   }
   function openSvcDetail(el) {
-    if (svcOpen) $(".svc-card", svcOpen).setAttribute("aria-expanded", "false");
-    svcDetail.remove();
-    const row = $$("#addonPick .svc:not([hidden])").filter((c) => c.offsetTop === el.offsetTop);
-    (row[row.length - 1] || el).after(svcDetail);
-    svcDetail.style.setProperty("--arrow-x", `${el.offsetLeft - $("#addonPick").offsetLeft + el.offsetWidth / 2}px`);
-    svcOpen = el;
-    $(".svc-card", el).setAttribute("aria-expanded", "true");
-    fillSvcDetail(el);
-    svcDetail.classList.remove("in"); void svcDetail.offsetWidth; svcDetail.classList.add("in");
-    const r = svcDetail.getBoundingClientRect();
-    if (r.bottom > window.innerHeight) svcDetail.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    const cards = $$("#addonPick .svc:not([hidden])");
+    openLb(cards.indexOf(el), cards.map((c) => { const sv = services[+c.dataset.i]; return { src: sv.image_url || "", alt: sv.name, cap: "", svc: c }; }));
   }
-  function closeSvcDetail() {
-    if (svcOpen) $(".svc-card", svcOpen).setAttribute("aria-expanded", "false");
-    svcOpen = null; svcDetail.remove();
-  }
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && svcOpen) { const el = svcOpen; closeSvcDetail(); $(".svc-card", el).focus(); } });
-  let svcResize;
-  window.addEventListener("resize", () => { clearTimeout(svcResize); svcResize = setTimeout(() => { if (svcOpen) openSvcDetail(svcOpen); }, 150); });
 
   renderServices();
   $("#addonPick").addEventListener("change", renderSvcTabs);
@@ -626,7 +549,6 @@
     $("#doneModal").classList.add("open");
     restoreBtn();
     $("#bookForm").reset();
-    closeSvcDetail();
     $$("#addonPick .svc-check").forEach((b) => b.setAttribute("aria-pressed", "false"));
     update();
     $("#dateInput").min = todayDubai();
@@ -660,13 +582,20 @@
     if (!list.length) return;
     LB.idx = (i + list.length) % list.length;
     const p = list[LB.idx];
-    $("#lbImg").src = p.src; $("#lbImg").alt = p.alt;
+    const box = $("#lightbox"), info = !!p.svc;
+    $("#lbImg").hidden = !p.src;
+    if (p.src) { $("#lbImg").src = p.src; $("#lbImg").alt = p.alt; }
+    box.classList.toggle("with-info", info);
+    box.setAttribute("aria-label", info ? `${p.alt} details` : "Photo viewer");
     $("#lbCap").textContent = p.cap;
-    $("#lbInquiry").innerHTML = inquiryBtn(`Hi Polybelle! I'd like to ask about this photo from your website${p.cap ? ` (${p.cap})` : ""}:\n${new URL(p.src, location.href).href}`);
+    $("#lbCap").hidden = $("#lbInquiry").hidden = info;
+    $("#lbInfo").hidden = !info;
+    if (info) { fillSvcInfo(p.svc); $("#lbInfo").scrollTop = box.scrollTop = 0; }
+    else $("#lbInquiry").innerHTML = inquiryBtn(`Hi Polybelle! I'd like to ask about this photo from your website${p.cap ? ` (${p.cap})` : ""}:\n${new URL(p.src, location.href).href}`);
     $("#lbPrev").hidden = $("#lbNext").hidden = list.length < 2;
     $("#lightbox").classList.add("open"); document.body.style.overflow = "hidden";
   }
-  const closeLb = () => { $("#lightbox").classList.remove("open"); document.body.style.overflow = ""; };
+  const closeLb = () => { $("#lightbox").classList.remove("open"); document.body.style.overflow = ""; const c = LB.list[LB.idx]?.svc; if (c) $(".svc-card", c).focus({ preventScroll: true }); };
   $("#lbClose").addEventListener("click", closeLb);
   $("#lbPrev").addEventListener("click", () => openLb(LB.idx - 1));
   $("#lbNext").addEventListener("click", () => openLb(LB.idx + 1));

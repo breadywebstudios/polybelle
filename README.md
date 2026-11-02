@@ -67,8 +67,8 @@ Admin → booking → **Edit booking** has a **Prices** section with one amount 
 
 `pb_services.price_from` comes from migration `20261101200000_service_prices.sql`; apply it before deploying this feature.
 
-## Package and service preview
-Resting the mouse on a package or service card in the booking form shows a floating preview beside it, with the whole uncropped photo, name, price and description. Phones and tablets can't hover, so they show the whole photo at the top of the details panel when a card is tapped. It uses the photo and text from Admin → Halls & Services.
+## Package and service details
+Clicking a package or service card in the booking form opens the photo viewer with the whole uncropped photo on the left and the name, price, description, what's included, **Add to my booking** and **Send us inquiry** on the right (below the photo on phones). The arrows move through the other items in the same tab. It uses the photo and text from Admin → Halls & Services.
 
 ## Send us inquiry
 A green **Send us inquiry** button appears in each hall's availability panel, in the package and service details, and in the photo viewer (gallery and hall photos). It opens WhatsApp to the booking number from Admin → Settings with a message about what the customer is viewing: the hall with any chosen date and session, the package or service name, or the photo's caption and link. Inquiries aren't saved as bookings.
