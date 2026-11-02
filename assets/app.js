@@ -98,6 +98,8 @@
     .replace(/[ \t]{2,}/g, " ").replace(/ +\n/g, "\n").trim();
   // api.whatsapp.com keeps emojis intact (the short wa.me redirect can garble them in WhatsApp Desktop/Web)
   const waLink = (num, text) => `https://api.whatsapp.com/send?phone=${num.replace(/\D/g, "")}${text ? "&text=" + encodeURIComponent(waClean(text)) : ""}`;
+  // "Send us inquiry" button: opens WhatsApp with a message about what the customer is looking at
+  const inquiryBtn = (text) => `<a class="btn btn-wa" href="${esc(waLink(state.whatsapp, text))}" target="_blank" rel="noopener noreferrer">Send us inquiry</a>`;
   const fmtDate = (d) => d ? new Date(d + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" }) : "—";
   const todayDubai = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Dubai" }).format(new Date());
   const money = (n) => "AED " + Number(n).toLocaleString("en-US", { maximumFractionDigits: 0 });
@@ -235,6 +237,7 @@
         : `<div class="sd-inc"><span class="sd-sub">What's included</span><p class="sd-note">Our team will share the full inclusions${sv.price_from ? "" : " and rates"} for this package on WhatsApp.</p></div>`) : ""}
       <div class="sd-actions">
         <button type="button" class="btn ${on ? "btn-outline" : "btn-dark"} sm" data-sd-toggle>${on ? "Remove" : "Add"}</button>
+        ${inquiryBtn(`Hi Polybelle! I'd like to ask about the ${sv.name} ${pkg ? "package" : "service"}.`)}
         ${on ? `<span class="sd-added">Added to your booking</span>` : ""}
       </div>`;
     $(".sd-x", svcDetail).onclick = closeSvcDetail;
@@ -609,6 +612,7 @@
     const p = list[LB.idx];
     $("#lbImg").src = p.src; $("#lbImg").alt = p.alt;
     $("#lbCap").textContent = p.cap;
+    $("#lbInquiry").innerHTML = inquiryBtn(`Hi Polybelle! I'd like to ask about this photo from your website${p.cap ? ` (${p.cap})` : ""}:\n${new URL(p.src, location.href).href}`);
     $("#lbPrev").hidden = $("#lbNext").hidden = list.length < 2;
     $("#lightbox").classList.add("open"); document.body.style.overflow = "hidden";
   }
@@ -825,15 +829,19 @@
   }
   function renderCalDay(hall) {
     const box = calEl("day");
+    const about = hall.other ? "an event at my own venue" : hall.name;
     if (!CAL.sel) {
       box.innerHTML = `<span class="sd-kind">${esc(hall.name)} · ${hall.other ? esc(hall.tagline || "at your location") : `up to ${hall.capacity} guests`}</span><p class="cal-day-empty">${hall.other ? "Tap a date to see when our team is free to come to you." : "Tap a date to see which sessions are free."}</p>
-        <p class="hint">Dates show confirmed bookings. Pending requests are confirmed by our team on WhatsApp.</p>`;
+        <p class="hint">Dates show confirmed bookings. Pending requests are confirmed by our team on WhatsApp.</p>
+        ${inquiryBtn(`Hi Polybelle! I'd like to ask about ${about}.`)}`;
       return;
     }
     const taken = takenFor(hall.id, CAL.sel), st = dayState(taken);
     const nice = new Date(CAL.sel + "T00:00:00Z").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
     const booked = (s) => taken.includes(s) || taken.includes("Whole day") || (s === "Whole day" && taken.length > 0);
     if (CAL.sess && booked(CAL.sess)) CAL.sess = null;
+    const pickedSess = C.sessions.find((x) => x.id === CAL.sess);
+    const inquiry = inquiryBtn(`Hi Polybelle! I'd like to ask about ${about} on ${plain(nice)}${pickedSess ? ` (${pickedSess.id}, ${plain(pickedSess.time)})` : ""}.`);
     box.innerHTML = `
       <span class="sd-kind">${esc(hall.name)} · ${hall.other ? esc(hall.tagline || "at your location") : `up to ${hall.capacity} guests`}</span>
       <h4>${esc(nice)}</h4>
@@ -841,8 +849,8 @@
       <div class="cal-sess" role="radiogroup" aria-label="Session">${C.sessions.slice().sort((a, b) => SESS_ORDER.indexOf(a.id) - SESS_ORDER.indexOf(b.id)).map((x) => booked(x.id)
         ? `<div class="cal-s booked"><span>${esc(x.id)}<small>${esc(x.time)}</small></span><span class="st st-booked">Booked 🔒</span></div>`
         : `<button type="button" class="cal-s ${CAL.sess === x.id ? "on" : ""}" role="radio" aria-checked="${CAL.sess === x.id}" data-sess="${esc(x.id)}"><span>${esc(x.id)}<small>${esc(x.time)}</small></span><span class="st st-free">${CAL.sess === x.id ? "Selected" : "Available ✅"}</span></button>`).join("")}</div>
-      ${st === "full" ? `<p class="hint warn">${esc(vLabel(hall))} is fully booked on this date. Please try another date${hall.other ? "" : " or hall"}.</p>`
-        : `<button type="button" class="btn btn-dark" data-cal="book">${CAL.sess ? `Book ${esc(CAL.sess.toLowerCase())}` : "Book this date"}</button>`}`;
+      ${st === "full" ? `<p class="hint warn">${esc(vLabel(hall))} is fully booked on this date. Please try another date${hall.other ? "" : " or hall"}.</p>${inquiry}`
+        : `<div class="cal-actions"><button type="button" class="btn btn-dark" data-cal="book">${CAL.sess ? `Book ${esc(CAL.sess.toLowerCase())}` : "Book this date"}</button>${inquiry}</div>`}`;
     box.querySelectorAll("[data-sess]").forEach((b) => b.addEventListener("click", () => { CAL.sess = CAL.sess === b.dataset.sess ? null : b.dataset.sess; renderCalDay(hall); }));
     calEl("book")?.addEventListener("click", () => {
       const r = document.querySelector(`#hallPick input[value="${CSS.escape(hall.id || hall.name)}"]`);

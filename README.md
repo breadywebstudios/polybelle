@@ -67,6 +67,9 @@ Admin → booking → **Edit booking** has a **Prices** section with one amount 
 
 `pb_services.price_from` comes from migration `20261101200000_service_prices.sql`; apply it before deploying this feature.
 
+## Send us inquiry
+A green **Send us inquiry** button appears in each hall's availability panel, in the package and service details, and in the photo viewer (gallery and hall photos). It opens WhatsApp to the booking number from Admin → Settings with a message about what the customer is viewing: the hall with any chosen date and session, the package or service name, or the photo's caption and link. Inquiries aren't saved as bookings.
+
 ## Under construction mode
 Edit `assets/config.js` and set `underConstruction: true` to show visitors a "coming soon" page (with WhatsApp, phone and social links) instead of the website; set it back to `false` to go live. The text comes from `underConstructionMessage`. Only the public website is affected; the admin site keeps working. While it's on, open the site with `?preview` (e.g. `/?preview`) to see the real site on your device (a gold bar reminds you), and `?preview=off` to see the coming-soon page again.
 

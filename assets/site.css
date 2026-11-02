@@ -249,8 +249,9 @@ b, strong { font-weight: 500; }
 .lightbox.open { opacity: 1; visibility: visible; }
 .lightbox figure { margin: 0; max-width: min(1100px, 100%); text-align: center; transform: scale(.97); transition: transform .6s var(--ease); }
 .lightbox.open figure { transform: none; }
-.lightbox img { max-height: 80vh; max-width: 100%; margin: 0 auto; }
+.lightbox img { max-height: min(80vh, calc(100vh - 170px)); max-width: 100%; margin: 0 auto; }
 .lightbox figcaption { color: #EADFD5; font: italic 400 1.25rem var(--serif); margin-top: 14px; }
+.lb-inquiry { margin-top: 14px; }
 .lb-btn { position: absolute; background: none; color: #fff; border: 1px solid rgba(255,255,255,.3); width: 48px; height: 48px; border-radius: 50%; font: 300 1.6rem/1 var(--sans); cursor: pointer; transition: background .3s, color .3s; }
 .lb-btn:hover { background: #fff; color: var(--ink); }
 .lb-close { top: 20px; right: 20px; }
@@ -635,6 +636,7 @@ label.field { display: grid; gap: 7px; font-size: .74rem; font-weight: 500; lett
 .cal-sess .st-booked { background: #F3E1DC; color: #9A4436; }
 .cal-sess li.booked { background: var(--ivory); color: var(--muted); }
 .cal-day .btn { justify-self: start; }
+.cal-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .cal-day-empty { color: var(--muted); font: italic 400 1.2rem/1.4 var(--serif); margin: 0; }
 @media (max-width: 860px) { .cal { grid-template-columns: 1fr; } .cal-box { padding: 16px 12px 14px; } .cal-week, .cal-grid { gap: 4px; } .cal-d { font-size: .95rem; } }
 .venue-links { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 0; padding-top: 0; }
