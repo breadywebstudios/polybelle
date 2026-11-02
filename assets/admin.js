@@ -368,10 +368,10 @@
     const uniq = [...new Set(vs.map((v) => v.venue_address.trim()))];
     return uniq.length > 1 ? vs.map((v) => `${v.name}: ${v.venue_address.trim()}`).join("\n") : uniq[0] || "";
   };
-  // TEMPORARY test icon: sends the same customer message to the test number (config.js → whatsappIconNumber)
+  // test icon: sends the same customer message to the test number (config.js → showWhatsappTest, whatsappIconNumber)
   const WA_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm5.3 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .1-3.3-.8-2.8-1.1-4.5-3.9-4.7-4.1-.1-.2-1.1-1.5-1.1-2.9s.7-2 1-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 1.9c.1.1.1.3 0 .5l-.3.5-.4.4c-.1.1-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.4 2.4 1.5.3.1.5.1.6-.1l.9-1c.2-.3.4-.2.6-.1l1.9.9c.3.1.4.2.5.3.1.2.1.7-.1 1.3Z"/></svg>';
   const waTest = (text) => {
-    const num = String(C.whatsappIconNumber || "").replace(/\D/g, "");
+    const num = C.showWhatsappTest ? String(C.whatsappIconNumber || "").replace(/\D/g, "") : "";
     return num ? `<a class="wa-test" target="_blank" rel="noopener" href="${waLink(num, text)}" title="Test: send this message to ${esc(num.replace(/^971/, "0"))}" aria-label="Test: send this message to the test number">${WA_ICON}</a>` : "";
   };
   // WhatsApp turns numbers, dates and addresses into green tappable links (and re-checks when "Read more"

@@ -15,12 +15,15 @@ window.PB_CONFIG = {
 
   // Fallbacks (live values come from the admin Settings tab)
   bookingWhatsapp: "971528653208",            // where booking requests are sent (backup if Admin Settings can't load)
-  whatsappIconNumber: "971564851757",        // TEMPORARY test: the small WhatsApp icon under the booking button sends the booking here
+  // ===== WHATSAPP TEST ICONS (for testing changes; customers should never see them) =====
+  // false = no test icons anywhere (normal)
+  // true  = small test icons appear when you hover the WhatsApp buttons on the website and admin; they send the message to the number below
+  showWhatsappTest: false,
+  whatsappIconNumber: "971564851757",
   bookingWhatsappChoices: [
     { number: "971528653208", label: "+971 52 865 3208" }
   ],
   displayPhones: "052 865 3208 | 054 557 9880", // shown on the site
-  instagram: "polybelleevents",
   facebook: "https://www.facebook.com/profile.php?id=100089250728671",
   // Social links shown as icons in the top bar and footer. Leave a url empty ("") to hide it.
   socials: [
@@ -45,13 +48,13 @@ window.PB_CONFIG = {
     {
       name: "Polybelle - Halls A & B",
       address: "603, 6th Floor, Tower B",
-      landmark: "Metro Manila / Global Studio Building, behind City Season Hotel, Electra Street",
+      landmark: "Metro Manila / Global Studio Building, behind City Seasons Hotel, Electra Street",
       mapUrl: "https://maps.app.goo.gl/iGwjTLTESVSD1wGN6"
     },
     {
       name: "Polybelle - Hall C",
       address: "1802, 18th Floor, C88 Commercial Tower A",
-      landmark: "AST Trading / dnata Travel Building, Electra Street, behind City Season Hotel",
+      landmark: "AST Trading / dnata Travel Building, Electra Street, behind City Seasons Hotel",
       mapUrl: "https://share.google/n6CTvTV2nUmjItbyQ"
     },
     {
@@ -86,6 +89,5 @@ window.PB_CONFIG = {
     "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=1200&q=70",
     "https://images.unsplash.com/photo-1530103862676-de8c9debad1d?auto=format&fit=crop&w=1200&q=70",
     "https://images.unsplash.com/photo-1478146896981-b80fe463b330?auto=format&fit=crop&w=1200&q=70"
-  ],
-  heroImage: "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=2000&q=75"
+  ]
 };

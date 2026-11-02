@@ -9,7 +9,7 @@ Website and booking admin for Polybelle Event Halls & Studio (Abu Dhabi).
 ## How booking works
 1. Customer picks a hall, date and session (confirmed slots are blocked), then fills in details.
 2. The request is saved to Supabase as **Pending** with a reference (e.g. `PB-261025-A1B2`).
-3. WhatsApp opens with the full booking message, addressed to the booking number set in Admin → Settings (default 056 485 1757).
+3. WhatsApp opens with the full booking message, addressed to the booking number set in Admin → Settings (default 052 865 3208).
 4. Staff confirm or cancel in the admin, then tap **WhatsApp customer** to send a prefilled reply.
    A hall can't have two confirmed bookings for the same date and session.
 5. In Admin → booking → **Invoice**, set the line items and tap **Send invoice to customer**: it saves the invoice (assigning the next number if it's new), draws an A4 PDF with the same layout as **Save & open invoice** (real text in the site fonts from `assets/fonts/pdf/`), uploads it to the private `invoices` bucket and opens WhatsApp with the itemised message and a short link like `https://www.polybelle.me/i/K7Q2MX9AbC`. Each booking keeps one link that always opens its latest invoice/receipt (table `pb_invoice_files`, Edge Function `invoice`, `vercel.json` rewrite `/i/:code`).
@@ -23,7 +23,7 @@ Photo framing: in Admin → Halls & Services, open a hall or package/service and
 
 Hall map locations: add an optional Google Maps URL or paste the full iframe embed code in Admin → Halls & Services → Edit hall. For a reliable embedded map, use Google Maps → Share → Embed a map; the admin extracts the iframe `src` when the full code is pasted. Regular place links are also supported when the location can be read from the URL. Configured locations appear as an embedded map and a Google Maps link on the public hall card. Apply `supabase/migrations/20261026203600_google_maps_venue_links.sql` before deploying this field.
 
-Hall addresses: enter the written venue address in Admin → Halls & Services → Edit hall. It is shown in the public booking hall selector and booking summary, and included in the prefilled WhatsApp booking request. Apply `supabase/migrations/20261026212200_venue_address.sql` before deploying this field.
+Hall addresses: enter the written venue address in Admin → Halls & Services → Edit hall. It is shown in the public booking hall selector and booking summary, and included in the prefilled WhatsApp booking request. Apply `supabase/migrations/20261026212100_venue_address.sql` before deploying this field.
 Only emails in `pb_admins` can use the admin page. Add a new admin in Admin → Settings with their email and initial password; the protected `admin-create-user` Supabase Edge Function creates the confirmed account and adds it to the allowlist. Deploy it with `supabase functions deploy admin-create-user` before using the form. It verifies the caller's signed-in admin status and uses the server-only Supabase service-role key; never put that key in website files. The form creates new Supabase accounts and will not change a password for an email that already has an account.
 
 Passwords (Admin → Settings): **Change my password** updates the signed-in admin's own password after re-checking the current one. **Set password** next to another admin sets a new password through the same `admin-create-user` function (`action: "set_password"`); it only works for emails on the Polybelle admin list (checked by the server-only `pb_admin_auth_user_id` SQL function), because the login system is shared with other sites in this Supabase project.
@@ -67,8 +67,14 @@ Admin → booking → **Edit booking** has a **Prices** section with one amount 
 
 `pb_services.price_from` comes from migration `20261101200000_service_prices.sql`; apply it before deploying this feature.
 
+## Package and service preview
+Resting the mouse on a package or service card in the booking form shows a floating preview beside it, with the whole uncropped photo, name, price and description. Phones and tablets can't hover, so they show the whole photo at the top of the details panel when a card is tapped. It uses the photo and text from Admin → Halls & Services.
+
 ## Send us inquiry
 A green **Send us inquiry** button appears in each hall's availability panel, in the package and service details, and in the photo viewer (gallery and hall photos). It opens WhatsApp to the booking number from Admin → Settings with a message about what the customer is viewing: the hall with any chosen date and session, the package or service name, or the photo's caption and link. Inquiries aren't saved as bookings.
+
+## WhatsApp test icons
+Small test icons that send booking and customer messages to a test number (056 485 1757) instead of the real number. They're off. To use them, open `assets/config.js`, set `showWhatsappTest: true` and push; they appear when you hover the WhatsApp buttons on the website (booking form and "booking sent" pop-up) and in the admin booking drawer. Customers can find them too while they're on, so set it back to `false` and push when testing is done. The test number is `whatsappIconNumber`, just below the switch.
 
 ## Under construction mode
 Edit `assets/config.js` and set `underConstruction: true` to show visitors a "coming soon" page (with WhatsApp, phone and social links) instead of the website; set it back to `false` to go live. The text comes from `underConstructionMessage`. Only the public website is affected; the admin site keeps working. While it's on, open the site with `?preview` (e.g. `/?preview`) to see the real site on your device (a gold bar reminds you), and `?preview=off` to see the coming-soon page again.
@@ -89,6 +95,7 @@ Some halls use the same room (e.g. a big hall that includes a smaller one). In A
 ## SEO
 - Live address: **https://www.polybelle.me** (canonical; it's the primary domain in Vercel, and polybelle.me forwards to it). Don't add redirect rules between polybelle.me and www in code: Vercel's domain settings already handle that, and an opposite rule breaks the site.
 - `index.html` head: description, canonical, Open Graph / WhatsApp preview (`assets/og-image.jpg`, 1200×630), icons in `assets/icons/`, `site.webmanifest`, and structured data (`LocalBusiness` + `EventVenue` with the three branches, phones, socials and services). Update the structured data if addresses, phones or opening hours change.
+- `8706cd698740ec3e23280e16ca9b8986.txt` is the IndexNow key that lets the site notify Bing of updates. Nothing links to it, but it must stay at the site root.
 - `robots.txt` (blocks `admin.html`) and `sitemap.xml`. Submit `https://www.polybelle.me/sitemap.xml` in Google Search Console.
 - The admin page has `noindex`. Photos get descriptive alt text from hall names, service names and gallery captions, so write clear gallery captions.
 

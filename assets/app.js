@@ -203,6 +203,13 @@
       // tapping the card only shows its details; adding happens with the Add button or the round check
       $(".svc-card", el).addEventListener("click", () => (svcOpen === el ? closeSvcDetail() : openSvcDetail(el)));
       $(".svc-check", el).addEventListener("click", () => setPicked(el, !cb.checked));
+      if (canHover) {
+        el.addEventListener("mousemove", () => { if (previewEl !== el && svcOpen !== el) showPreview(el); });   // shows once the mouse rests, and again after scrolling
+        el.addEventListener("mouseleave", hidePreview);
+        el.addEventListener("click", hidePreview);
+        el.addEventListener("focusin", () => { if ($(":focus-visible", el)) showPreview(el); });
+        el.addEventListener("focusout", hidePreview);
+      }
     });
     renderSvcTabs();
     if (reopen) { const el = $(`#addonPick .svc[data-i="${reopen.dataset.i}"]`); if (el && !el.hidden) openSvcDetail(el); }
@@ -212,6 +219,48 @@
   let svcOpen = null;
   const svcDetail = document.createElement("div");
   svcDetail.className = "svc-detail"; svcDetail.id = "svcDetail"; svcDetail.setAttribute("role", "region");
+  // ---------- hover preview: the whole photo with the description, beside the card (mouse only;
+  // phones and tablets see the whole photo in the details panel instead)
+  const svcPreview = document.createElement("div");
+  svcPreview.className = "svc-preview"; svcPreview.setAttribute("aria-hidden", "true");
+  document.body.append(svcPreview);
+  const canHover = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+  let previewEl = null, previewTimer;
+  function placePreview() {
+    if (!previewEl) return;
+    const r = previewEl.getBoundingClientRect(), w = svcPreview.offsetWidth, h = svcPreview.offsetHeight, gap = 14, edge = 12;
+    const right = r.right + gap + w <= document.documentElement.clientWidth - edge;
+    svcPreview.style.left = `${right ? r.right + gap : Math.max(edge, r.left - gap - w)}px`;
+    svcPreview.style.top = `${Math.max($(".nav").offsetHeight + edge, Math.min(r.top, window.innerHeight - h - edge))}px`;
+  }
+  function showPreview(el) {
+    clearTimeout(previewTimer);
+    previewTimer = setTimeout(() => {
+      const sv = services[+el.dataset.i];
+      if (!sv.image_url && !sv.description) return;
+      const pkg = sv.kind === "Package";
+      previewEl = el;
+      svcPreview.innerHTML = `${sv.image_url ? `<img src="${esc(sv.image_url)}" alt="">` : ""}
+        <div class="sp-body">
+          <span class="sd-kind">${pkg ? "Package" : "Service"} · ${esc(sv.category || "Event Services")}</span>
+          <h4>${esc(sv.name)}</h4>
+          ${sv.price_from ? `<span class="price">From ${esc(money(sv.price_from))}</span>` : ""}
+          ${sv.description ? `<p>${esc(sv.description)}</p>` : ""}
+          <small>${pkg ? "Click to see what's included" : "Click for details"}</small>
+        </div>`;
+      const img = $("img", svcPreview);
+      if (img) img.onload = placePreview;
+      placePreview();
+      svcPreview.classList.add("on");
+    }, 160);
+  }
+  function hidePreview() {
+    clearTimeout(previewTimer);
+    previewEl = null;
+    svcPreview.classList.remove("on");
+  }
+  window.addEventListener("scroll", hidePreview, { passive: true });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") hidePreview(); });
   function setPicked(el, on) {
     const cb = $("input", el);
     cb.checked = on;
@@ -227,6 +276,7 @@
     svcDetail.innerHTML = `
       <button type="button" class="sd-x" aria-label="Close details">×</button>
       <div class="sd-main">
+        ${sv.image_url ? `<img class="sd-photo" src="${esc(sv.image_url)}" alt="${esc(sv.name)}" loading="lazy">` : ""}
         <span class="sd-kind">${pkg ? "Package" : "Service"} · ${esc(sv.category || "Event Services")}</span>
         <h4>${esc(sv.name)}</h4>
         ${sv.price_from ? `<p class="price">From ${esc(money(sv.price_from))}</p>` : ""}
@@ -282,9 +332,9 @@
             <svg class="whatsapp-button-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="#fff"/><path fill="#25D366" d="M12 3.6a8.3 8.3 0 0 0-7.1 12.6L3.8 20l4-1.1a8.4 8.4 0 1 0 4.2-15.3Zm4.4 11.8c-.2.5-1.1 1-1.5 1-.4.1-.8.1-2.7-.7-2.3-.9-3.7-3.2-3.9-3.4-.1-.2-.9-1.2-.9-2.4s.6-1.6.8-1.9c.2-.2.4-.2.6-.2h.4c.2 0 .3 0 .5.4l.7 1.6c.1.2.1.3 0 .4l-.3.4-.3.3c-.1.1-.2.2-.1.5.2.3.7 1.1 1.4 1.7 1 .8 1.7 1.1 2 1.2.3.1.4.1.5-.1l.7-.8c.2-.2.3-.2.5-.1l1.5.7c.2.1.4.2.4.3.1.1.1.5-.1.9Z"/></svg>
             WhatsApp
           </button>
-          <button type="submit" form="bookForm" class="whatsapp-shortcut" data-wa-number="${esc(String(C.whatsappIconNumber || C.bookingWhatsapp).replace(/\D/g, ""))}" aria-label="Send booking on WhatsApp (test number)" title="Send booking on WhatsApp (test number)">
+          ${C.showWhatsappTest ? `<button type="submit" form="bookForm" class="whatsapp-shortcut" data-wa-number="${esc(String(C.whatsappIconNumber || C.bookingWhatsapp).replace(/\D/g, ""))}" aria-label="Send booking on WhatsApp (test number)" title="Send booking on WhatsApp (test number)">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm5.3 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .1-3.3-.8-2.8-1.1-4.5-3.9-4.7-4.1-.1-.2-1.1-1.5-1.1-2.9s.7-2 1-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.4 0 .5l-.3.5-.4.4c-.1.1-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.4 2.4 1.5.3.1.5.1.6-.1l.9-1c.2-.3.4-.2.6-.1l1.9.9c.3.1.5.2.5.3.1.2.1.6-.1 1.1Z"/></svg>
-          </button>
+          </button>` : ""}
         </div>`
       ).join("");
     });
@@ -570,9 +620,9 @@
     // the pop-up's "Send on WhatsApp" always goes to the main booking number (052 865 3208), whichever button was used
     const mainNumber = String((C.bookingWhatsappChoices || [])[0]?.number || state.whatsapp).replace(/\D/g, "");
     $("#doneWa").href = waLink(mainNumber, buildMessage(d, ref));
-    // hidden icon under Close sends the same message to the test number
-    const testNumber = String(C.whatsappIconNumber || "971564851757").replace(/\D/g, "");
-    $("#doneWaAlt").href = waLink(testNumber, buildMessage(d, ref));
+    // test icon under Close sends the same message to the test number (only when showWhatsappTest is on)
+    $("#doneWaAlt").hidden = !C.showWhatsappTest;
+    if (C.showWhatsappTest) $("#doneWaAlt").href = waLink(String(C.whatsappIconNumber).replace(/\D/g, ""), buildMessage(d, ref));
     $("#doneModal").classList.add("open");
     restoreBtn();
     $("#bookForm").reset();

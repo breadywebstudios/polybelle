@@ -33,7 +33,6 @@ img { max-width: 100%; display: block; }
 a { color: inherit; }
 [hidden] { display: none !important; }
 .wrap { width: min(1180px, 100% - 40px); margin-inline: auto; }
-.narrow { max-width: 760px; }
 .center { text-align: center; }
 h1, h2, h3, h4 { font-family: var(--serif); font-weight: 500; line-height: 1.12; margin: 0; letter-spacing: -.005em; }
 h2 { font-size: clamp(2.1rem, 4.4vw, 3.3rem); }
@@ -66,8 +65,6 @@ b, strong { font-weight: 500; }
 .btn-outline:hover { background: var(--ink); color: #fff; }
 .btn-light { background: #fff; color: var(--ink); }
 .btn-light:hover { background: var(--gold-soft); color: #fff; }
-.btn-ghost { border-color: rgba(255,255,255,.7); color: #fff; }
-.btn-ghost:hover { background: #fff; color: var(--ink); }
 .link-line { position: relative; display: inline-flex; gap: 10px; align-items: center; font: 500 .76rem/1 var(--sans); letter-spacing: .2em; text-transform: uppercase; text-decoration: none; color: var(--ink); padding: 8px 0; background: none; border: 0; cursor: pointer; }
 .link-line::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: currentColor; transform-origin: right; transition: transform .5s var(--ease); }
 .link-line:hover::after { transform: scaleX(0); }
@@ -218,19 +215,6 @@ b, strong { font-weight: 500; }
 .venue-footer { display: grid; align-content: end; gap: 8px; min-width: 0; }
 /* ---------- Packages ---------- */
 .packages { background: var(--cream); }
-.pk-grid { display: grid; grid-template-columns: .9fr 1.1fr; gap: clamp(40px, 7vw, 110px); align-items: start; }
-.pk-intro { position: sticky; top: 120px; display: grid; gap: 22px; justify-items: start; }
-.pk-intro p { margin: 0; color: var(--muted); max-width: 440px; }
-.pk-intro .pay { font-size: .9rem; padding-left: 16px; border-left: 1px solid var(--gold); color: var(--ink); }
-.pk-intro .btn { margin-top: 10px; }
-.pk-list { display: grid; }
-.pk-item { display: grid; grid-template-columns: 64px 1fr; gap: 10px; padding: 34px 0; border-top: 1px solid var(--line); }
-.pk-item:last-child { border-bottom: 1px solid var(--line); }
-.pk-num { font: 400 1rem/1.9 var(--serif); color: var(--gold); letter-spacing: .1em; }
-.pk-item h3 { font-size: 1.8rem; margin-bottom: 10px; transition: color .4s var(--ease); }
-.pk-item p { margin: 0; color: var(--muted); }
-.pk-item:hover h3 { color: var(--gold); }
-@media (max-width: 900px) { .pk-grid { grid-template-columns: 1fr; } .pk-intro { position: static; } }
 
 /* ---------- Gallery ---------- */
 .g-filters { display: flex; flex-wrap: wrap; gap: 6px 26px; justify-content: center; margin-bottom: 28px; }
@@ -325,10 +309,6 @@ label.field { display: grid; gap: 7px; font-size: .74rem; font-weight: 500; lett
 .field input, .field select, .field textarea { font: 400 1rem var(--sans); letter-spacing: 0; text-transform: none; color: var(--ink); padding: 13px 14px; border: 1px solid var(--line); border-radius: 0; background: var(--ivory); width: 100%; transition: border-color .3s, background .3s; }
 .field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: var(--ink); background: #fff; }
 .field textarea { min-height: 100px; resize: vertical; }
-.type-pick { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.type-pick .chip-radio span { padding: 18px 18px; }
-.type-pick .chip-radio b { font: 400 1.25rem/1.2 var(--serif); }
-@media (max-width: 560px) { .type-pick { grid-template-columns: 1fr; } }
 /* hall choices: simple name buttons in a row (they wrap on phones); the chosen hall's address shows underneath */
 .hall-pick { display: flex; flex-wrap: wrap; gap: 8px; }
 .hall-pick .chip-radio { flex: 1 1 0; min-width: max-content; }
@@ -435,6 +415,7 @@ label.field { display: grid; gap: 7px; font-size: .74rem; font-weight: 500; lett
   .nav .wordmark small { letter-spacing: .24em; margin-right: -.24em; }
 }
 .done-actions { position: relative; display: grid; justify-items: center; }
+.done-actions .whatsapp-shortcut[hidden] { display: none; }
 .done-actions .whatsapp-shortcut { position: absolute; top: calc(100% + 8px); left: 50%; transform: translateX(-50%); }
 .done-actions:hover .whatsapp-shortcut, .done-actions:focus-within .whatsapp-shortcut { opacity: 1; visibility: visible; }
 .tick { width: 58px; height: 58px; border-radius: 50%; border: 1px solid var(--gold); margin: 0 auto; position: relative; }
@@ -450,11 +431,10 @@ label.field { display: grid; gap: 7px; font-size: .74rem; font-weight: 500; lett
 /* ---------- Scroll reveal ---------- */
 .reveal { opacity: 0; transform: translateY(34px); transition: opacity 1.1s var(--ease), transform 1.1s var(--ease); transition-delay: calc(var(--d, 0) * .12s); }
 .reveal.in { opacity: 1; transform: none; }
-.section-head .rule, .pk-intro .rule { transform: scaleX(0); transition: transform 1.2s var(--ease) .3s; }
-.section-head.in .rule, .pk-intro.in .rule { transform: scaleX(1); }
+.section-head .rule { transform: scaleX(0); transition: transform 1.2s var(--ease) .3s; }
+.section-head.in .rule { transform: scaleX(1); }
 .venue { opacity: 0; transform: translateY(30px); transition: opacity 1s var(--ease), transform 1s var(--ease); transition-delay: calc(var(--d, 0) * .12s); }
 .venue.in { opacity: 1; transform: none; }
-.no-js .reveal, .no-js .venue { opacity: 1; transform: none; }
 
 @media (max-width: 640px) {
   .wrap { width: min(1180px, 100% - 32px); }
@@ -476,7 +456,6 @@ label.field { display: grid; gap: 7px; font-size: .74rem; font-weight: 500; lett
 .brand { display: grid; line-height: 1; text-decoration: none; }
 .brand b { font-family: var(--serif); font-weight: 600; font-size: 1.85rem; font-style: italic; color: var(--cocoa); }
 .brand small { font-size: .6rem; letter-spacing: .32em; text-transform: uppercase; color: var(--gold); margin-top: 4px; }
-.brand-logo { width: 280px; height: 62px; object-fit: cover; object-position: center; }
 @media (max-width: 640px) {
   .occasions { gap: 8px; letter-spacing: .14em; font-size: .66rem; }
   .occasions span + span::before { display: none; }
@@ -525,6 +504,18 @@ label.field { display: grid; gap: 7px; font-size: .74rem; font-weight: 500; lett
 .sd-inc li { position: relative; padding-left: 22px; font-size: .92rem; opacity: 0; transform: translateY(6px); animation: rise .5s var(--ease) forwards; animation-delay: calc(.08s + var(--k, 0) * .04s); }
 .sd-inc li::before { content: ""; position: absolute; left: 2px; top: .38em; width: 5px; height: 9px; border: solid var(--gold); border-width: 0 1.5px 1.5px 0; transform: rotate(45deg); }
 .sd-note { margin: 0; color: var(--muted); font-size: .92rem; font-style: italic; }
+.sd-photo { display: none; }
+@media (hover: none) { .sd-photo { display: block; width: 100%; height: auto; max-height: 60vh; object-fit: contain; background: var(--cream); } }
+/* hover preview: the whole photo with the description, beside the card */
+.svc-preview { position: fixed; z-index: 38; top: 0; left: 0; width: min(400px, calc(100vw - 24px)); background: var(--ivory); border: 1px solid var(--ink); box-shadow: var(--shadow); pointer-events: none; opacity: 0; visibility: hidden; transform: translateY(6px); transition: opacity .25s var(--ease), transform .25s var(--ease), visibility .25s; }
+.svc-preview.on { opacity: 1; visibility: visible; transform: none; }
+.svc-preview img { display: block; width: 100%; height: auto; max-height: min(56vh, 440px); object-fit: contain; background: var(--cream); }
+.sp-body { display: grid; gap: 6px; padding: 14px 18px 16px; }
+.sp-body h4 { font: 400 1.4rem/1.2 var(--serif); }
+.sp-body p { margin: 0; color: var(--muted); font-size: .92rem; }
+.sp-body small { color: var(--gold); font-size: .66rem; letter-spacing: .14em; text-transform: uppercase; }
+@media (hover: none) { .svc-preview { display: none; } }
+@media (prefers-reduced-motion: reduce) { .svc-preview { transition: none; transform: none; } }
 .sd-actions { grid-column: 1 / -1; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; border-top: 1px solid var(--line); padding-top: 16px; }
 .sd-added { font-size: .8rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ok); }
 .svc-detail:not(:has(.sd-inc)) { grid-template-columns: 1fr; }
@@ -586,7 +577,6 @@ label.field { display: grid; gap: 7px; font-size: .74rem; font-weight: 500; lett
 .sd-actions .btn { min-width: 132px; }
 
 /* ---------- scroll performance ---------- */
-.past-hero .hero-bg { animation-play-state: paused; }
 .reveal { transition-duration: .9s; }
 @media (max-width: 900px) {
   /* blur behind a fixed header is costly on phones; a near-solid header looks the same */
