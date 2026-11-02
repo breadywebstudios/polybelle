@@ -23,6 +23,8 @@ Photo framing: in Admin → Halls & Services, open a hall or package/service and
 
 Hall map locations: add an optional Google Maps URL or paste the full iframe embed code in Admin → Halls & Services → Edit hall. For a reliable embedded map, use Google Maps → Share → Embed a map; the admin extracts the iframe `src` when the full code is pasted. Regular place links are also supported when the location can be read from the URL. Configured locations appear as an embedded map and a Google Maps link on the public hall card. Apply `supabase/migrations/20261026203600_google_maps_venue_links.sql` before deploying this field.
 
+Hall order: in Admin → Halls & Services → Edit hall, set **Position** (1 shows first). The other halls shift to make room, so the numbers stay 1, 2, 3… with no gaps or duplicates, the same way the Gallery works.
+
 Hall addresses: enter the written venue address in Admin → Halls & Services → Edit hall. It is shown in the public booking hall selector and booking summary, and included in the prefilled WhatsApp booking request. Apply `supabase/migrations/20261026212100_venue_address.sql` before deploying this field.
 Only emails in `pb_admins` can use the admin page. Add a new admin in Admin → Settings with their email and initial password; the protected `admin-create-user` Supabase Edge Function creates the confirmed account and adds it to the allowlist. Deploy it with `supabase functions deploy admin-create-user` before using the form. It verifies the caller's signed-in admin status and uses the server-only Supabase service-role key; never put that key in website files. The form creates new Supabase accounts and will not change a password for an email that already has an account.
 

@@ -1208,7 +1208,7 @@
           <span class="badge ${v.active ? "b-Confirmed" : "b-Cancelled"}">${v.active ? "Shown on website" : "Hidden"}</span>
         </div>
         <div class="vb">
-          <h3>${esc(v.name)}</h3>
+          <h3>${v.sort_order}. ${esc(v.name)}</h3>
           ${v.venue_address ? `<p style="white-space:pre-wrap">📍 ${esc(v.venue_address)}</p>` : ""}<p>Up to ${v.capacity} guests${v.branch ? " · " + esc(v.branch) : ""}${v.price_from ? " · from AED " + Number(v.price_from).toLocaleString() : ""}</p>
           ${v.tagline ? `<p><i>${esc(v.tagline)}</i></p>` : ""}
           ${v.image_url ? "" : `<p style="color:var(--gold)">Using a sample photo — upload the real one.</p>`}
@@ -1238,7 +1238,7 @@
           <label class="field">Max guests<input type="number" name="capacity" min="1" required value="${v.capacity}"></label>
           <label class="field">Branch / location<select name="branch"><option value="">—</option>${C.branches.map((b) => `<option ${b.name === v.branch ? "selected" : ""}>${esc(b.name)}</option>`).join("")}</select></label>
           <label class="field">Starting price (AED, optional)<input type="number" name="price_from" min="0" step="1" value="${v.price_from ?? ""}"></label>
-          <label class="field">Display order<input type="number" name="sort_order" value="${v.sort_order}"></label>
+          <label class="field">Position (1 shows first)<input type="number" name="sort_order" min="1" value="${v.sort_order}"></label>
         </div>
         ${(() => { const others = S.venues.filter((x) => x.id !== v.id); if (!others.length) return "";
           const on = v.id ? linkedHalls(v.id) : new Set();
@@ -1277,6 +1277,7 @@
         if (error.code === "23503") return toast("This hall has booking history and can't be deleted. Hide it instead to preserve its records.");
         return toast("Couldn't delete hall: " + error.message);
       }
+      await placeHall();
       toast("Hall deleted"); closeDrawers(); loadVenues();
     });
     $("#venueForm").addEventListener("submit", async (e) => {
@@ -1287,9 +1288,10 @@
         venue_address: f.venue_address.value.trim() || null,
         capacity: +f.capacity.value, branch: f.branch.value || null, price_from: f.price_from.value === "" ? null : +f.price_from.value,
         google_maps_url: googleMapsInputUrl(f.google_maps_url.value) || null,
-        sort_order: +f.sort_order.value || 0, active: f.active.checked, image_url: f.image_url.value || null,
+        active: f.active.checked, image_url: f.image_url.value || null,
         image_pos: f.image_url.value ? posOk(f.image_pos.value) || null : null
       };
+      if (isNew) row.sort_order = (S.venues.at(-1)?.sort_order || 0) + 1;   // placeHall moves it to the chosen position
       if (!isGoogleMapsUrl(row.google_maps_url)) return toast("Paste a valid Google Maps URL or iframe embed code.");
       const shares = $$('input[name="shares"]:checked', f).map((x) => x.value);
       row.shares_with = shares;
@@ -1307,10 +1309,25 @@
         }
       }
       if (error) return toast(error.message);
+      await placeHall(myId, +f.sort_order.value);
       toast(isNew ? "Hall added — it's live on the website" : "Hall updated");
       closeDrawers(); loadVenues();
     });
     openDrawer("#vdrawer");
+  }
+  // moving a hall shifts the others, so the positions stay 1, 2, 3… with no gaps or duplicates (no id: just close the gaps)
+  async function placeHall(id, pos) {
+    const { data, error } = await sb.from("pb_venues").select("id,sort_order").order("sort_order").order("name");
+    if (error) return toast("Couldn't save the new order: " + error.message);
+    const list = data.slice(), from = list.findIndex((h) => h.id === id);
+    if (from >= 0) {
+      const [hall] = list.splice(from, 1);
+      list.splice(Math.min(Math.max(Math.round(pos) || 1, 1), list.length + 1) - 1, 0, hall);
+    }
+    const res = await Promise.all(list.map((h, i) => [h, i + 1]).filter(([h, n]) => h.sort_order !== n)
+      .map(([h, n]) => sb.from("pb_venues").update({ sort_order: n }).eq("id", h.id)));
+    const failed = res.find((r) => r.error);
+    if (failed) toast("Couldn't save the new order: " + failed.error.message);
   }
 
   function openOtherVenue() {
