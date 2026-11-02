@@ -58,9 +58,9 @@ b, strong { font-weight: 500; }
 .btn-dark:hover, .btn-primary:hover, .btn-wa:hover { background: var(--gold); border-color: var(--gold); }
 .btn-wa { background: #25D366; color: #fff; border-color: #25D366; }
 .btn-wa:hover, #doneWa:hover { background: #1DA851; border-color: #1DA851; }
-.btn-inquiry { background: #0B6B4F; color: #fff; border-color: #0B6B4F; font-weight: 600; font-size: .84rem; letter-spacing: .14em; }
+.btn-inquiry { background: #0B6B4F; color: #fff; border-color: #0B6B4F; font-weight: 600; }
 .btn-inquiry:hover { background: #084F3A; border-color: #084F3A; color: #fff; }
-.btn-inquiry svg { width: 20px; height: 20px; flex: none; }
+.btn-inquiry svg { width: 18px; height: 18px; flex: none; margin: -3px 0; }
 #doneWa { background: #25D366; color: #fff; border-color: #25D366; }
 .btn-outline { background: transparent; color: var(--ink); border-color: var(--ink); }
 .btn-outline:hover { background: var(--ink); color: #fff; }
