@@ -1915,11 +1915,19 @@
         ${m.attachments?.length ? `<small>📎 ${esc(m.attachments.join(", "))}</small>` : ""}
         ${m.error ? `<small style="color:#A9473A">${esc(m.error)}</small>` : ""}
         <p class="em-body">${esc(m.body)}</p>
-        <div class="ract"><button class="linkbtn" type="button" data-em-open>Show / hide full message</button><button class="linkbtn" type="button" data-em-reuse>Send again / edit</button></div>
+        <div class="ract"><button class="linkbtn" type="button" data-em-open>Show / hide full message</button><button class="linkbtn" type="button" data-em-reuse>Send again / edit</button><button class="linkbtn" type="button" data-em-del style="margin-left:auto;color:#A9473A">Delete</button></div>
       </div>`).join("") : `<p class="empty">No emails sent yet.</p>`;
     $$("#emLog [data-em]").forEach((card) => {
       const m = data.find((x) => x.id === card.dataset.em);
       $("[data-em-open]", card).addEventListener("click", () => card.classList.toggle("open"));
+      $("[data-em-del]", card).addEventListener("click", async () => {
+        if (!confirm(`Delete “${m.subject || "(no subject)"}” to ${m.to_addresses.join(", ")} from Sent emails? This only removes it from this list (the recipient keeps their copy). This can't be undone.`)) return;
+        const { data: gone, error: delError } = await sb.from("pb_emails").delete().eq("id", m.id).select("id");
+        if (delError) return toast(delError.message);
+        if (!gone?.length) return toast("Couldn't delete this email (no permission).");
+        toast("Email deleted");
+        loadEmails();
+      });
       $("[data-em-reuse]", card).addEventListener("click", () => {
         const f = $("#emailForm");
         f.from_local.value = m.from_address.split("@")[0];
