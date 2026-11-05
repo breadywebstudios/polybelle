@@ -878,7 +878,7 @@
     renderVenues(); renderContact(); update();
     if (!sb) return;
     loadPublicPromos();
-    sb.from("pb_gallery").select("image_url,caption,category").eq("active", true).order("sort_order").order("created_at", { ascending: false })
+    sb.from("pb_gallery").select("id,image_url,caption,category").eq("active", true).order("sort_order").order("created_at", { ascending: false })
       .then(({ data }) => { if (data) { G.items = data; renderGallery(); renderHeroParade(data.map((g) => g.image_url)); } });
     sb.from("pb_reviews").select("name,event_type,rating,comment,source,featured,created_at").eq("status", "Approved")
       .order("featured", { ascending: false }).order("created_at", { ascending: false }).limit(60)
