@@ -1,9 +1,32 @@
 {
   "rewrites": [
-    { "source": "/i/:code", "destination": "https://ntohdxudxfggsmhxhvho.supabase.co/functions/v1/invoice?c=:code" }
+    {
+      "source": "/i/:code",
+      "destination": "https://ntohdxudxfggsmhxhvho.supabase.co/functions/v1/invoice?c=:code"
+    },
+    {
+      "source": "/p/:code",
+      "destination": "/api/p?c=:code"
+    }
   ],
   "headers": [
-    { "source": "/i/:code", "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }] },
-    { "source": "/admin.html", "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }] }
+    {
+      "source": "/i/:code",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/admin.html",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    }
   ]
 }

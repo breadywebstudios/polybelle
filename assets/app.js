@@ -317,7 +317,7 @@
     $$("[data-zoom]").forEach((el) => {
       const open = () => {
         if (!$("img", el)) return;   // photo failed to load
-        const list = halls.map(({ v, i }) => ({ src: imgFor(v, i), alt: v.other ? `${v.name}: Polybelle events at your venue in Abu Dhabi` : `${v.name}, event hall at Polybelle, Abu Dhabi`, cap: [v.name, v.other ? "At your location" : v.capacity != null ? `Up to ${v.capacity} guests` : ""].filter(Boolean).join(" · ") }));
+        const list = halls.map(({ v, i }) => ({ src: imgFor(v, i), code: v.other ? "other" : v.image_url ? shortCode(v.id) : "", alt: v.other ? `${v.name}: Polybelle events at your venue in Abu Dhabi` : `${v.name}, event hall at Polybelle, Abu Dhabi`, cap: [v.name, v.other ? "At your location" : v.capacity != null ? `Up to ${v.capacity} guests` : ""].filter(Boolean).join(" · ") }));
         openLb(halls.findIndex(({ i }) => i === +el.dataset.zoom), list);
       };
       el.addEventListener("click", open);
@@ -571,11 +571,15 @@
         <img src="${esc(g.image_url)}" alt="${esc([g.caption, g.category && g.category !== g.caption ? g.category : "", "Polybelle, Abu Dhabi"].filter(Boolean).join(" · "))}" loading="lazy" onerror="this.style.visibility='hidden'">
         <span><small>${esc(g.category)}</small>${esc(g.caption || "")}</span>
       </button>`).join("") : `<p class="g-empty">New event photos coming soon.</p>`;
-    $$("#gGrid .g-item").forEach((b) => b.addEventListener("click", () => openLb(+b.dataset.i, G.view.map((g) => ({ src: g.image_url, alt: g.caption || g.category, cap: [g.caption, g.category].filter(Boolean).join(" · ") })))));
+    $$("#gGrid .g-item").forEach((b) => b.addEventListener("click", () => openLb(+b.dataset.i, G.view.map((g) => ({ src: g.image_url, code: shortCode(g.id), alt: g.caption || g.category, cap: [g.caption, g.category].filter(Boolean).join(" · ") })))));
     $("#gMore").hidden = G.view.length <= G.shown;
   }
   $("#gMore").addEventListener("click", () => { G.shown += 9; renderGallery(); });
-  // photo viewer, shared by the gallery and the hall photos: list = [{ src, alt, cap }]
+  // short, tidy photo links for WhatsApp: www.polybelle.me/p/<first 8 characters of the photo's id> (see api/p.js)
+  const shortCode = (id) => /^[0-9a-f]{8}-/i.test(String(id || "")) ? String(id).slice(0, 8).toLowerCase() : "";
+  const siteHost = String(C.siteUrl || "https://www.polybelle.me").replace(/^https?:\/\//, "").replace(/\/+$/, "");
+  const photoLink = (p) => p.code ? `${siteHost}/p/${p.code}` : new URL(p.src, location.href).href;
+  // photo viewer, shared by the gallery and the hall photos: list = [{ src, code, alt, cap }]
   const LB = { list: [], idx: 0 };
   function openLb(i, list = LB.list) {
     LB.list = list;
@@ -591,7 +595,7 @@
     $("#lbCap").hidden = $("#lbInquiry").hidden = info;
     $("#lbInfo").hidden = !info;
     if (info) { fillSvcInfo(p.svc); $("#lbInfo").scrollTop = box.scrollTop = 0; }
-    else $("#lbInquiry").innerHTML = inquiryBtn(`Hi Polybelle! I'd like to ask about this photo from your website${p.cap ? ` (${p.cap})` : ""}:\n${new URL(p.src, location.href).href}`);
+    else $("#lbInquiry").innerHTML = inquiryBtn(`Hi Polybelle! I'd like to ask about this photo from your website${p.cap ? ` (${p.cap})` : ""}:\n${photoLink(p)}`);
     $("#lbPrev").hidden = $("#lbNext").hidden = list.length < 2;
     $("#lightbox").classList.add("open"); document.body.style.overflow = "hidden";
   }

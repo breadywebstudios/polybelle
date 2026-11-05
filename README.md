@@ -51,6 +51,9 @@ One-time setup (after the Email setup above):
 4. Resend → Webhooks → **Add webhook**: endpoint `https://ntohdxudxfggsmhxhvho.supabase.co/functions/v1/email-inbound`, event `email.received`. Copy its signing secret (`whsec_…`) and save it as the Supabase secret `RESEND_WEBHOOK_SECRET`.
 5. Send a test email to `info@polybelle.me` and check that it appears in the Inbox. If it doesn't, check Resend → Webhooks for the delivery status. Failed deliveries are retried automatically and can be replayed from there.
 
+## Short photo links (/p/…)
+"Send us inquiry" on a gallery or hall photo writes a short link like `www.polybelle.me/p/2c556676` in the WhatsApp message instead of the long storage address. The code is the first 8 characters of the photo's id (`pb_gallery` or `pb_venues`), or `other` for the Other venues photo. `vercel.json` rewrites `/p/:code` to the Vercel function `api/p.js`, which looks the photo up with the public key and returns a small Polybelle page with the photo, an "Ask about this" WhatsApp button and preview tags (`og:image`), so WhatsApp shows the photo in the chat. Hidden or deleted photos show a friendly "Photo not found" page. No database changes needed.
+
 ## Calendars
 - **Website → Halls → Check availability:** each hall card expands a monthly calendar under its row (below the swipe row on phones), built from `pb_booked_slots` (confirmed bookings only, no customer details). Days show available / some sessions booked / fully booked; tapping a day lists its sessions, and **Book this date** fills the booking form.
 - **Admin → Calendar:** a monthly calendar of all bookings, filterable by hall (or services only), colour-coded by status with hall clashes outlined. Tap a booking to open it, tap the **+** on any day (today onwards) to add a booking for that date (and the selected hall), or tap a day to see its sessions and **+ Add booking**.
